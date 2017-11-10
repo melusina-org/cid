@@ -1,0 +1,20 @@
+# -*- mode: shell-script -*-
+# Image: cid/postgresql
+# Mount: /var/lib/postgresql/9.6/main
+
+databasedir='/var/lib/postgresql/9.6/main'
+
+/etc/init.d/postgresql start
+trap '/etc/init.d/postgresql stop' EXIT
+
+postgresscript()
+{
+    sed -e "s|@@DATABASEDIR@@|${databasedir}|g" <<'SHELL'
+initdb -D @@DATABASEDIR@@
+psql -c "CREATE USER trac WITH PASSWORD 'trac';"
+createdb -U postgres -O trac -E UTF8 trac
+SHELL
+}
+
+install -d -o postgres -g postgres -m 750 "${databasedir}"
+su postgres -c "$(postgresscript)"

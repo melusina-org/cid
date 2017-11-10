@@ -1,0 +1,48 @@
+version: '3'
+
+services:
+ load-balancer:
+  image: cid/load-balancer
+  volumes:
+   - cid-haproxy:/etc/haproxy
+  ports:
+   - "80:80"
+   - "443:443"
+
+ postgresql:
+  user: postgres
+  image: cid/postgresql
+  volumes:
+   - cid-postgresql-etc:/etc/postgresql
+   - cid-postgresql-lib:/var/lib/postgresql
+  ports:
+   - "5432:5432"
+
+ trac:
+  image: cid/trac
+  volumes:
+   - cid-trac:/var/trac
+   - cid-git:/var/git
+   - cid-www:/var/www
+  ports:
+   - "2022:22"
+
+volumes:
+  cid-haproxy:
+    external:
+      name: cid-${cid_project}-haproxy
+  cid-postgresql-etc:
+    external:
+      name: cid-${cid_project}-postgresql-etc
+  cid-postgresql-lib:
+    external:
+      name: cid-${cid_project}-postgresql-lib
+  cid-trac:
+    external:
+      name: cid-${cid_project}-trac
+  cid-git:
+    external:
+      name: cid-${cid_project}-git
+  cid-www:
+    external:
+      name: cid-${cid_project}-www

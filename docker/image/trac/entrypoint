@@ -1,0 +1,26 @@
+#!/bin/sh
+set -e
+
+run_sshd()
+{
+    /usr/sbin/sshd -D
+}
+
+run_apache()
+{
+    /usr/sbin/apache2ctl -DFOREGROUND
+}
+
+run_all()
+(
+    run_sshd &
+    run_apache &
+    wait
+)
+
+
+if [ $# -gt 0 ]; then
+    exec "$@"
+else
+    run_all
+fi

@@ -1,0 +1,60 @@
+# -*- mode: shell-script -*-
+
+# Image: cid/trac
+# Volume: trac:/var/trac
+# Volume: git:/var/git
+# Volume: www:/var/www
+
+tracdir='/var/trac'
+wwwdir='/var/www'
+gitdir='/var/git'
+
+chown www-data:www-data "${tracdir}"
+
+install -d -o www-data -g www-data -m 750\
+ "${tracdir}/sites"\
+ "${tracdir}/www"\
+ "${tracdir}/git"
+
+# prepare_environment NAME WWW-LOCATION
+#  Prepare an environment
+
+prepare_environment()
+{
+    install -d -o www-data -g www-data -m 750\
+            "${tracdir}/$1"\
+            "${wwwdir}/$1"
+
+    install -d -o git -g git -m 750\
+            "${gitdir}/$1"
+
+    su -l www-data -s '/bin/sh' <<TRAC-ADMIN
+trac-admin "${tracdir}/$1" initenv "$1" sqlite:db/trac.db
+trac-admin "${tracdir}/$1" deploy "${wwwdir}/$1"
+TRAC-ADMIN
+
+    install -o www-data -g www-data -m 640 /dev/null "${tracdir}/sites/$1.htpasswd"
+    install -o www-data -g www-data -m 640 /dev/null "${tracdir}/sites/$1.conf"
+    cat >> "${tracdir}/sites/$1.conf" <<SITE-CONF
+Alias $2/chrome /var/www/$1/htdocs
+
+<Directory "/var/www/$1/htdocs">
+  <IfModule mod_authz_core.c>
+    Require all granted
+  </IfModule>
+</Directory>
+
+<Location "$2/login">
+  AuthType Basic
+  AuthName "Trac $1"
+  AuthUserFile /var/trac/sites/$1.htpasswd
+  Require valid-user
+</Location>
+
+
+
+WSGIScriptAlias $2 ${wwwdir}/$1/cgi-bin/trac.wsgi
+SITE-CONF
+}
+
+prepare_environment able-and-baker /trac/able-and-baker
