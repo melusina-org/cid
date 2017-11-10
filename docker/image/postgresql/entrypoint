@@ -1,0 +1,9 @@
+#!/bin/sh
+set -e
+
+if [ "${1#-}" != "$1" ]; then
+  # First arg is `-F` or `--SOME-OPTION`
+  set -- /usr/lib/postgresql/9.6/bin/postgres "$@"
+fi
+
+exec "$@"

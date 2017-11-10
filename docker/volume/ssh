@@ -1,0 +1,10 @@
+# -*- mode: shell-script -*-
+
+# Mount: /home/cid/.ssh
+
+cat > /var/tmp/ssh.tar
+trap 'rm -f /var/tmp/ssh.tar' EXIT
+
+chown cid:cid /home/cid/.ssh
+su cid -c 'tar xfC - /home/cid/.ssh' < /var/tmp/ssh.tar
+find /home/cid/.ssh -type f -exec chmod go= '{}' ';'

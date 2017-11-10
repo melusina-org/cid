@@ -1,0 +1,8 @@
+autom4te.cache/
+config.log
+config.status
+configure
+Makefile.config
+Makefile.local
+Library/Unversioned/
+*.fasl

@@ -1,0 +1,14 @@
+FROM cid/tool:latest
+
+SCRIPT setup/jenkins.sh
+
+USER jenkins
+ENV PATH "/opt/cid/bin:/opt/local/bin:${PATH}"
+ENV JENKINS_HOME "/var/lib/jenkins"
+
+VOLUME /var/lib/jenkins
+
+EXPOSE 8080
+EXPOSE 5000
+
+ENTRYPOINT ["java", "-jar", "/usr/share/jenkins/jenkins.war"]

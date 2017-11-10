@@ -1,0 +1,161 @@
+#!/bin/sh
+
+### image_tool -- Tool to build a docker image
+
+: ${package:=cid}
+: ${packagedir:=/cid}
+: ${prefix:=/usr/local}
+: ${cachedir:=${prefix}/var/cache${packagedir}}
+
+. './subr.sh'
+
+# maybecp OLDFILE NEWFILE
+#  Copy OLDFILE to NEWFILE only if the file contents differ
+
+maybecp()
+{
+    if ! [ -e "$2" ]; then
+        cp "$1" "$2"
+    elif cmp -s "$1" "$2"; then
+        : NOP
+    else
+        cp -f "$1" "$2"
+    fi
+}
+
+# make_tarball PATH-TO-LOCAL-REPOSITORY PACKAGE
+#  Prepare a tarball of a local repo
+#
+# The repository located at PATH-TO-LOCAL-REPOSITORY is prepared as an
+# archive named "${PACKAGE}.tar" .
+
+make_tarball ()
+{
+    (cd "$1" && git archive --prefix "$2/" HEAD)  > "./$2.tar"
+}
+
+
+# transpile
+#  A simple dockerfile transpiler
+#
+# The transpiler functions as a filter. It understands the following
+# commands:
+#
+# SCRIPT [user] scriptfilename [function arg1 …]
+#  Replace the directive with the content of scriptfilename
+
+transpile()
+{
+    sbcl --noinform\
+         --eval '(ql:quickload :cid :silent t)'\
+         --eval '(progn (cid.dockerfile:stream-from-stream)(uiop:quit 0))'
+}
+
+# docker_context [-d TARGET-DIR] SKEL
+#  Prepare a docker context based on the given skeleton SKEL
+#
+# The context is prepared in a temporary directory or in the the
+# directory TARGET-DIR when the corresponding argument is provided.
+# The actual context directory is saved in the `contextdir' variable.
+#
+# The SKEL is a folder whose files are copied to the context. A
+# file `Dockerfile' is copied “as is”. A file `Dockerfile.in' is
+# ran through the `transpile' filter to generate the actual
+# `Dockerfile'.
+
+docker_context()
+{
+    local OPTIND OPTION OPTARG file
+
+    status=1
+    OPTIND=1
+
+    while getopts 'd:' OPTION; do
+        case ${OPTION} in
+            d)	contextdir="${OPTARG}";;
+            *)	failwith -x 70 'docker_context: %s: Unsupported option.' "${OPTION}";;
+        esac
+    done
+    shift $(expr ${OPTIND} - 1)
+
+    if [ -z "${contextdir}" ]; then
+        tmpdir_initializer
+        contextdir="${tmpdir}"
+    fi
+
+    if [ ! -d "${contextdir}" ]; then
+        failwith 'docker_context: %s: Context directory not found.' "${contextdir}"
+    fi
+
+    if [ ! -d "$1" ]; then
+        failwith 'docker_context: %s: Skeleton directory not found.' "$1"
+    fi
+
+    for file in "$1"/*; do
+        case "${file}" in
+            */Dockerfile.in)
+                transpile < "${file}" > "${contextdir}/Dockerfile";;
+            *)
+                cp -a "${file}" "${contextdir}";;
+        esac
+    done
+
+    if [ -x "${contextdir}/populate" ]; then
+        (cd "${contextdir}" && exec ./populate)
+    fi
+}
+
+
+# docker_build SYSTEM-NAME
+#  Build the image for SYSTEM-NAME
+#
+# The context is taked from ${contextdir}. The produced image is
+# tagged as PACKAGE/SYSTEM-NAME.
+
+docker_build()
+{
+    docker build --tag "${package}/$1" "${contextdir}"
+}
+
+
+# image_build SYSTEM-NAME
+#  Prepare docker image for system
+
+image_build()
+(
+    docker_context "${image_baseskeldir}/$1"
+    docker_build "$1"
+)
+
+
+#
+# Main
+#
+
+image_baseskeldir='./image'
+image_list='linux load-balancer postgresql trac'
+
+image_main()
+{
+    local OPTIND OPTION OPTARG image
+
+    status=1
+    OPTIND=1
+
+    while getopts '' OPTION; do
+        case ${OPTION} in
+            *)	failwith -x 70 'image_tool: %s: Unsupported option.' "${OPTION}";;
+        esac
+    done
+    shift $(expr ${OPTIND} - 1)
+
+    if [ $# -eq 0 ]; then
+        set -- ${image_list}
+    fi
+
+    for image in "$@"; do
+        image_build "${image}"
+    done
+}
+
+image_main "$@"
