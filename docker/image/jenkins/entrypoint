@@ -1,0 +1,8 @@
+#!/bin/sh
+set -e
+
+if [ "$#" -le 0 ]; then
+    set -- java -jar /usr/share/jenkins/jenkins.war
+fi
+
+exec "$@"

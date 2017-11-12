@@ -133,7 +133,7 @@ image_build()
 #
 
 image_baseskeldir='./image'
-image_list='linux load-balancer postgresql trac'
+image_list='linux load-balancer postgresql trac jenkins'
 
 image_main()
 {
