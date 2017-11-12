@@ -1,0 +1,11 @@
+;;; -*- mode: common-lisp -*-
+
+(require "asdf")
+
+(let ((quicklisp-init (merge-pathnames "quicklisp/setup.lisp"
+                                       (user-homedir-pathname))))
+  (when (probe-file quicklisp-init)
+    (load quicklisp-init)))
+
+(let ((workspace (sb-unix::posix-getenv "WORKSPACE")))
+  (when workspace (push (concatenate 'string workspace "/") asdf:*central-registry*)))

@@ -1,24 +1,18 @@
 FROM cid/linux
 
-RUN env DEBIAN_FRONTEND=noninteractive apt-get install -y\
- autoconf\
- bmake\
- curl\
- gawk\
- git\
- gnupg\
- jenkins\
- m4\
- pkg-config
-
-
 SCRIPT setup/jenkins.sh
 SCRIPT setup/docker.sh
+SCRIPT setup/sbcl.sh
+
+RUN sbcl\
+ --eval '(load #p"/usr/share/cl-quicklisp/quicklisp.lisp")'\
+ --eval '(quicklisp-quickstart:install)'\
 
 RUN usermod -a -G docker jenkins
 
 ENV JENKINS_HOME "/var/lib/jenkins"
 
+ADD sbclrc /var/lib/jenkins/.sbclrc
 ADD entrypoint /usr/local/bin/entrypoint
 ENTRYPOINT ["/usr/local/bin/entrypoint"]
 
