@@ -1,0 +1,25 @@
+FROM cid/linux
+
+RUN env DEBIAN_FRONTEND=noninteractive apt-get install -y\
+ autoconf\
+ bmake\
+ curl\
+ gawk\
+ git\
+ gnupg\
+ jenkins\
+ m4\
+ pkg-config
+
+
+SCRIPT setup/jenkins.sh
+SCRIPT setup/docker.sh
+
+RUN usermod -a -G docker jenkins
+
+ENV JENKINS_HOME "/var/lib/jenkins"
+
+ADD entrypoint /usr/local/bin/entrypoint
+ENTRYPOINT ["/usr/local/bin/entrypoint"]
+
+VOLUME ["/var/lib/jenkins"]

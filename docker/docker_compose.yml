@@ -27,10 +27,21 @@ services:
   ports:
    - "2022:22"
 
+ jenkins:
+  user: jenkins
+  image: cid/jenkins
+  volumes:
+   - /var/run/docker.sock:/var/run/docker.sock
+   - cid-jenkins:/var/lib/jenkins
+   - cid-git:/var/git
+
 volumes:
   cid-haproxy:
     external:
       name: cid-${cid_project}-haproxy
+  cid-jenkins:
+    external:
+      name: cid-${cid_project}-jenkins
   cid-postgresql-etc:
     external:
       name: cid-${cid_project}-postgresql-etc
