@@ -2,9 +2,12 @@ version: '3'
 
 services:
  load-balancer:
+  restart: unless-stopped
   image: cid/load-balancer
-  volumes:
-   - cid-haproxy:/etc/haproxy
+  deploy:
+   mode: global
+  networks:
+   - frontend
   ports:
    - "80:80"
    - "443:443"
@@ -15,6 +18,10 @@ services:
   volumes:
    - cid-postgresql-etc:/etc/postgresql
    - cid-postgresql-lib:/var/lib/postgresql
+  deploy:
+   mode: global
+  networks:
+   - backend
   ports:
    - "5432:5432"
 
@@ -24,21 +31,30 @@ services:
    - cid-trac:/var/trac
    - cid-git:/var/git
    - cid-www:/var/www
+  deploy:
+   mode: global
+  networks:
+   - frontend
   ports:
    - "2022:22"
 
  jenkins:
   user: jenkins
   image: cid/jenkins
+  deploy:
+   mode: global
   volumes:
    - /var/run/docker.sock:/var/run/docker.sock
    - cid-jenkins:/var/lib/jenkins
    - cid-git:/var/git
+  networks:
+   - frontend
+
+networks:
+ frontend:
+ backend:
 
 volumes:
-  cid-haproxy:
-    external:
-      name: cid-${cid_project}-haproxy
   cid-jenkins:
     external:
       name: cid-${cid_project}-jenkins
