@@ -1,5 +1,0 @@
-FROM debian:stretch
-
-SCRIPT setup/apt.sh
-SCRIPT setup/hier.sh
-SCRIPT setup/cid_users.sh

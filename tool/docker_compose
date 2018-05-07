@@ -1,0 +1,55 @@
+#!/bin/sh
+
+### docker_compose -- Tool to run docker compose
+
+# El Cid (https://github.com/melusina-org/cid)
+# This file is part of El Cid
+#
+# Copyright © 2018 Michaël Le Barbier
+#
+# This file must be used under the terms of the MIT license.
+# This source file is licensed as described in the file LICENSE, which
+# you should have received as part of this distribution. The terms
+# are also available at
+# https://opensource.org/licenses/MIT
+
+: ${TOPLEVELDIR:=$(git rev-parse --show-toplevel)}
+: ${dockerdir:=${TOPLEVELDIR}/docker}
+: ${package:=cid}
+: ${packagedir:=/cid}
+: ${prefix:=/usr/local}
+: ${cachedir:=${prefix}/var/cache${packagedir}}
+
+#
+# Main
+#
+
+compose_project='local'
+
+compose_main()
+{
+    local OPTIND OPTION OPTARG image
+
+    status=1
+    OPTIND=1
+
+    while getopts 'p:' OPTION; do
+        case ${OPTION} in
+            p)	compose_project="${OPTARG}";;
+            *)	failwith -x 70 'docker_compose: %s: Unsupported option.' "${OPTION}";;
+        esac
+    done
+    shift $(expr ${OPTIND} - 1)
+
+    (
+        cid_project="${compose_project}"
+        export cid_project
+
+        exec docker-compose\
+             --file "${dockerdir}/compose/cid.yml"\
+             --project-name "cid-${compose_project}"\
+             "$@"
+    )
+}
+
+compose_main "$@"

@@ -1,4 +1,0 @@
-FROM cid/linux
-SCRIPT setup/git-server.sh
-CMD ["/usr/sbin/sshd","-D"]
-VOLUME ["/var/git"]

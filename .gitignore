@@ -6,3 +6,4 @@ Makefile.config
 Makefile.local
 Library/Unversioned/
 *.fasl
+backup/

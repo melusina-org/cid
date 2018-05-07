@@ -5,13 +5,13 @@
 # El Cid (https://github.com/melusina-org/cid)
 # This file is part of El Cid
 #
-# Copyright © 2017 Michaël Le Barbier
+# Copyright © 2018 Michaël Le Barbier
 #
-# This file must be used under the terms of the CeCILL-B.
-# This source file is licensed as described in the file COPYING, which
+# This file must be used under the terms of the MIT license.
+# This source file is licensed as described in the file LICENSE, which
 # you should have received as part of this distribution. The terms
 # are also available at
-# http://www.cecill.info/licences/Licence_CeCILL-B_V1-en.txt
+# https://opensource.org/licenses/MIT
 
 : ${package:=@PACKAGE@}
 : ${packagedir:=/@PACKAGEDIR@}
@@ -23,31 +23,34 @@
 : ${tracdir:=/var/trac}
 : ${gitdir:=/var/git}
 
-# repository_make_compose_project_name PROJECT-NAME
-#  Print the project name used by docker compose deduced from PROJECT-NAME
 
-repository_make_compose_project_name()
-{
-    printf 'cid-%s' "$1" | sed -e 's/-//g'
-}
+# failwith [-x STATUS] PRINTF-LIKE-ARGV
+#  Fail with the given diagnostic message
+#
+# The -x flag can be used to convey a custom exit status, instead of
+# the value 1.  A newline is automatically added to the output.
 
-repository_delegate_method()
+failwith()
 {
-    printf '%s' "${repository_delegate}"\
-        | cut -d ':' -f 1
-}
+    local OPTIND OPTION OPTARG status
 
-repository_delegate_subject()
-{
-    printf '%s' "${repository_delegate}"\
-        | cut -d ':' -f 2
-}
+    status=1
+    OPTIND=1
 
-repository_docker_shell()
-{
-    cat <<EOF
-/usr/local/bin/cid_repository${repository_project:+ -p }${repository_project} $@
-EOF
+    while getopts 'x:' OPTION; do
+        case ${OPTION} in
+            x)	status="${OPTARG}";;
+            *)	1>&2 printf 'failwith: %s: Unsupported option.\n' "${OPTION}";;
+        esac
+    done
+
+    shift $(expr ${OPTIND} - 1)
+    {
+        printf 'Failure: '
+        printf "$@"
+        printf '\n'
+    } 1>&2
+    exit "${status}"
 }
 
 # repository_ls
@@ -149,53 +152,62 @@ repository_delete()
 # Main
 #
 
-repository_project='local'
-repository_delegate='NATIVE:'
+# repository_usage
+#  Print usage information for the program
+
+repository_usage()
+{
+    iconv -f utf-8 <<EOF
+Usage: cid_repository [-p PROJECT] SUBCOMMAND [REPOSITORY]
+ Operate on cid repositories
+Subcommands:
+ ls
+ config
+ create
+ delete
+Options:
+ -p PROJECT
+ -h Display a help message.
+EOF
+}
+
 
 repository_main()
 {
-    local OPTIND OPTION OPTARG action mode project script
+    local OPTIND OPTION OPTARG
+    local subcommand repository_project
 
-    action='help'
-    mode='master'
-    status=1
+    repository_project='local'
+    subcommand='usage'
     OPTIND=1
 
-    while getopts 'np:tS' OPTION; do
+    while getopts 'p:' OPTION; do
         case ${OPTION} in
-            n)	repository_delegate="NATIVE:";;
-            p)	repository_project="${OPTARG}"
-                project=$(repository_make_compose_project_name "${OPTARG}")
-                repository_delegate="DOCKER:${project}_trac_1";;
-            t)	repository_delegate="TEST:";;
-            S)	mode='slave';;
+            h)	repository_usage; exit 0;;
+            p)	repository_project="${OPTARG}";;
             *)	failwith -x 70 'cid_repository: %s: Unsupported option.' "${OPTION}";;
         esac
     done
     shift $(expr ${OPTIND} - 1)
 
     if [ $# -eq 0 ]; then
-        repository_usage -x 0
+        repository_usage
+        exit 64
     fi
 
-    action="$1"
+    subcommand="$1"
     shift
 
-    case "$(repository_delegate_method)" in
-        NATIVE)
-            repository_${action} "$@";;
-        DOCKER)
-            script=$(repository_docker_shell -n ${action} "$@")
-            docker exec -it --user git "$(repository_delegate_subject)"\
-                   sh -c "${script}"
-            ;;
-        TEST)
-            repository_docker_shell ${action} "$@"
+    case "${subcommand}" in
+        ls|config|create|delete|hook)
+            : 'NOP'
             ;;
         *)
-            failwith -x 64 'cid_repository: %s: Delegation method unknown.' "$(repository_delegate_method)"
+            failwith -x 64 'cid_repository: %s: Unknown subcommand.' "${subcommand}"
             ;;
     esac
+
+    repository_${subcommand} "$@"
 }
 
 repository_main "$@"

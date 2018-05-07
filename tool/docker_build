@@ -1,0 +1,56 @@
+#!/bin/sh
+
+### docker_build -- Docker build images
+
+# El Cid (https://github.com/melusina-org/cid)
+# This file is part of El Cid
+#
+# Copyright © 2018 Michaël Le Barbier
+#
+# This file must be used under the terms of the MIT license.
+# This source file is licensed as described in the file LICENSE, which
+# you should have received as part of this distribution. The terms
+# are also available at
+# https://opensource.org/licenses/MIT
+
+: ${TOPLEVELDIR:=$(git rev-parse --show-toplevel)}
+: ${dockerdir:=${TOPLEVELDIR}/docker}
+
+build_package='cid'
+
+
+# build_db
+#  The database of systems we can build
+#
+# It has the following columns:
+#
+#  SYSTEM-NAME
+
+build_db()
+{
+    find "${dockerdir}" -type f -name 'Dockerfile' \
+         | sed -e 's@/Dockerfile@@;s@.*/@@'
+}
+
+
+# build_image SYSTEM-NAME
+#  Build the image for SYSTEM-NAME
+
+build_image()
+{
+    cd "${TOPLEVELDIR}"
+    docker build -t "${build_package}/$1" -f "./docker/image/$1/Dockerfile" .
+}
+
+
+build_main()
+{
+    local image
+    for image in "$@"; do
+        build_image "${image}"
+    done
+}
+
+build_main "$@"
+
+### End of file `docker_build'

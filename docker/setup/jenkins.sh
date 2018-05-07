@@ -2,6 +2,7 @@ env DEBIAN_FRONTEND=noninteractive apt-get install -y\
  autoconf\
  bmake\
  curl\
+ default-jdk\
  gawk\
  git\
  gnupg\

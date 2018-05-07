@@ -1,3 +1,14 @@
+# El Cid (https://github.com/melusina-org/cid)
+# This file is part of El Cid
+#
+# Copyright © 2018 Michaël Le Barbier
+#
+# This file must be used under the terms of the MIT license.
+# This source file is licensed as described in the file LICENSE, which
+# you should have received as part of this distribution. The terms
+# are also available at
+# https://opensource.org/licenses/MIT
+
 env DEBIAN_FRONTEND=noninteractive apt-get install -y\
  apache2\
  pwgen\
@@ -27,7 +38,7 @@ ln -s /var/trac/sites /etc/apache2/sites-trac
 
 cat > /etc/apache2/ports.conf <<PORTS-CONF
 # We only listen to 80, as SSL Termination is implemented by
-# the load-balancer.
+# the reverseproxy.
 Listen 80
 PORTS-CONF
 
