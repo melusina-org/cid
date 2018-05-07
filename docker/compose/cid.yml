@@ -1,9 +1,9 @@
 version: '3'
 
 services:
- load-balancer:
+ reverseproxy:
   restart: unless-stopped
-  image: cid/load-balancer
+  image: cid/reverseproxy
   deploy:
    mode: global
   networks:

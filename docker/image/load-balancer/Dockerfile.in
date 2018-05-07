@@ -1,8 +1,0 @@
-FROM cid/linux
-RUN env DEBIAN_FRONTEND=noninteractive apt-get install -y\
- haproxy\
- && install -d -o haproxy -g haproxy -m 700 /run/haproxy
-ADD haproxy.cfg /etc/haproxy/haproxy.cfg
-ADD entrypoint /usr/local/bin/entrypoint
-ENTRYPOINT ["/usr/local/bin/entrypoint"]
-CMD ["haproxy","-db","-f","/etc/haproxy/haproxy.cfg"]

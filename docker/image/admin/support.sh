@@ -9,21 +9,12 @@
 # are also available at
 # https://opensource.org/licenses/MIT
 
-env DEBIAN_FRONTEND=noninteractive apt-get install -y\
- autoconf\
- bmake\
- bsdtar\
- curl
-
-install -d -o cid -g cid -m 700 /usr/local/src
 su -l cid -c '
  set -e
- cd /usr/local/src
- curl -L https://github.com/michipili/bsdowl/archive/master.zip | bsdtar xf -
- cd bsdowl-master
+ cd /opt/cid/var/src/support
  autoconf
- ./configure --prefix=/usr/local --with-credentials=sudo
- bmake all
+ ./configure --prefix=/opt/cid
+ bmake -I/usr/local/share/bsdowl all
 '
 
-( cd /usr/local/src/bsdowl-master && bmake install )
+( cd /opt/cid/var/src/support && bmake -I/usr/local/share/bsdowl install )

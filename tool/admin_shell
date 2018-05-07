@@ -1,0 +1,195 @@
+#!/bin/sh
+
+### admin_shell -- Start the Admin Shell
+
+# El Cid (https://github.com/melusina-org/cid)
+# This file is part of El Cid
+#
+# Copyright © 2018 Michaël Le Barbier
+#
+# This file must be used under the terms of the MIT license.
+# This source file is licensed as described in the file LICENSE, which
+# you should have received as part of this distribution. The terms
+# are also available at
+# https://opensource.org/licenses/MIT
+
+: ${TOPLEVELDIR:=$(git rev-parse --show-toplevel)}
+: ${dockerimage:=cid/admin}
+: ${admin_package:='cid'}
+: ${admin_project:='local'}
+: ${admin_user:='root'}
+: ${admin_backupdir:=${TOPLEVELDIR}/backup}
+: ${admin_configdir:='/dev/null'}
+: ${admin_gnupgdir:=/home/cid/.gnupg}
+: ${admin_sshdir:=/home/cid/.ssh}
+: ${admin_wwwdir:=/var/www}
+: ${admin_tracdir:=/var/trac}
+: ${admin_interaction:=confirm}
+
+# confirm PRINTF-LIKE-ARGV
+#  Abort program if answer is not yes
+
+confirm()
+{
+    local answer
+
+    printf "$@"
+    printf ' [yN] '
+    read answer
+    case "${answer}" in
+        Y|y|yes|YES|Yes)
+            : 'NOP'
+            ;;
+        *)
+            failwith 'admin_shell: No confirmation.'
+            ;;
+    esac
+}
+
+# failwith [-x STATUS] PRINTF-LIKE-ARGV
+#  Fail with the given diagnostic message
+#
+# The -x flag can be used to convey a custom exit status, instead of
+# the value 1.  A newline is automatically added to the output.
+
+failwith()
+{
+    local OPTIND OPTION OPTARG status
+
+    status=1
+    OPTIND=1
+
+    while getopts 'x:' OPTION; do
+        case ${OPTION} in
+            x)	status="${OPTARG}";;
+            *)	1>&2 printf 'failwith: %s: Unsupported option.\n' "${OPTION}";;
+        esac
+    done
+
+    shift $(expr ${OPTIND} - 1)
+    {
+        printf 'Failure: '
+        printf "$@"
+        printf '\n'
+    } 1>&2
+    exit "${status}"
+}
+
+
+admin_docker()
+{
+    docker run --rm\
+           --user "${admin_user}"\
+           --volume "cid-${admin_project}-jenkins:/var/lib/jenkins"\
+           --volume "cid-${admin_project}-git:/var/git"\
+           --volume "cid-${admin_project}-trac:${admin_tracdir}"\
+           --volume "cid-${admin_project}-www:${admin_wwwdir}"\
+           --volume "cid-${admin_project}-gpg:${admin_gnupgdir}"\
+           --volume "cid-${admin_project}-ssh:${admin_sshdir}"\
+           --volume "${admin_backupdir}:/opt/cid/var/backups"\
+           --volume "${admin_configdir}:/opt/cid/var/config"\
+           "$@"
+}
+
+admin_shell()
+{
+    admin_docker -it "${dockerimage}" bash -l
+}
+
+admin_devshell()
+{
+    admin_docker\
+        --volume "${TOPLEVELDIR}:/opt/cid/var/src/cid"\
+        -it "${dockerimage}" bash -l
+}
+
+admin_dump()
+{
+    admin_docker -it "${dockerimage}" cid_dump -p "${admin_project}"
+}
+
+admin_restore()
+{
+    local dumpfile
+    case "$1" in
+        /*)
+            dumpfile="$1"
+            ;;
+        *)
+            dumpfile="$(pwd -P)/$1"
+            ;;
+    esac
+    admin_docker\
+        --volume "${dumpfile}:/var/backups/backup.txz"\
+        -it "${dockerimage}" cid_restore '/var/backups/backup.txz'
+}
+
+admin_ls()
+{
+    docker volume ls --format '{{.Name}}'\
+        | sed -n -e '/-trac$/{s/^cid-//;s/-trac$//;p;}'\
+        | sort -u
+}
+
+admin_rm()
+{
+    case "${admin_interaction}" in
+        confirm)
+            confirm '%s: Remove data volumes for this project.' "${admin_project}";;
+        yes)
+            : 'NOP'
+            ;;
+        no)
+            failwith 'admin_rm: Interaction set to no, abort.'
+            ;;
+    esac
+    docker volume ls --format '{{.Name}}'\
+        | grep -F "cid-${admin_project}"\
+        | xargs docker volume rm
+}
+
+admin_create()
+{
+    local volume
+    for volume in git gpg jenkins postgresql-etc postgresql-lib ssh trac www; do
+        docker volume create "cid-${admin_project}-${volume}"
+    done
+}
+
+admin_configure()
+{
+    admin_docker -it "${dockerimage}" cid_configure -p "${admin_project}"
+}
+
+admin_main()
+{
+    local OPTIND OPTION OPTARG
+
+    subcommand='shell'
+    OPTIND=1
+
+    while getopts 'b:c:dhp:' OPTION; do
+        case ${OPTION} in
+            b)	admin_backupdir="${OPTARG}";;
+            c)	admin_configdir="${OPTARG%/}";;
+            d)	admin_subcommand='subshell';;
+            h)	admin_usage; exit 0;;
+            p)	admin_project="${OPTARG}";;
+            *)	failwith -x 64 'admin_shell: %s: Unsupported option.' "${OPTION}";;
+        esac
+    done
+    shift $(expr ${OPTIND} - 1)
+
+    case $1 in
+        configure|create|dump|ls|restore|rm)
+            subcommand="$1"
+            shift
+            ;;
+    esac
+
+    admin_${subcommand} "$@"
+}
+
+admin_main "$@"
+
+### End of file `admin_shell'
