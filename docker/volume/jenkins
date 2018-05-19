@@ -1,5 +1,0 @@
-# -*- mode: shell-script -*-
-
-# Volume: jenkins:/var/lib/jenkins
-
-: 'Relax, nothing to do!'

@@ -1,6 +1,0 @@
-# -*- mode: shell-script -*-
-
-# Image: cid/git-server
-# Volume: git:/var/git
-
-chown git:git /var/git
