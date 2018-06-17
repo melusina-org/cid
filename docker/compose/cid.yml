@@ -12,19 +12,6 @@ services:
    - "80:80"
    - "443:443"
 
- postgresql:
-  user: postgres
-  image: cid/postgresql
-  volumes:
-   - cid-postgresql-etc:/etc/postgresql
-   - cid-postgresql-lib:/var/lib/postgresql
-  deploy:
-   mode: global
-  networks:
-   - backend
-  ports:
-   - "5432:5432"
-
  trac:
   image: cid/trac
   volumes:
@@ -58,12 +45,6 @@ volumes:
   cid-jenkins:
     external:
       name: cid-${cid_project}-jenkins
-  cid-postgresql-etc:
-    external:
-      name: cid-${cid_project}-postgresql-etc
-  cid-postgresql-lib:
-    external:
-      name: cid-${cid_project}-postgresql-lib
   cid-trac:
     external:
       name: cid-${cid_project}-trac
