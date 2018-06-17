@@ -20,6 +20,9 @@ RUN sh /root/setup/docker.sh
 COPY ./docker/setup/sbcl.sh /root/setup/
 RUN sh /root/setup/sbcl.sh
 
+COPY ./docker/setup/java.sh /root/setup/
+RUN sh /root/setup/java.sh
+
 COPY ./docker/setup/quicklisp.sh /root/setup/
 RUN sh /root/setup/quicklisp.sh -o jenkins -g jenkins
 
