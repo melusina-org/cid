@@ -1,6 +1,6 @@
 #!/bin/sh
 
-### admin_shell -- Start the Admin Shell
+### admin_console -- Start the Admin Shell
 
 # El Cid (https://github.com/melusina-org/cid)
 # This file is part of El Cid
@@ -41,7 +41,7 @@ confirm()
             : 'NOP'
             ;;
         *)
-            failwith 'admin_shell: No confirmation.'
+            failwith 'admin_console: No confirmation.'
             ;;
     esac
 }
@@ -175,7 +175,7 @@ admin_main()
             d)	admin_subcommand='subshell';;
             h)	admin_usage; exit 0;;
             p)	admin_project="${OPTARG}";;
-            *)	failwith -x 64 'admin_shell: %s: Unsupported option.' "${OPTION}";;
+            *)	failwith -x 64 'admin_console: %s: Unsupported option.' "${OPTION}";;
         esac
     done
     shift $(expr ${OPTIND} - 1)
@@ -192,4 +192,4 @@ admin_main()
 
 admin_main "$@"
 
-### End of file `admin_shell'
+### End of file `admin_console'
