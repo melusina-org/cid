@@ -14,6 +14,9 @@ cloud.
 % ./tool/docker_build linux admin gitserver jenkins postgresql reverseproxy trac
 ~~~
 
+## Configure a Project
+
+
 ## Administrative operations
 
 ### Example configuration directory
@@ -47,32 +50,32 @@ where location stands for the location served by the Apache server.
 ### Create data volumes
 
 ~~~ console
-% ./tool/admin_shell -c $(pwd)/Library/Config/local -p local create
+% ./tool/admin_console -c $(pwd)/Library/Config/local -p local create
 ~~~
 
 
 ### Configure data volumes
 
 ~~~ console
-% ./tool/admin_shell -c $(pwd)/Library/Config/local -p local configure
+% ./tool/admin_console -c $(pwd)/Library/Config/local -p local configure
 ~~~
 
 ### Dump data volumes
 
 ~~~ console
-% ./tool/admin_shell -c $(pwd)/Library/Config/local -p local dump
+% ./tool/admin_console -c $(pwd)/Library/Config/local -p local dump
 ~~~
 
 ### Restore data volumes
 
 ~~~ console
-% ./tool/admin_shell -c $(pwd)/Library/Config/local -p local restore ./backup/local.2018-05-16.a.txz
+% ./tool/admin_console -c $(pwd)/Library/Config/local -p local restore ./backup/local.2018-05-16.a.txz
 ~~~
 
 ### Reclaim data volumes
 
 ~~~ console
-% ./tool/admin_shell -c $(pwd)/Library/Config/local -p local rm
+% ./tool/admin_console -c $(pwd)/Library/Config/local -p local rm
 ~~~
 
 
