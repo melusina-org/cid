@@ -27,7 +27,7 @@ services:
 
  jenkins:
   user: jenkins
-  image: cid/jenkins
+  image: cid/jenkins:${cid_jenkinsversion}
   deploy:
    mode: global
   volumes:
