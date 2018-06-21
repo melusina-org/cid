@@ -75,6 +75,11 @@ failwith()
     exit "${status}"
 }
 
+admin_config()
+{
+    git config --file "${admin_configdir}/cid.conf" "$@"
+}
+
 
 admin_docker()
 {
@@ -156,6 +161,28 @@ admin_create()
     done
 }
 
+admin_jenkins()
+{
+    local version
+
+    version=$(admin_config 'jenkins.version')
+    if [ -z "${version}" ]; then
+        version="${admin_configdir%/}"
+        version="${version##*/}"
+    fi
+
+    if [ -f "${admin_configdir}/Dockerfile" ]; then
+        (
+            cd "${TOPLEVELDIR}"
+            docker build -t "${admin_package}/jenkins:${version}" -
+        ) < "${admin_configdir}/Dockerfile"
+    else
+        failwith '%s: Dockerfile for specialised Jenkins image is missing.'
+    fi
+}
+
+
+
 admin_configure()
 {
     admin_docker -it "${dockerimage}" cid_configure -p "${admin_project}"
@@ -181,7 +208,7 @@ admin_main()
     shift $(expr ${OPTIND} - 1)
 
     case $1 in
-        configure|create|dump|ls|restore|rm)
+        configure|create|dump|ls|restore|rm|jenkins)
             subcommand="$1"
             shift
             ;;
