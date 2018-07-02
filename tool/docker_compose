@@ -26,9 +26,27 @@
 
 compose_project='local'
 
+compose_jenkinsversion()
+{
+    docker images --format '{{.Repository}}:{{.Tag}}' |\
+        awk -F ':'\
+            -v project="${compose_project}" '
+BEGIN {
+ version = "latest"
+}
+
+$1 == "cid/jenkins" && $2 == project {
+ version = $2
+}
+
+END {
+ print version
+}'
+}
+
 compose_main()
 {
-    local OPTIND OPTION OPTARG image
+    local OPTIND OPTION OPTARG
 
     status=1
     OPTIND=1
@@ -43,7 +61,9 @@ compose_main()
 
     (
         cid_project="${compose_project}"
+        cid_jenkinsversion="$(compose_jenkinsversion)"
         export cid_project
+        export cid_jenkinsversion
 
         exec docker-compose\
              --file "${dockerdir}/compose/cid.yml"\
@@ -53,3 +73,5 @@ compose_main()
 }
 
 compose_main "$@"
+
+### End of file `docker_compose'

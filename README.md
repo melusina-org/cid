@@ -14,19 +14,11 @@ cloud.
 % ./tool/docker_build linux admin gitserver jenkins postgresql reverseproxy trac
 ~~~
 
-## Configure a Project
-
-
 ## Administrative operations
 
 ### Example configuration directory
 
-The SSH configuration is just a regular SSH configuration file which
-is made available to the cid user, which allows it to access remote
-directories.
-
-The GPG key is added to the keyring of the cid user and can be used to
-sign software.
+Here is a listing for a configuration directory to use:
 
 ~~~ console
 % find ./local -type f
@@ -34,6 +26,7 @@ sign software.
 ./local/cid.conf
 ./local/ssh/config
 ./local/ssh/id_rsa_github
+./local/Dockerfile
 ~~~
 
 The `cid.conf` enumerates the trac environments to configure.  Each
@@ -45,8 +38,20 @@ location = /trac/local
 admin = alice
 ~~~
 
-where location stands for the location served by the Apache server.
+where location stands for the location served by the Apache
+server. All other parts are optional.
 
+The SSH configuration is just a regular SSH configuration file which
+is made available to the cid user, which allows it to access remote
+directories.
+
+The GPG key is added to the keyring of the cid user and can be used to
+sign software.
+
+The Dockerfile describe a custom Jenkins installation, with
+dependencies tailored to the project.  It can start from `cid/jenkins`.
+
+7
 ### Create data volumes
 
 ~~~ console
@@ -78,6 +83,27 @@ where location stands for the location served by the Apache server.
 % ./tool/admin_console -c $(pwd)/Library/Config/local -p local rm
 ~~~
 
+
+### Build special Jenkins image
+
+~~~ console
+% ./tool/admin_console -c $(pwd)/Library/Config/local -p local jenkins
+~~~
+
+
+## Deploy with compose
+
+### Up or update
+
+~~~ console
+% ./tool/docker_compose -p local up -d
+~~~
+
+### Down
+
+~~~ console
+% ./tool/docker_compose -p local down
+~~~
 
 ## Free software
 
