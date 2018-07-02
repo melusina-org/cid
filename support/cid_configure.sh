@@ -77,10 +77,24 @@ configure_assert()
     fi
 }
 
+
+# configure_git
+#  Configure the git subsytem
+#
+# This makes sure the root of the filesystem holding the git
+# repositories is owned by the git user.
+
 configure_git()
 {
     chown 'git:git' "${gitdir}"
 }
+
+
+# configure_gpg
+#  Import GPG keys in in cid keyring
+#
+# This imports the GPG keys in "${configdir}/gpg" in cid user keyring.
+# If that directory does not exist, this phase is skipped.
 
 configure_gpg()
 {
@@ -93,6 +107,13 @@ configure_gpg()
         "
     fi
 }
+
+
+# configure_ssh
+#  This imports a SSHconfiguration for the cid user.
+#
+# This imports the SSH configuration in "${configdir}/ssh" in cid user
+# account.  If that directory does not exist, this phase is skipped.
 
 configure_ssh()
 {
@@ -109,6 +130,10 @@ configure_ssh()
         find "${sshdir}" -type f -exec chmod go= '{}' ';'
     fi
 }
+
+
+# configure_trac
+#  This creates trac environments specified by the main confguration file.
 
 configure_trac()
 {
@@ -181,82 +206,7 @@ configure_all()
 # Main
 #
 
-configure_user='root'
-configure_project='local'
-configure_delegate='NATIVE:'
-
-
-# configure_usage
-#  Print usage information for the program
-
-configure_usage()
-{
-    iconv -f utf-8 <<EOF
-Usage: cid_configure [-p PROJECT] SUBCOMMAND [CONFIGURE]
- Operate on cid repositories
-Subcommands:
- ls
- config
- create
- delete
-Options:
- -p PROJECT
- -h Display a help message.
-EOF
-}
-
-
-configure_main()
-{
-    local OPTIND OPTION OPTARG subcommand mode project script
-
-    subcommand='usage'
-    mode='master'
-    status=1
-    OPTIND=1
-
-    while getopts 'np:tS' OPTION; do
-        case ${OPTION} in
-            h)	configure_usage; exit 0;;
-            n)	configure_delegate="NATIVE:";;
-            p)	configure_project="${OPTARG}"
-                project=$(configure_make_compose_project_name "${OPTARG}")
-                configure_delegate="DOCKER:${project}_trac_1";;
-            t)	configure_delegate="TEST:";;
-            S)	mode='slave';;
-            *)	failwith -x 70 'cid_configure: %s: Unsupported option.' "${OPTION}";;
-        esac
-    done
-    shift $(expr ${OPTIND} - 1)
-
-    if [ $# -eq 0 ]; then
-        configure_usage
-        exit 64
-    fi
-
-    subcommand="$1"
-    shift
-
-    case "$(configure_delegate_method)" in
-        NATIVE)
-            configure_${subcommand} "$@";;
-        DOCKER)
-            script=$(configure_docker_script -n "${subcommand}" "$@")
-            configure_docker_exec "${script}"
-            ;;
-        TEST)
-            # configure_docker_script ${subcommand} "$@"
-            configure_delegate="DOCKER:${project}_trac_1"
-            configure_next_configurename
-            ;;
-        *)
-            failwith -x 64 'cid_configure: %s: Delegation method unknown.' "$(configure_delegate_method)"
-            ;;
-    esac
-}
-
 configure_assert
 configure_all
-#configure_main "$@"
 
 ### End of file `cid_configure.sh'

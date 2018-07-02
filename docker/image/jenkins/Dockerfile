@@ -24,14 +24,11 @@ COPY ./docker/setup/java.sh /root/setup/
 RUN sh /root/setup/java.sh
 
 COPY ./docker/setup/quicklisp.sh /root/setup/
-RUN sh /root/setup/quicklisp.sh -o jenkins -g jenkins
+RUN env PACKAGE=cid sh /root/setup/quicklisp.sh -o jenkins -g jenkins -i
 
 RUN usermod -a -G docker jenkins
 
 ENV JENKINS_HOME "/var/lib/jenkins"
 
-ADD ./docker/image/jenkins/sbclrc /var/lib/jenkins/.sbclrc
 ADD ./docker/image/jenkins/entrypoint /usr/local/bin/entrypoint
 ENTRYPOINT ["/usr/local/bin/entrypoint"]
-
-VOLUME ["/var/lib/jenkins"]

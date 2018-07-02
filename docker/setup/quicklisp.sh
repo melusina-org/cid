@@ -44,6 +44,8 @@ quicklisp_prepare_load_script()
     local packages
 
     packages=$(printf ' "%s"' "$@")
+    packages="${packages# }"
+
     cat > /tmp/quicklisp-load.lisp <<EOF
 (load #p"${quicklisp_home}/setup.lisp")
 (ql:quickload '(${packages}))
@@ -135,15 +137,15 @@ quicklisp_main()
 
     case "${action}" in
         all)
-            quicklisp_setup
+            quicklisp_install
             quicklisp_register_local_projects
-            quicklisp_install "$@"
-            ;;
-        register)
-            quicklisp_register_local_projects
+            quicklisp_load "$@"
             ;;
         install)
             quicklisp_install
+            ;;
+        register)
+            quicklisp_register_local_projects
             ;;
         load)
             quicklisp_load "$@"
