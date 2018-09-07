@@ -194,7 +194,7 @@ SITE-CONF
 }
 
 
-configure_all()
+configure_batch()
 {
     configure_git
     configure_gpg
@@ -207,6 +207,6 @@ configure_all()
 #
 
 configure_assert
-configure_all
+configure_batch
 
 ### End of file `cid_configure.sh'
