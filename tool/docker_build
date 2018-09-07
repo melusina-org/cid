@@ -39,13 +39,25 @@ build_db()
 build_image()
 {
     cd "${TOPLEVELDIR}"
-    docker build -t "${build_package}/$1" -f "./docker/image/$1/Dockerfile" .
+    docker build ${build_cacheflag} -t "${build_package}/$1" -f "./docker/image/$1/Dockerfile" .
 }
 
 
 build_main()
 {
-    local image
+    local OPTIND OPTION OPTARG
+    local image build_cacheflag
+
+    build_cacheflag=''
+    OPTIND=1
+
+    while getopts 'c' OPTION; do
+        case ${OPTION} in
+            c)	build_cacheflag="--no-cache";;
+            *)	failwith -x 70 'docker_compose: %s: Unsupported option.' "${OPTION}";;
+        esac
+    done
+    shift $(expr ${OPTIND} - 1)
     for image in "$@"; do
         build_image "${image}"
     done
