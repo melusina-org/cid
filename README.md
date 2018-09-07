@@ -1,7 +1,71 @@
 # El Cid, Count of Vivar and Prince of Continuous Integration and Deployment Systems
 
-The **El Cid** project aims at providing a continuous integration and
-deployment system that is easy to deploy locally as well as in the
+The **El Cid** project aims at providing a complete continuous
+integration and deployment system that is easy to incrementally
+improve, to share with team mates and collaborators, and that can be
+deployed easily either locally, on bare metal or in the cloud.
+
+It is based on Debian, Ubuntu, Jenkins, Sonartype Nexus and Icinga2.
+
+## Benefits and Features
+
+### Escape the Monolithic Continuous Integration and Deployment Server
+
+Since setting-up and integrating a Jenkins continuous integration
+deployment server can be quite a lengthy process, it is common for
+organization to start with one server and pack every job related to
+all projects into this very server. In a wimplash, this results in a
+monolithic system whose availability is criticial to the organization
+with a lot of subtle dependencies and conditions that make it hard or
+impossible to upgrade.  With **El Cid** a new continuous integration
+and development environment can be set up in minutes with a single
+command, it makes it very easy to escape the monolithic continuous
+integration and deployment server anti-pattern.
+
+### Integrated artefact repositories
+
+After software artefacts have been built and tested in Jenkins, they
+must be saved somewhere where systems target of a deployment or an
+update can find them.  While the “save produced artefacts” after-build
+step can provide a quick expedient to solve this problem, it is not
+always well suited for all artefacts, is a source of a security issues
+as in this setup the Jenkins server is connected to production
+machines, and last this solution lacks all sort of dependency
+management features. Therefore **El Cid** integrates software
+repositories for common artefact types (DEB, JAR, Tarballs, Docker
+Images), supports repository proxying, repository dumps, repostory
+restore and repositroy garbage collection.
+
+### Integrate Ansible Playbooks
+
+Because Ansible is so popular as a deployment tool, it is convenient
+to integrate it well with the continuous integration and deployment
+pipeline. Therefore **El Cid** arranges for starting Jenkins jobs in
+Ansible playbooks to be very easy and also arranges for starting
+Ansible playbooks in Jenkins to be also easy.  This allows **El Cid**
+users to simplify operation privilege delegation by relying on Jenkins
+privileges.
+
+### Integrated monitoring system
+
+There is many reasons why monitoring should be part of the continuous
+itnegration and deployment pipeline.  Furthermore, because the
+monitoring problem has the same input as the deployment problem,
+moitoring fits rather naturally in the pipeline. **El Cid** features
+Icinga2 and provides useful integrations.
+
+### Integrated backup and restore systen.
+
+### Easy build of Debian packages
+
+### Take your continuous integration and deployment scripts under version control
+
+Continuous integration and deployment scripts are valuable assets of
+your organization and they need to be 
+
+XXX
+
+deploy locally, on bare metal as well as in the
 cloud.
 
 [![Build Status](https://travis-ci.org/michipili/cid.svg?branch=master)](https://travis-ci.org/michipili/cid?branch=master)
