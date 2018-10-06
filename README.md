@@ -1,4 +1,4 @@
-# El Cid, Count of Bivar and Prince of Continuous Integration and Deployment Systems
+# El Cid, Count of Vivar and Prince of Continuous Integration and Deployment Systems
 
 The **El Cid** project aims at providing a continuous integration and
 deployment system that is easy to deploy locally as well as in the
