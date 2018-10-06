@@ -17,7 +17,6 @@
 : ${subrdir:=${TOPLEVELDIR}/subr}
 : ${dockerimage:=cid/admin}
 : ${admin_package:='cid'}
-: ${admin_project:='local'}
 : ${admin_user:='root'}
 : ${admin_backupdir:=${TOPLEVELDIR}/backup}
 : ${admin_configdir:='/dev/null'}
@@ -28,6 +27,7 @@
 : ${admin_interaction:=confirm}
 
 . "${subrdir}/stdlib.sh"
+. "${subrdir}/config.sh"
 
 admin_config()
 {
@@ -39,12 +39,12 @@ admin_docker()
 {
     docker run --rm\
            --user "${admin_user}"\
-           --volume "cid-${admin_project}-jenkins:/var/lib/jenkins"\
-           --volume "cid-${admin_project}-git:/var/git"\
-           --volume "cid-${admin_project}-trac:${admin_tracdir}"\
-           --volume "cid-${admin_project}-www:${admin_wwwdir}"\
-           --volume "cid-${admin_project}-gpg:${admin_gnupgdir}"\
-           --volume "cid-${admin_project}-ssh:${admin_sshdir}"\
+           --volume "cid-${config_project}-jenkins:/var/lib/jenkins"\
+           --volume "cid-${config_project}-git:/var/git"\
+           --volume "cid-${config_project}-trac:${admin_tracdir}"\
+           --volume "cid-${config_project}-www:${admin_wwwdir}"\
+           --volume "cid-${config_project}-gpg:${admin_gnupgdir}"\
+           --volume "cid-${config_project}-ssh:${admin_sshdir}"\
            --volume "${admin_backupdir}:/opt/cid/var/backups"\
            --volume "${admin_configdir}:/opt/cid/var/config"\
            "$@"
@@ -64,7 +64,7 @@ admin_devshell()
 
 admin_dump()
 {
-    admin_docker -it "${dockerimage}" cid_dump -p "${admin_project}"
+    admin_docker -it "${dockerimage}" cid_dump -p "${config_project}"
 }
 
 admin_restore()
@@ -94,7 +94,7 @@ admin_rm()
 {
     case "${admin_interaction}" in
         confirm)
-            confirm '%s: Remove data volumes for this project.' "${admin_project}";;
+            confirm '%s: Remove data volumes for this project.' "${config_project}";;
         yes)
             : 'NOP'
             ;;
@@ -103,7 +103,7 @@ admin_rm()
             ;;
     esac
     docker volume ls --format '{{.Name}}'\
-        | grep -F "cid-${admin_project}"\
+        | grep -F "cid-${config_project}"\
         | xargs docker volume rm
 }
 
@@ -111,7 +111,7 @@ admin_create()
 {
     local volume
     for volume in git gpg jenkins postgresql-etc postgresql-lib ssh trac www; do
-        docker volume create "cid-${admin_project}-${volume}"
+        docker volume create "cid-${config_project}-${volume}"
     done
 }
 
@@ -119,7 +119,7 @@ admin_jenkins()
 {
     local version
 
-    version=$(admin_config 'jenkins.version')
+    version=$(config 'jenkins.version')
     if [ -z "${version}" ]; then
         version="${admin_configdir%/}"
         version="${version##*/}"
@@ -139,7 +139,7 @@ admin_jenkins()
 
 admin_configure()
 {
-    admin_docker -it "${dockerimage}" cid_configure -p "${admin_project}"
+    admin_docker -it "${dockerimage}" cid_configure -p "${config_project}"
 }
 
 admin_main()
@@ -151,17 +151,19 @@ admin_main()
 
     while getopts 'b:c:dhp:' OPTION; do
         case ${OPTION} in
+            c)	config_dir="${OPTARG%/}";;
+            p)	config_project="${OPTARG}";;
             b)	admin_backupdir="${OPTARG}";;
-            c)	admin_configdir="${OPTARG%/}";;
             d)	admin_subcommand='subshell';;
             h)	admin_usage; exit 0;;
-            p)	admin_project="${OPTARG}";;
             *)	failwith -x 64 'admin_console: %s: Unsupported option.' "${OPTION}";;
         esac
     done
     shift $(expr ${OPTIND} - 1)
 
-    case $1 in
+    config_setup
+
+    case "$1" in
         configure|create|dump|ls|restore|rm|jenkins)
             subcommand="$1"
             shift
