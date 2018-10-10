@@ -19,18 +19,20 @@
 : ${packagedir:=/cid}
 : ${prefix:=/usr/local}
 : ${cachedir:=${prefix}/var/cache${packagedir}}
+: ${subrdir:=${TOPLEVELDIR}/subr}
+
+. "${subrdir}/stdlib.sh"
+. "${subrdir}/config.sh"
 
 #
 # Main
 #
 
-compose_project='local'
-
 compose_jenkinsversion()
 {
     docker images --format '{{.Repository}}:{{.Tag}}' |\
         awk -F ':'\
-            -v project="${compose_project}" '
+            -v project="${config_project}" '
 BEGIN {
  version = "latest"
 }
@@ -51,23 +53,25 @@ compose_main()
     status=1
     OPTIND=1
 
-    while getopts 'p:' OPTION; do
+    while getopts 'hc:p:' OPTION; do
         case ${OPTION} in
-            p)	compose_project="${OPTARG}";;
+            c)	config_dir="${OPTARG%/}";;
+            p)	config_project="${OPTARG}";;
             *)	failwith -x 70 'docker_compose: %s: Unsupported option.' "${OPTION}";;
         esac
     done
     shift $(expr ${OPTIND} - 1)
+    config_setup
 
     (
-        cid_project="${compose_project}"
+        cid_project="${config_project}"
         cid_jenkinsversion="$(compose_jenkinsversion)"
         export cid_project
         export cid_jenkinsversion
 
         exec docker-compose\
              --file "${dockerdir}/compose/cid.yml"\
-             --project-name "cid-${compose_project}"\
+             --project-name "cid-${config_project}"\
              "$@"
     )
 }
