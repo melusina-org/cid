@@ -14,55 +14,73 @@
 # https://opensource.org/licenses/MIT
 
 : ${TOPLEVELDIR:=$(git rev-parse --show-toplevel)}
+: ${subrdir:=${TOPLEVELDIR}/subr}
 : ${dockerdir:=${TOPLEVELDIR}/docker}
 
-build_package='cid'
+. "${subrdir}/stdlib.sh"
+. "${subrdir}/config.sh"
 
+docker_build_package='cid'
 
-# build_db
+# docker_build_db
 #  The database of systems we can build
 #
 # It has the following columns:
 #
 #  SYSTEM-NAME
 
-build_db()
+docker_build_db()
 {
     find "${dockerdir}" -type f -name 'Dockerfile' \
          | sed -e 's@/Dockerfile@@;s@.*/@@'
 }
 
 
-# build_image SYSTEM-NAME
+# docker_build_image SYSTEM-NAME
 #  Build the image for SYSTEM-NAME
 
-build_image()
+docker_build_image()
 {
     cd "${TOPLEVELDIR}"
-    docker build ${build_cacheflag} -t "${build_package}/$1" -f "./docker/image/$1/Dockerfile" .
+    docker build ${docker_build_cacheflag} -t "${docker_build_package}/$1" -f "./docker/image/$1/Dockerfile" .
 }
 
+docker_build_usage()
+{
+    iconv -f utf-8 <<EOF
+Usage: docker_build [-c CONFIG-DIR] [-n] IMAGE-1 …
+ Build docker image defined in current git working copy
+Options:
+ -h Display this help message.
+ -n Build without cache.
+ -c CONFIG-DIR
+    Configuration directory.
+ -p PROJECT-NAME
+    Project name, used by docker-compose and volume ressources.
+EOF
+}
 
-build_main()
+docker_build_main()
 {
     local OPTIND OPTION OPTARG
-    local image build_cacheflag
+    local image docker_build_cacheflag
 
-    build_cacheflag=''
+    docker_build_cacheflag=''
     OPTIND=1
 
-    while getopts 'c' OPTION; do
+    while getopts 'n:h' OPTION; do
         case ${OPTION} in
-            c)	build_cacheflag="--no-cache";;
-            *)	failwith -x 70 'docker_compose: %s: Unsupported option.' "${OPTION}";;
+            h)	docker_build_usage; exit 0;;
+            n)	docker_build_cacheflag="--no-cache";;
+            *)	docker_build_usage; failwith -x 70 'docker_build: %s: Unsupported option.' "${OPTION}";;
         esac
     done
     shift $(expr ${OPTIND} - 1)
     for image in "$@"; do
-        build_image "${image}"
+        docker_build_image "${image}"
     done
 }
 
-build_main "$@"
+docker_build_main "$@"
 
 ### End of file `docker_build'
