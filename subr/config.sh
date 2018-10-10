@@ -35,4 +35,51 @@ config_db()
     git config -f "${config_file}" --list | sed -e 's/=/|/'
 }
 
+
+# config_project
+#  Determine the project name
+#
+# The project name is determined:
+# - either from the variable config_project,
+# - or from the configuration value project.name,
+# - or from the name of the directory holding the configuration file.
+
+config_project()
+{
+    local text
+    if [ -n "${config_project}" ]; then
+        printf '%s' "${config_project}"
+    elif config 'project.name'; then
+        : NOP
+    else
+        text="${config_file}"
+        text="${text%/*.conf}"
+        text="${text##*/}"
+        printf '%s' "${text}"
+    fi
+}
+
+
+# config_setup
+#  Basic setup of configuration, exit on failure
+
+config_setup()
+{
+    if [ -z "${config_dir}" ]; then
+        failwith -x 70 'config.sh: config_dir: This variable is not set.'
+    fi
+
+    if ! [ -d "${config_dir}" ]; then
+        failwith -x 64 '%s: Cannot read configuration directory.' "${config_dir}"
+    fi
+
+    config_file="${config_dir}/cid.conf"
+
+    if ! [ -f "${config_file}" ]; then
+        failwith -x 64 '%s: Cannot read configuration file.' "${config_file}"
+    fi
+
+    config_project="$(config_project)"
+}
+
 ### End of file `config.sh'
