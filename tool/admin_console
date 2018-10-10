@@ -43,8 +43,6 @@ admin_docker()
            --volume "cid-${config_project}-git:/var/git"\
            --volume "cid-${config_project}-trac:${admin_tracdir}"\
            --volume "cid-${config_project}-www:${admin_wwwdir}"\
-           --volume "cid-${config_project}-gpg:${admin_gnupgdir}"\
-           --volume "cid-${config_project}-ssh:${admin_sshdir}"\
            --volume "${admin_backupdir}:/opt/cid/var/backups"\
            --volume "${admin_configdir}:/opt/cid/var/config"\
            "$@"
@@ -110,7 +108,7 @@ admin_rm()
 admin_create()
 {
     local volume
-    for volume in git gpg jenkins postgresql-etc postgresql-lib ssh trac www; do
+    for volume in git jenkins trac www; do
         docker volume create "cid-${config_project}-${volume}"
     done
 }
