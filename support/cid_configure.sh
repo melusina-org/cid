@@ -197,8 +197,6 @@ SITE-CONF
 configure_batch()
 {
     configure_git
-    configure_gpg
-    configure_ssh
     configure_trac
 }
 
