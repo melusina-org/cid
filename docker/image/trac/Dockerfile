@@ -38,12 +38,7 @@ RUN env DEBIAN_FRONTEND=noninteractive apt-get install -y\
 COPY ./docker/setup/trac.sh /root/setup/
 RUN sh /root/setup/trac.sh
 
-COPY ./docker/setup/bsdowl.sh /root/setup/
-RUN sh /root/setup/bsdowl.sh
-
-COPY ./docker/setup/git-server.sh /root/setup/
-RUN sh /root/setup/git-server.sh
-
 ADD ./docker/image/trac/entrypoint /usr/local/bin/entrypoint
+
 ENTRYPOINT ["/usr/local/bin/entrypoint"]
 VOLUME ["/var/git","/var/www","/var/trac"]
