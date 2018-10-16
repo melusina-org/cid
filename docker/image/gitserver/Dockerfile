@@ -12,6 +12,17 @@
 # https://opensource.org/licenses/MIT
 
 FROM cid/linux
-SCRIPT setup/git-server.sh
+
+COPY ./docker/setup/gitserver.sh /root/setup/
+RUN sh /root/setup/gitserver.sh
+
+COPY ./docker/setup/bsdowl.sh /root/setup/
+RUN sh /root/setup/bsdowl.sh
+
+COPY ./docker/image/admin/support.sh /root/setup/
+ADD ./support /opt/cid/var/src/support
+RUN chown -R cid:cid /opt/cid/var/src/support
+RUN sh /root/setup/support.sh
+
 CMD ["/usr/sbin/sshd","-D"]
 VOLUME ["/var/git"]
