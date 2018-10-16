@@ -49,12 +49,16 @@ END {
 compose_main()
 {
     local OPTIND OPTION OPTARG
+    local compose_environment
+
+    compose_environment='cid'
 
     status=1
     OPTIND=1
 
-    while getopts 'hc:p:' OPTION; do
+    while getopts 'hc:p:e:' OPTION; do
         case ${OPTION} in
+            e)	compose_environment="${OPTARG}";;
             c)	config_dir="${OPTARG%/}";;
             p)	config_project="${OPTARG}";;
             *)	failwith -x 70 'docker_compose: %s: Unsupported option.' "${OPTION}";;
@@ -69,9 +73,13 @@ compose_main()
         export cid_project
         export cid_jenkinsversion
 
+        if ! [ -f "${dockerdir}/compose/${compose_environment}.yml" ]; then
+            failwith -x 64 'docker_compose: %s: Nothing is known about this environment.' "${compose_environment}"
+        fi
+
         exec docker-compose\
-             --file "${dockerdir}/compose/cid.yml"\
-             --project-name "cid-${config_project}"\
+             --file "${dockerdir}/compose/${compose_environment}.yml"\
+             --project-name "${package}_${config_project}"\
              "$@"
     )
 }

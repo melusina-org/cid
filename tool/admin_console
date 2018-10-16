@@ -19,9 +19,6 @@
 : ${admin_package:='cid'}
 : ${admin_user:='root'}
 : ${admin_backupdir:=${TOPLEVELDIR}/backup}
-: ${admin_configdir:='/dev/null'}
-: ${admin_gnupgdir:=/home/cid/.gnupg}
-: ${admin_sshdir:=/home/cid/.ssh}
 : ${admin_wwwdir:=/var/www}
 : ${admin_tracdir:=/var/trac}
 : ${admin_interaction:=confirm}
@@ -31,7 +28,7 @@
 
 admin_config()
 {
-    git config --file "${admin_configdir}/cid.conf" "$@"
+    git config --file "${config_dir}/cid.conf" "$@"
 }
 
 
@@ -44,7 +41,7 @@ admin_docker()
            --volume "cid-${config_project}-trac:${admin_tracdir}"\
            --volume "cid-${config_project}-www:${admin_wwwdir}"\
            --volume "${admin_backupdir}:/opt/cid/var/backups"\
-           --volume "${admin_configdir}:/opt/cid/var/config"\
+           --volume "${config_dir}:/opt/cid/var/config"\
            "$@"
 }
 
@@ -119,15 +116,15 @@ admin_jenkins()
 
     version=$(config 'jenkins.version')
     if [ -z "${version}" ]; then
-        version="${admin_configdir%/}"
+        version="${config_dir%/}"
         version="${version##*/}"
     fi
 
-    if [ -f "${admin_configdir}/Dockerfile" ]; then
+    if [ -f "${config_dir}/Dockerfile" ]; then
         (
             cd "${TOPLEVELDIR}"
             docker build -t "${admin_package}/jenkins:${version}" -
-        ) < "${admin_configdir}/Dockerfile"
+        ) < "${config_dir}/Dockerfile"
     else
         failwith '%s: Dockerfile for specialised Jenkins image is missing.'
     fi

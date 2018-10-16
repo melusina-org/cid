@@ -117,13 +117,13 @@ continuous integeration and deployment pipeline.
 
 ## Roadmap
 
-  - [ ] Escape the Monolithic Continuous Integration and Deployment Server
-  - [ ] Instant recreation of the continuous integration pipepline after a disaster
-  - [ ] Share your continuous integration and deployment scripts with your contributors
-  - [ ] Integrated artefact repositories
-  - [ ] Integrated monitoring system
-  - [ ] Simplified build of Debian packages
-  - [ ] Make your Ansible Playbooks accessible to your developers
+  -[ ] Escape the Monolithic Continuous Integration and Deployment Server
+  -[ ] Instant recreation of the continuous integration pipepline after a disaster
+  -[ ] Share your continuous integration and deployment scripts with your contributors
+  -[ ] Integrated artefact repositories
+  -[ ] Integrated monitoring system
+  -[ ] Simplified build of Debian packages
+  -[ ] Make your Ansible Playbooks accessible to your developers
 
 
 ## Quick Initial Setup Guide
