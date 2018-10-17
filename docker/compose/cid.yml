@@ -11,6 +11,16 @@ services:
    - "80:80"
    - "443:443"
 
+ gitserver:
+  image: cid/gitserver
+  #command: /usr/sbin/sshd -D -d
+  volumes:
+   - cid-git:/var/git
+  networks:
+   - frontend
+  ports:
+   - "2022:22"
+
  trac:
   image: cid/trac
   volumes:
@@ -19,9 +29,6 @@ services:
    - cid-www:/var/www
   networks:
    - service
-   - frontend
-  ports:
-   - "2022:22"
 
  jenkins:
   user: jenkins

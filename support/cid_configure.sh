@@ -66,7 +66,7 @@ configure_config()
 configure_environment_db()
 {
     git config --file "${configdir}/cid.conf" --list\
-        | awk -F '[.]' '{s[$1]}END{for(t in s){print t}}'
+        | awk -F '[.]' '$1 == "environment" {s[$2]}END{for(t in s){print t}}'
 }
 
 
@@ -87,6 +87,13 @@ configure_assert()
 configure_git()
 {
     chown 'git:git' "${gitdir}"
+
+    install -d -o root -g root -m 755 "${gitdir}/.ssh"
+    install -o root -g root -m 644 /dev/null "${gitdir}/.ssh/authorized_keys"
+    if [ -d "${configdir}/user" ]; then
+       find "${configdir}/user" -name 'authorized_keys' -exec awk '//' '{}' '+' \
+            > "${gitdir}/.ssh/authorized_keys"
+    fi
 }
 
 
@@ -137,7 +144,7 @@ configure_ssh()
 
 configure_trac()
 {
-    local environment location
+    local environment traclocation
 
     chown www-data:www-data "${tracdir}"
     install -d -o www-data -g www-data -m 750\
@@ -146,9 +153,9 @@ configure_trac()
             "${tracdir}/git"
 
     configure_environment_db | while read environment; do
-        location=$(configure_config "${environment}.location")
-        : ${location:=/trac/${environment}}
-        configure_trac_environment "${environment}" "${location}"
+        traclocation=$(configure_config "environment.${environment}.traclocation")
+        : ${traclocation:=${environment}/trac}
+        configure_trac_environment "${environment}" "${traclocation}"
     done
 
 }

@@ -24,5 +24,6 @@ ADD ./support /opt/cid/var/src/support
 RUN chown -R cid:cid /opt/cid/var/src/support
 RUN sh /root/setup/support.sh
 
-CMD ["/usr/sbin/sshd","-D"]
+ADD ./docker/image/gitserver/entrypoint /usr/local/bin/entrypoint
+ENTRYPOINT ["/usr/local/bin/entrypoint"]
 VOLUME ["/var/git"]

@@ -1,13 +1,13 @@
 #!/bin/sh
 set -e
 
-run_apache()
+run_sshd()
 {
-    /usr/sbin/apache2ctl -DFOREGROUND
+    /usr/sbin/sshd -D
 }
 
 if [ $# -gt 0 ]; then
     exec "$@"
 else
-    run_apache
+    run_sshd
 fi
