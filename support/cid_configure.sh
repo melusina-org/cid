@@ -17,6 +17,7 @@
 : ${packagedir:=/@PACKAGEDIR@}
 : ${version:=@VERSION@}
 : ${prefix:=@prefix@}
+: ${subrdir:=@datadir@/subr}
 : ${libexecdir:=@libexecdir@}
 : ${localstatedir:=@localstatedir@}
 : ${cachedir:=${localstatedir}/cache${packagedir}}
@@ -28,35 +29,7 @@
 : ${tracdir:=/var/trac}
 : ${wwwdir:=/var/www}
 
-
-# failwith [-x STATUS] PRINTF-LIKE-ARGV
-#  Fail with the given diagnostic message
-#
-# The -x flag can be used to convey a custom exit status, instead of
-# the value 1.  A newline is automatically added to the output.
-
-failwith()
-{
-    local OPTIND OPTION OPTARG status
-
-    status=1
-    OPTIND=1
-
-    while getopts 'x:' OPTION; do
-        case ${OPTION} in
-            x)	status="${OPTARG}";;
-            *)	1>&2 printf 'failwith: %s: Unsupported option.\n' "${OPTION}";;
-        esac
-    done
-
-    shift $(expr ${OPTIND} - 1)
-    {
-        printf 'Failure: '
-        printf "$@"
-        printf '\n'
-    } 1>&2
-    exit "${status}"
-}
+. "${subrdir}/stdlib.sh"
 
 configure_config()
 {
