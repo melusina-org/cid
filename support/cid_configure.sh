@@ -59,6 +59,8 @@ configure_assert()
 
 configure_git()
 {
+    local keycomment
+
     chown 'git:git' "${gitdir}"
 
     install -d -o root -g root -m 755 "${gitdir}/.ssh"
@@ -66,6 +68,9 @@ configure_git()
     if [ -d "${configdir}/user" ]; then
        find "${configdir}/user" -name 'authorized_keys' -exec awk '//' '{}' '+' \
             > "${gitdir}/.ssh/authorized_keys"
+       awk '{print($3)}' "${gitdir}/.ssh/authorized_keys" | while read keycomment; do
+           wlog 'Info' '%s: Authorized SSH-Key for git repositories.' "${keycomment}"
+       done
     fi
 }
 
@@ -127,7 +132,7 @@ configure_trac()
 
     configure_environment_db | while read environment; do
         traclocation=$(configure_config "environment.${environment}.traclocation")
-        : ${traclocation:=${environment}/trac}
+        : ${traclocation:=/trac/${environment}}
         configure_trac_environment "${environment}" "${traclocation}"
     done
 
@@ -136,9 +141,19 @@ configure_trac()
 
 # configure_trac_environment NAME WWW-LOCATION
 #  Prepare a trac environment
+#
+# This will skip the configuration if the environment has already been
+# configured in a previous run.
 
 configure_trac_environment()
 {
+    if [ -d "${tracdir}/$1" ]; then
+        wlog 'Info' '%s: Skip previously configured trac environment.' "$1"
+        return 0
+    else
+        wlog 'Info' '%s: Configure trac environment.' "$1"
+    fi
+
     install -d -o www-data -g www-data -m 750\
             "${tracdir}/$1"\
             "${wwwdir}/$1"
