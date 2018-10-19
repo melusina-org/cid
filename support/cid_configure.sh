@@ -39,7 +39,7 @@ configure_config()
 configure_environment_db()
 {
     git config --file "${configdir}/cid.conf" --list\
-        | awk -F '[.]' '$1 == "environment" {s[$2]}END{for(t in s){print t}}'
+        | awk -F '[.]' '$1 == "trac" && $2 == "environment" {s[$3]}END{for(t in s){print t}}'
 }
 
 
