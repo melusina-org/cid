@@ -565,7 +565,8 @@ apt-get install -y\
   procps\
   ruby-mustache\
   sudo\
-  wget
+  wget\
+  xz-utils
 
 cat >> /etc/apt/sources.list <<EOF
 deb https://deb.nodesource.com/node_8.x stretch main

@@ -59,6 +59,34 @@ config_project()
     fi
 }
 
+# config_expand
+#  Expand the HOME variable in environemt
+
+config_expand()
+{
+    local sedscript
+    sedscript=$(printf 's|[$][{]HOME[}]|%s|g;s|~|%s|g' "${HOME}" "${HOME}")
+    sed -e "${sedscript}"
+}
+
+# config_statedir
+#  The configure statedir
+
+config_statedir()
+{
+    ( config 'project.statedir' | config_expand )\
+        || printf '%s\n' "${statedir:-/var/backups}"
+}
+
+# config_backupdir
+#  The configure backupdir
+
+config_backupdir()
+{
+    ( config 'project.backupdir' | config_expand )\
+        || printf '%s\n' "${backupdir:-/var/backups}"
+}
+
 
 # config_setup
 #  Basic setup of configuration, exit on failure
@@ -80,6 +108,8 @@ config_setup()
     fi
 
     config_project="$(config_project)"
+    config_backupdir="$(config_backupdir)"
+    config_statedir="$(config_statedir)"
 }
 
 ### End of file `config.sh'

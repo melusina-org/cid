@@ -143,7 +143,7 @@ wlog__numeric_level()
 
 wlog__is_interesting()
 {
-    [ $(wlog__numeric_level ${wlog_level}) -le $(wlog__numeric_level $1) ]
+    [ $(wlog__numeric_level ${wlog_level}) -ge $(wlog__numeric_level $1) ]
 }
 
 wlog()
@@ -154,7 +154,7 @@ wlog()
 
     if wlog__is_interesting "${level}"; then
         {
-            printf '%s: ' "${level}"
+            printf '%s: %s' "${level}" "${wlog_prefix}${wlog_prefix:+: }"
             printf "$@"
             printf '\n'
         } 1>&2
@@ -225,6 +225,19 @@ tmpdir_reclaim()
 {
     wlog 'Debug' 'tmpdir_reclaim: %s' "${tmpdir}"
     rm -r -f "${tmpdir:?}"
+}
+
+# when PREDICATE COMMAND
+#  When PREDICATE is true execute COMMAND
+
+when()
+{
+    local predicate
+
+    predicate="$1"
+    shift
+
+    if "${predicate}"; then "$@"; fi
 }
 
 ### End of file `stdlib.sh'
