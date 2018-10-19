@@ -18,7 +18,6 @@
 : ${dockerimage:=cid/admin}
 : ${admin_package:='cid'}
 : ${admin_user:='root'}
-: ${admin_backupdir:=${TOPLEVELDIR}/backup}
 : ${admin_wwwdir:=/var/www}
 : ${admin_tracdir:=/var/trac}
 : ${admin_interaction:=confirm}
@@ -40,7 +39,7 @@ admin_docker()
            --volume "cid-${config_project}-git:/var/git"\
            --volume "cid-${config_project}-trac:${admin_tracdir}"\
            --volume "cid-${config_project}-www:${admin_wwwdir}"\
-           --volume "${admin_backupdir}:/opt/cid/var/backups"\
+           --volume "${config_backupdir}:/opt/cid/var/backups"\
            --volume "${config_dir}:/opt/cid/var/config"\
            "$@"
 }
@@ -59,12 +58,16 @@ admin_devshell()
 
 admin_dump()
 {
+    if ! [ -d "${config_backupdir}" ]; then
+        wlog 'Error' 'admin: %s: The backup directory does not exist.' "${config_backupdir}"
+        exit 1
+    fi
     admin_docker -it "${dockerimage}" cid_dump -p "${config_project}"
 }
 
 admin_restore()
 {
-    local dumpfile
+    local dumpfile shortname
     case "$1" in
         /*)
             dumpfile="$1"
@@ -73,9 +76,14 @@ admin_restore()
             dumpfile="$(pwd -P)/$1"
             ;;
     esac
-    admin_docker\
-        --volume "${dumpfile}:/var/backups/backup.txz"\
-        -it "${dockerimage}" cid_restore '/var/backups/backup.txz'
+    shortname="${dumpfile##*/}"
+    if [ -f "${dumpfile}" ]; then
+        admin_docker\
+            --volume "${dumpfile}:/var/backups/${shortname}"\
+            -it "${dockerimage}" cid_restore "/var/backups/${shortname}"
+    else
+        failwith '%s: Cannot restore, file not found.' "${dumpfile}"
+    fi
 }
 
 admin_ls()
@@ -148,7 +156,7 @@ admin_main()
         case ${OPTION} in
             c)	config_dir="${OPTARG%/}";;
             p)	config_project="${OPTARG}";;
-            b)	admin_backupdir="${OPTARG}";;
+            b)	config_backupdir="${OPTARG}";;
             d)	admin_subcommand='subshell';;
             h)	admin_usage; exit 0;;
             *)	failwith -x 64 'admin_console: %s: Unsupported option.' "${OPTION}";;

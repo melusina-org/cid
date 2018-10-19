@@ -34,19 +34,20 @@ docker_compose()
 docker_build()
 (
     cd "${TOPLEVELDIR}"
-    ./tool/docker_build
+    ./tool/docker_build "$@"
 )
 
 test_main()
 {
     case "$1" in
-        create|configure|rm)
+        create|configure|rm|dump|restore)
             admin_console "$@"
             ;;
         up|down)
             docker_compose "$@"
             ;;
         build)
+            shift
             docker_build "$@"
             ;;
         *)
