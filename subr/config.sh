@@ -11,6 +11,7 @@
 # are also available at
 # https://opensource.org/licenses/MIT
 
+: ${config_service_list:=gitserver trac}
 : ${config_file:=/dev/null}
 
 # config CONFIGURATION-KEY
@@ -110,6 +111,23 @@ config_setup()
     config_project="$(config_project)"
     config_backupdir="$(config_backupdir)"
     config_statedir="$(config_statedir)"
+}
+
+
+# config_service_is_enabled SERVICE
+#  Predicate telling if the SERVICE is enabled
+
+config_service_is_enabled()
+{
+    local enable
+    enable=$(config "$1.service.enable")
+    if [ "${enable}" = 'yes' ]; then
+        wlog 'Info' '%s: This service is enabled.' "$1"
+        return 0
+    else
+        wlog 'Info' '%s: This service is disabled.' "$1"
+        return 1
+    fi
 }
 
 ### End of file `config.sh'
