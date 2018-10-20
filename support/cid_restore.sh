@@ -22,21 +22,13 @@
 : ${subrdir:=@datadir@/subr}
 : ${cachedir:=${localstatedir}/cache${packagedir}}
 : ${config_dir:=/opt/cid/var/config}
-: ${tracdir:=/var/trac}
-: ${gitdir:=/var/git}
 
 . "${subrdir}/stdlib.sh"
 . "${subrdir}/config.sh"
+
+. "${subrdir}/gitserver.sh"
 . "${subrdir}/trac.sh"
 
-# restore_git DUMPFILE
-#  Dump git repositories
-
-restore_git()
-{
-    wlog 'Info' '%s: Restore git repositories.' "$1"
-    tar xJfC "$1" "${gitdir}" --strip-components 2 ./git/
-}
 
 # restore_main DUMP-NAME
 #  Dump main
@@ -44,7 +36,7 @@ restore_git()
 restore_main()
 {
     local OPTIND OPTION OPTARG
-    local dumpfile
+    local dumpfile service
 
     OPTIND=1
 
@@ -58,16 +50,17 @@ restore_main()
     config_setup
 
     if [ $# -ne 1 ]; then
-        failwith -x 64 "cid_restore: Can restore exactly one dump file."
+        failwith -x 64 "cid_restore: Can only restore exactly one dump file."
     fi
     dumpfile="$1"
     shift
     wlog_prefix="restore: ${dumpfile##*/}"
 
-    wlog 'Info' 'Start to restore.'
-    trac_restore "${dumpfile}"
-    restore_git "${dumpfile}"
-    wlog 'Info' 'Restore complete.'
+    wlog 'Info' 'Start restore operation.'
+    for service in ${config_service_list}; do
+        when ${service}_is_enabled ${service}_restore "${dumpfile}"
+    done
+    wlog 'Info' 'Restore operation complete.'
 }
 
 restore_main "$@"

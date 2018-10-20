@@ -19,15 +19,7 @@
 
 trac_is_enabled()
 {
-    local enable
-    enable=$(config 'trac.service.enable')
-    if [ "${enable}" = 'yes' ]; then
-        wlog 'Info' "trac: This service is enabled."
-        return 0
-    else
-        wlog 'Info' "trac: This service is disabled."
-        return 1
-    fi
+    config_service_is_enabled 'trac'
 }
 
 # trac_environment_db

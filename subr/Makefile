@@ -17,6 +17,8 @@ LIBRARY=		stdlib.sh
 LIBRARY+=		autoconf.sh
 LIBRARY+=		config.sh
 LIBRARY+=		jenkins.sh
+
+LIBRARY+=		gitserver.sh
 LIBRARY+=		trac.sh
 
 .include "shell.lib.mk"

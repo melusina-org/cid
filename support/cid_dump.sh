@@ -22,11 +22,12 @@
 : ${subrdir:=@datadir@/subr}
 : ${cachedir:=${localstatedir}/cache${packagedir}}
 : ${config_dir:=/opt/cid/var/config}
-: ${gitdir:=/var/git}
 : ${backupdir:=${localstatedir}/backups}
 
 . "${subrdir}/stdlib.sh"
 . "${subrdir}/config.sh"
+
+. "${subrdir}/gitserver.sh"
 . "${subrdir}/trac.sh"
 
 
@@ -102,29 +103,6 @@ END {
 '
 }
 
-# dump_git_ls
-#  List git repositories
-
-dump_git_ls()
-{
-    find "${gitdir}" -name 'branches'\
-        | sed -E -e "s|^${gitdir}/?||;s|/branches/?||"
-}
-
-
-# dump_git DUMP-NAME
-#  Dump git repositories
-
-dump_git()
-{
-    local repository
-    install -d -o git -g git "${tmpdir}/git"
-    dump_git_ls | while read repository; do
-        wlog 'Info' '%s: %s: Clone repository.' "$1" "${repository}"
-        git clone --quiet --bare "${gitdir}/${repository}" "${tmpdir}/git/${repository}"
-        chown -R git:git "${tmpdir}/git"
-    done
-}
 
 # dump_main DUMP-NAME
 #  Dump main
@@ -132,7 +110,7 @@ dump_git()
 dump_main()
 {
     local OPTIND OPTION OPTARG
-    local dump_project next_dumpname
+    local dump_project next_dumpname service
 
     OPTIND=1
     dump_project='local'
@@ -151,8 +129,9 @@ dump_main()
     tmpdir_initializer
     exec 1> "${tmpdir}/cid_dump.log"
     wlog 'Info' 'Start the dump.'
-    when trac_is_enabled trac_dump "${next_dumpname}"
-    dump_git "${next_dumpname}"
+    for service in ${config_service_list}; do
+        when ${service}_is_enabled ${service}_dump "${next_dumpname}"
+    done
     tar cJfC "${backupdir}/${next_dumpname}.txz" "${tmpdir}" .
     wlog 'Info' 'Dump complete.'
 }
