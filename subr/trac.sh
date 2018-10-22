@@ -144,4 +144,15 @@ trac_restore()
     tar xJfC "$1" "${tracdir}" --strip-components 2 ./trac/
 }
 
+# trac_volume_db CONFIG-PROJECT
+#  List data volumes for trac environments
+
+trac_volume_db()
+{
+    cat <<EOF
+trac|cid-$1-trac|/var/trac
+trac|cid-$1-www|/var/www
+EOF
+}
+
 ### End of file `trac.sh'

@@ -79,4 +79,15 @@ gitserver_restore()
     tar xJfC "$1" "${gitserverdir}" --strip-components 2 ./git/
 }
 
+
+# gitserver_volume_db CONFIG-PROJECT
+#  List data volumes for git repositories
+
+gitserver_volume_db()
+{
+    cat <<EOF
+gitserver|cid-$1-gitserver|/var/git
+EOF
+}
+
 ### End of file `gitserver.sh'

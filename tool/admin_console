@@ -18,30 +18,33 @@
 : ${dockerimage:=cid/admin}
 : ${admin_package:='cid'}
 : ${admin_user:='root'}
-: ${admin_wwwdir:=/var/www}
-: ${admin_tracdir:=/var/trac}
 : ${admin_interaction:=confirm}
 
 . "${subrdir}/stdlib.sh"
 . "${subrdir}/config.sh"
+
+. "${subrdir}/trac.sh"
+. "${subrdir}/gitserver.sh"
 
 admin_config()
 {
     git config --file "${config_dir}/cid.conf" "$@"
 }
 
-
 admin_docker()
 {
     docker run --rm\
            --user "${admin_user}"\
            --volume "cid-${config_project}-jenkins:/var/lib/jenkins"\
-           --volume "cid-${config_project}-git:/var/git"\
-           --volume "cid-${config_project}-trac:${admin_tracdir}"\
-           --volume "cid-${config_project}-www:${admin_wwwdir}"\
+           $(admin_docker__volume)\
            --volume "${config_backupdir}:/opt/cid/var/backups"\
            --volume "${config_dir}:/opt/cid/var/config"\
            "$@"
+}
+
+admin_docker__volume()
+{
+    config_volume_db | awk -F '|' '{printf(" --volume %s:%s", $2, $3)}'
 }
 
 admin_shell()
@@ -89,7 +92,12 @@ admin_restore()
 admin_ls()
 {
     docker volume ls --format '{{.Name}}'\
-        | sed -n -e '/-trac$/{s/^cid-//;s/-trac$//;p;}'\
+        | sed -n -e '
+/-git$/{s/^cid-//;s/-git$//;p;}
+/-jenkins$/{s/^cid-//;s/-jenkins$//;p;}
+/-trac$/{s/^cid-//;s/-trac$//;p;}
+/-www$/{s/^cid-//;s/-www$//;p;}
+'\
         | sort -u
 }
 
@@ -113,9 +121,10 @@ admin_rm()
 admin_create()
 {
     local volume
-    for volume in git jenkins trac www; do
-        docker volume create "cid-${config_project}-${volume}"
+    config_volume_list | while read volume; do
+        docker volume create "${volume}"
     done
+    docker volume create "cid-${config_project}-jenkins"
 }
 
 admin_jenkins()
@@ -163,7 +172,6 @@ admin_main()
         esac
     done
     shift $(expr ${OPTIND} - 1)
-
     config_setup
 
     case "$1" in
