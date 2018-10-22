@@ -130,4 +130,29 @@ config_service_is_enabled()
     fi
 }
 
+# config_volume_db
+#  Print volume database
+#
+# It has the columns
+#
+#     SERVICE | VOLUME-NAME | PREFERRED-MOUNT-POINT
+
+config_volume_db()
+{
+    local service
+    for service in ${config_service_list}; do
+        if ${service}_is_enabled; then
+            ${service}_volume_db "${config_project}"
+        fi
+    done
+}
+
+# config_volume_list
+#  Print volume list
+
+config_volume_list()
+{
+    config_volume_db | awk -F '|' '{s[$2]} END { for(n in s){print(n)}}'
+}
+
 ### End of file `config.sh'
