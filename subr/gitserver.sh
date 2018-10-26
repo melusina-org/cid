@@ -86,7 +86,7 @@ gitserver_restore()
 gitserver_volume_db()
 {
     cat <<EOF
-gitserver|cid-$1-gitserver|/var/git
+gitserver|cid-$1-git|/var/git
 EOF
 }
 
