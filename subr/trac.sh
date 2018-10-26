@@ -152,6 +152,7 @@ trac_volume_db()
     cat <<EOF
 trac|cid-$1-trac|/var/trac
 trac|cid-$1-www|/var/www
+trac|cid-$1-git|/var/git
 EOF
 }
 
