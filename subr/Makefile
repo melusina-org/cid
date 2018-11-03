@@ -16,6 +16,7 @@ PACKAGE=		subr
 LIBRARY=		stdlib.sh
 LIBRARY+=		autoconf.sh
 LIBRARY+=		config.sh
+LIBRARY+=		role.sh
 LIBRARY+=		jenkins.sh
 
 LIBRARY+=		gitserver.sh

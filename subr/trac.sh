@@ -43,6 +43,25 @@ trac_environment_location()
 }
 
 
+# trac_permission_db
+#  The database of trac permssions
+#
+# This implements hardwired policy documents for the role subsystem.
+#
+# The permission database has the following columns:
+#
+#   ROLE | PERMISSION
+
+trac_permission_db()
+{
+    cat <<EOF
+admin|TRAC_ADMIN
+developer|WIKI_ADMIN
+developer|REPORT_ADMIN
+developer|TICKET_MODIFY
+EOF
+}
+
 # trac_configure
 #  This creates trac environments specified by the main confguration file.
 
@@ -74,6 +93,8 @@ trac_configure()
 
 trac_configure_environment()
 {
+    local role permission
+
     if [ -d "${tracdir}/$1" ]; then
         wlog 'Info' 'trac: %s: Skip previously configured trac environment.' "$1"
         return 0
@@ -92,6 +113,10 @@ trac_configure_environment()
 trac-admin "${tracdir}/$1" initenv "$1" sqlite:db/trac.db
 trac-admin "${tracdir}/$1" deploy "${wwwdir}/$1"
 TRAC-ADMIN
+
+    trac_permission_db "$1" | while IFS='|' read role permission; do
+        su -l www-data -s '/bin/sh' -c "trac-admin ${tracdir}/$1 permission add ${role} ${permission}"
+    done
 
     install -o www-data -g www-data -m 640 /dev/null "${tracdir}/sites/$1.htpasswd"
     install -o www-data -g www-data -m 640 /dev/null "${tracdir}/sites/$1.conf"
@@ -113,6 +138,8 @@ Alias $2/chrome ${wwwdir}/$1/htdocs
 
 WSGIScriptAlias $2 ${wwwdir}/$1/cgi-bin/trac.wsgi
 SITE-CONF
+
+    role_user_db "$1" | trac_create_user "$1"
 }
 
 
@@ -154,6 +181,22 @@ trac|cid-$1-trac|/var/trac
 trac|cid-$1-www|/var/www
 trac|cid-$1-git|/var/git
 EOF
+}
+
+
+# trac_create_user NAME
+#  Consume the user database in environment NAME
+
+trac_create_user()
+{
+    local username displayname role secret
+    while IFS='|' read username displayname role; do
+        secret=$(role_user_secret "${username}")
+        wlog 'Info' 'trac: %s: Add user \047%s\047 to role \047%s\047.'\
+             "${environment}" "${username}" "${role}"
+        su -l www-data -s '/bin/sh' -c "trac-admin ${tracdir}/$1 permission add ${username} ${role}"
+        htpasswd -B -b "${tracdir}/sites/$1.htpasswd" "${username}" "${secret}"
+    done
 }
 
 ### End of file `trac.sh'

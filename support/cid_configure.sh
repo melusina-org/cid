@@ -29,6 +29,7 @@
 
 . "${subrdir}/stdlib.sh"
 . "${subrdir}/config.sh"
+. "${subrdir}/role.sh"
 
 . "${subrdir}/gitserver.sh"
 . "${subrdir}/trac.sh"
