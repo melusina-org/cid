@@ -24,6 +24,7 @@
 . "${subrdir}/config.sh"
 
 . "${subrdir}/trac.sh"
+. "${subrdir}/jenkins.sh"
 . "${subrdir}/gitserver.sh"
 
 admin_config()
@@ -35,7 +36,6 @@ admin_docker()
 {
     docker run --rm\
            --user "${admin_user}"\
-           --volume "cid-${config_project}-jenkins:/var/lib/jenkins"\
            $(admin_docker__volume)\
            --volume "${config_backupdir}:/opt/cid/var/backups"\
            --volume "${config_dir}:/opt/cid/var/config"\
@@ -124,7 +124,6 @@ admin_create()
     config_volume_list | while read volume; do
         docker volume create "${volume}"
     done
-    docker volume create "cid-${config_project}-jenkins"
 }
 
 admin_jenkins()
