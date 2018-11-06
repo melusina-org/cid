@@ -27,6 +27,7 @@
 . "${subrdir}/config.sh"
 
 . "${subrdir}/gitserver.sh"
+. "${subrdir}/jenkins.sh"
 . "${subrdir}/trac.sh"
 
 

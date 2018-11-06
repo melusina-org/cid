@@ -11,7 +11,7 @@
 # are also available at
 # https://opensource.org/licenses/MIT
 
-: ${config_service_list:=gitserver trac}
+: ${config_service_list:=gitserver trac jenkins}
 : ${config_file:=/dev/null}
 
 # config CONFIGURATION-KEY
