@@ -36,6 +36,11 @@ gitserver_repository_ls()
 #
 # This makes sure the root of the filesystem holding the git
 # repositories is owned by the git user.
+#
+# TODO(michael): Configure gitserver using the role subsystem
+#
+#  Currently any user can do anything to any git repository. A minimal
+#  amount of separation would be desirable.
 
 gitserver_configure()
 {
