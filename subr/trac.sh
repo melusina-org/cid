@@ -96,27 +96,21 @@ trac_configure_environment()
     local role permission
 
     if [ -d "${tracdir}/$1" ]; then
-        wlog 'Info' 'trac: %s: Skip previously configured trac environment.' "$1"
-        return 0
+        wlog 'Info' 'trac: %s: Reconfigure trac environment.' "$1"
     else
         wlog 'Info' 'trac: %s: Configure trac environment.' "$1"
-    fi
+        install -d -o www-data -g www-data -m 750\
+                "${tracdir}/$1"\
+                "${wwwdir}/$1"
 
-    install -d -o www-data -g www-data -m 750\
-            "${tracdir}/$1"\
-            "${wwwdir}/$1"
+        install -d -o git -g git -m 750\
+                "${gitdir}/$1"
 
-    install -d -o git -g git -m 750\
-            "${gitdir}/$1"
-
-    su -l www-data -s '/bin/sh' <<TRAC-ADMIN
+        su -l www-data -s '/bin/sh' <<TRAC-ADMIN
 trac-admin "${tracdir}/$1" initenv "$1" sqlite:db/trac.db
 trac-admin "${tracdir}/$1" deploy "${wwwdir}/$1"
 TRAC-ADMIN
-
-    trac_permission_db "$1" | while IFS='|' read role permission; do
-        su -l www-data -s '/bin/sh' -c "trac-admin ${tracdir}/$1 permission add ${role} ${permission}"
-    done
+    fi
 
     install -o www-data -g www-data -m 640 /dev/null "${tracdir}/sites/$1.htpasswd"
     install -o www-data -g www-data -m 640 /dev/null "${tracdir}/sites/$1.conf"
@@ -138,6 +132,10 @@ Alias $2/chrome ${wwwdir}/$1/htdocs
 
 WSGIScriptAlias $2 ${wwwdir}/$1/cgi-bin/trac.wsgi
 SITE-CONF
+
+    trac_permission_db "$1" | while IFS='|' read role permission; do
+        su -l www-data -s '/bin/sh' -c "trac-admin ${tracdir}/$1 permission add ${role} ${permission}"
+    done
 
     role_user_db "$1" | trac_create_user "$1"
 }
