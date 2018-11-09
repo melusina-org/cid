@@ -57,6 +57,14 @@ EOF
 }
 
 
+# jenkins_configure
+#  This configure the Jenkins service.
+
+jenkins_configure()
+{
+    :
+}
+
 
 #
 # Jenkins Jobs
