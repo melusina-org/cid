@@ -63,7 +63,11 @@ repository_install_hook()
     fi | while read repo; do
         (
             cd "${gitserverdir}/${repository_environment}/${repo}.git" || exit 1
-            git config trac.addchangeset yes
+            if trac_is_enabled; then
+                git config trac.addchangeset yes
+            else
+                git config trac.addchangeset no
+            fi
             git config trac.environment "${tracdir}/${repository_environment}"
             git config trac.repositoryname "${repo}"
             rm -f 'hooks/post-receive'
