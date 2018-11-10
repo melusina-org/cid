@@ -13,6 +13,9 @@
 
 FROM cid/linux
 
+COPY ./docker/setup/trac.sh /root/setup/
+RUN sh /root/setup/trac.sh
+
 COPY ./docker/setup/gitserver.sh /root/setup/
 RUN sh /root/setup/gitserver.sh
 
@@ -24,6 +27,7 @@ ADD ./support /opt/cid/var/src/support
 RUN chown -R cid:cid /opt/cid/var/src/support
 RUN sh /root/setup/support.sh
 
-ADD ./docker/image/gitserver/entrypoint /usr/local/bin/entrypoint
+COPY ./docker/image/gitserver/sudoers-gitserver /etc/sudoers.d/gitserver
+COPY ./docker/image/gitserver/entrypoint /usr/local/bin/entrypoint
 ENTRYPOINT ["/usr/local/bin/entrypoint"]
 VOLUME ["/var/git"]
