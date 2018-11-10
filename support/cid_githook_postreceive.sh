@@ -77,7 +77,10 @@ policy_trac_add_changeset
 ### IMPLEMENTATION
 
 # Redirect output to stderr.
+exec 2>>/var/log/cid_hithook_postreceive.log
 exec 1>&2
+
+set -x
 
 # Save list of incoming commits in tmpfile
 tmpfile_initializer postreceivedata

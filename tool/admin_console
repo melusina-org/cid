@@ -14,86 +14,37 @@
 # https://opensource.org/licenses/MIT
 
 : ${TOPLEVELDIR:=$(git rev-parse --show-toplevel)}
+: ${subrdir:=${TOPLEVELDIR}/subr}
 : ${dockerimage:=cid/admin}
 : ${admin_package:='cid'}
-: ${admin_project:='local'}
 : ${admin_user:='root'}
-: ${admin_backupdir:=${TOPLEVELDIR}/backup}
-: ${admin_configdir:='/dev/null'}
-: ${admin_gnupgdir:=/home/cid/.gnupg}
-: ${admin_sshdir:=/home/cid/.ssh}
-: ${admin_wwwdir:=/var/www}
-: ${admin_tracdir:=/var/trac}
 : ${admin_interaction:=confirm}
 
-# confirm PRINTF-LIKE-ARGV
-#  Abort program if answer is not yes
+. "${subrdir}/stdlib.sh"
+. "${subrdir}/config.sh"
 
-confirm()
-{
-    local answer
-
-    printf "$@"
-    printf ' [yN] '
-    read answer
-    case "${answer}" in
-        Y|y|yes|YES|Yes)
-            : 'NOP'
-            ;;
-        *)
-            failwith 'admin_console: No confirmation.'
-            ;;
-    esac
-}
-
-# failwith [-x STATUS] PRINTF-LIKE-ARGV
-#  Fail with the given diagnostic message
-#
-# The -x flag can be used to convey a custom exit status, instead of
-# the value 1.  A newline is automatically added to the output.
-
-failwith()
-{
-    local OPTIND OPTION OPTARG status
-
-    status=1
-    OPTIND=1
-
-    while getopts 'x:' OPTION; do
-        case ${OPTION} in
-            x)	status="${OPTARG}";;
-            *)	1>&2 printf 'failwith: %s: Unsupported option.\n' "${OPTION}";;
-        esac
-    done
-
-    shift $(expr ${OPTIND} - 1)
-    {
-        printf 'Failure: '
-        printf "$@"
-        printf '\n'
-    } 1>&2
-    exit "${status}"
-}
+. "${subrdir}/trac.sh"
+. "${subrdir}/jenkins.sh"
+. "${subrdir}/gitserver.sh"
 
 admin_config()
 {
-    git config --file "${admin_configdir}/cid.conf" "$@"
+    git config --file "${config_dir}/cid.conf" "$@"
 }
-
 
 admin_docker()
 {
     docker run --rm\
            --user "${admin_user}"\
-           --volume "cid-${admin_project}-jenkins:/var/lib/jenkins"\
-           --volume "cid-${admin_project}-git:/var/git"\
-           --volume "cid-${admin_project}-trac:${admin_tracdir}"\
-           --volume "cid-${admin_project}-www:${admin_wwwdir}"\
-           --volume "cid-${admin_project}-gpg:${admin_gnupgdir}"\
-           --volume "cid-${admin_project}-ssh:${admin_sshdir}"\
-           --volume "${admin_backupdir}:/opt/cid/var/backups"\
-           --volume "${admin_configdir}:/opt/cid/var/config"\
+           $(admin_docker__volume)\
+           --volume "${config_backupdir}:/opt/cid/var/backups"\
+           --volume "${config_dir}:/opt/cid/var/config"\
            "$@"
+}
+
+admin_docker__volume()
+{
+    config_volume_db | awk -F '|' '{printf(" --volume %s:%s", $2, $3)}'
 }
 
 admin_shell()
@@ -110,12 +61,16 @@ admin_devshell()
 
 admin_dump()
 {
-    admin_docker -it "${dockerimage}" cid_dump -p "${admin_project}"
+    if ! [ -d "${config_backupdir}" ]; then
+        wlog 'Error' 'admin: %s: The backup directory does not exist.' "${config_backupdir}"
+        exit 1
+    fi
+    admin_docker -it "${dockerimage}" cid_dump -p "${config_project}"
 }
 
 admin_restore()
 {
-    local dumpfile
+    local dumpfile shortname
     case "$1" in
         /*)
             dumpfile="$1"
@@ -124,15 +79,25 @@ admin_restore()
             dumpfile="$(pwd -P)/$1"
             ;;
     esac
-    admin_docker\
-        --volume "${dumpfile}:/var/backups/backup.txz"\
-        -it "${dockerimage}" cid_restore '/var/backups/backup.txz'
+    shortname="${dumpfile##*/}"
+    if [ -f "${dumpfile}" ]; then
+        admin_docker\
+            --volume "${dumpfile}:/var/backups/${shortname}"\
+            -it "${dockerimage}" cid_restore "/var/backups/${shortname}"
+    else
+        failwith '%s: Cannot restore, file not found.' "${dumpfile}"
+    fi
 }
 
 admin_ls()
 {
     docker volume ls --format '{{.Name}}'\
-        | sed -n -e '/-trac$/{s/^cid-//;s/-trac$//;p;}'\
+        | sed -n -e '
+/-git$/{s/^cid-//;s/-git$//;p;}
+/-jenkins$/{s/^cid-//;s/-jenkins$//;p;}
+/-trac$/{s/^cid-//;s/-trac$//;p;}
+/-www$/{s/^cid-//;s/-www$//;p;}
+'\
         | sort -u
 }
 
@@ -140,7 +105,7 @@ admin_rm()
 {
     case "${admin_interaction}" in
         confirm)
-            confirm '%s: Remove data volumes for this project.' "${admin_project}";;
+            confirm '%s: Remove data volumes for this project.' "${config_project}";;
         yes)
             : 'NOP'
             ;;
@@ -149,15 +114,15 @@ admin_rm()
             ;;
     esac
     docker volume ls --format '{{.Name}}'\
-        | grep -F "cid-${admin_project}"\
+        | grep -F "cid-${config_project}"\
         | xargs docker volume rm
 }
 
 admin_create()
 {
     local volume
-    for volume in git gpg jenkins postgresql-etc postgresql-lib ssh trac www; do
-        docker volume create "cid-${admin_project}-${volume}"
+    config_volume_list | while read volume; do
+        docker volume create "${volume}"
     done
 }
 
@@ -165,17 +130,17 @@ admin_jenkins()
 {
     local version
 
-    version=$(admin_config 'jenkins.version')
+    version=$(config 'jenkins.version')
     if [ -z "${version}" ]; then
-        version="${admin_configdir%/}"
+        version="${config_dir%/}"
         version="${version##*/}"
     fi
 
-    if [ -f "${admin_configdir}/Dockerfile" ]; then
+    if [ -f "${config_dir}/Dockerfile" ]; then
         (
             cd "${TOPLEVELDIR}"
             docker build -t "${admin_package}/jenkins:${version}" -
-        ) < "${admin_configdir}/Dockerfile"
+        ) < "${config_dir}/Dockerfile"
     else
         failwith '%s: Dockerfile for specialised Jenkins image is missing.'
     fi
@@ -185,7 +150,7 @@ admin_jenkins()
 
 admin_configure()
 {
-    admin_docker -it "${dockerimage}" cid_configure -p "${admin_project}"
+    admin_docker -it "${dockerimage}" cid_configure -p "${config_project}"
 }
 
 admin_main()
@@ -197,17 +162,18 @@ admin_main()
 
     while getopts 'b:c:dhp:' OPTION; do
         case ${OPTION} in
-            b)	admin_backupdir="${OPTARG}";;
-            c)	admin_configdir="${OPTARG%/}";;
+            c)	config_dir="${OPTARG%/}";;
+            p)	config_project="${OPTARG}";;
+            b)	config_backupdir="${OPTARG}";;
             d)	admin_subcommand='subshell';;
             h)	admin_usage; exit 0;;
-            p)	admin_project="${OPTARG}";;
             *)	failwith -x 64 'admin_console: %s: Unsupported option.' "${OPTION}";;
         esac
     done
     shift $(expr ${OPTIND} - 1)
+    config_setup
 
-    case $1 in
+    case "$1" in
         configure|create|dump|ls|restore|rm|jenkins)
             subcommand="$1"
             shift

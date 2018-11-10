@@ -1,4 +1,4 @@
-### support.sh -- Install support programs in a docker image
+### Makefile -- Shell Standard Library
 
 # El Cid (https://github.com/melusina-org/cid)
 # This file is part of El Cid
@@ -11,14 +11,17 @@
 # are also available at
 # https://opensource.org/licenses/MIT
 
-su -l cid -c '
- set -e
- cd /opt/cid/var/src/support
- autoconf
- ./configure --prefix=/opt/cid
- bmake -I/usr/local/share/bsdowl all
-'
+PACKAGE=		subr
 
-( cd /opt/cid/var/src/support && bmake -I/usr/local/share/bsdowl install )
+LIBRARY=		stdlib.sh
+LIBRARY+=		autoconf.sh
+LIBRARY+=		config.sh
+LIBRARY+=		role.sh
 
-### End of file `support.sh'
+LIBRARY+=		gitserver.sh
+LIBRARY+=		jenkins.sh
+LIBRARY+=		trac.sh
+
+.include "shell.lib.mk"
+
+### End of file `Makefile'

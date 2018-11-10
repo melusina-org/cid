@@ -19,102 +19,21 @@
 : ${prefix:=@prefix@}
 : ${libexecdir:=@libexecdir@}
 : ${localstatedir:=@localstatedir@}
+: ${subrdir:=@datadir@/subr}
 : ${cachedir:=${localstatedir}/cache${packagedir}}
-: ${tracdir:=/var/trac}
-: ${gitdir:=/var/git}
+: ${config_dir:=/opt/cid/var/config}
 : ${backupdir:=${localstatedir}/backups}
 
+. "${subrdir}/stdlib.sh"
+. "${subrdir}/config.sh"
+
+. "${subrdir}/gitserver.sh"
+. "${subrdir}/jenkins.sh"
+. "${subrdir}/trac.sh"
 
 #
 # Ancillary functions
 #
-
-# wlog PRINTF-LIKE-ARGV
-#  Same as printf with output on STDERR
-#
-# A newline is automatically added to the output.
-
-wlog_level='Info'
-
-wlog__numeric_level()
-{
-    local level
-    case "$1" in
-        Emergency)      level=0;;
-        Alert)          level=1;;
-        Critical)       level=2;;
-        Error)          level=3;;
-        Warning)        level=4;;
-        Notice)         level=5;;
-        Info)           level=6;;
-        Debug)          level=7;;
-    esac
-    printf '%s' "${level}"
-}
-
-wlog__is_interesting()
-{
-    [ $(wlog__numeric_level ${wlog_level}) -le $(wlog__numeric_level $1) ]
-}
-
-wlog()
-{
-    local level
-    level="$1"
-    shift
-
-    if wlog__is_interesting "${level}"; then
-        {
-            printf '%s: ' "${level}"
-            printf "$@"
-            printf '\n'
-        } 1>&2
-    fi
-}
-
-# tmpdir_initializer
-#  Create a temporary directory
-#
-# The path to that directory is saved in tmpdir. A hook is registered
-# to remove that directory upon program termination.
-
-tmpdir_initializer()
-{
-    tmpdir=$(mktemp -d -t "${package}-XXXXXX")
-    wlog 'Debug' 'tmpdir_initializer: %s' "${tmpdir}"
-    trap 'rm -r -f "${tmpdir:?}"' INT TERM EXIT
-    export tmpdir
-}
-
-
-# failwith [-x STATUS] PRINTF-LIKE-ARGV
-#  Fail with the given diagnostic message
-#
-# The -x flag can be used to convey a custom exit status, instead of
-# the value 1.  A newline is automatically added to the output.
-
-failwith()
-{
-    local OPTIND OPTION OPTARG status
-
-    status=1
-    OPTIND=1
-
-    while getopts 'x:' OPTION; do
-        case ${OPTION} in
-            x)	status="${OPTARG}";;
-            *)	1>&2 printf 'failwith: %s: Unsupported option.\n' "${OPTION}";;
-        esac
-    done
-
-    shift $(expr ${OPTIND} - 1)
-    {
-        printf 'Failure: '
-        printf "$@"
-        printf '\n'
-    } 1>&2
-    exit "${status}"
-}
 
 # dump_docker_exec SCRIPT
 #  Exec SCRIPT in the trac docker container.
@@ -184,58 +103,6 @@ END {
 '
 }
 
-# dump_trac_ls
-#  List trac environments
-
-dump_trac_ls()
-{
-    find "${tracdir}" -maxdepth 1 -mindepth 1 -type d -not -name 'sites'\
-        | sed -E -e "s|^${tracdir}/?||"
-}
-
-# dump_trac DUMP-NAME
-#  Dump trac environments
-
-dump_trac()
-{
-    local environment
-    install -d -o www-data -g www-data "${tmpdir}/trac"
-
-    wlog 'Info' '%s: Copy trac sites.' "$1"
-    ( cd "${tracdir}" && find 'sites' | cpio -dump "${tmpdir}/trac" )\
-        2>&1
-
-    dump_trac_ls | while read environment; do
-        wlog 'Info' '%s: %s: Copy trac environment.' "$1" "${environment}"
-        trac-admin "${tracdir}/${environment}" hotcopy "${tmpdir}/trac/${environment}"
-        chown -R www-data:www-data "${tmpdir}/trac"
-    done
-}
-
-
-# dump_git_ls
-#  List git repositories
-
-dump_git_ls()
-{
-    find "${gitdir}" -name 'branches'\
-        | sed -E -e "s|^${gitdir}/?||;s|/branches/?||"
-}
-
-
-# dump_git DUMP-NAME
-#  Dump git repositories
-
-dump_git()
-{
-    local repository
-    install -d -o git -g git "${tmpdir}/git"
-    dump_git_ls | while read repository; do
-        wlog 'Info' '%s: %s: Clone repository.' "$1" "${repository}"
-        git clone --quiet --bare "${gitdir}/${repository}" "${tmpdir}/git/${repository}"
-        chown -R git:git "${tmpdir}/git"
-    done
-}
 
 # dump_main DUMP-NAME
 #  Dump main
@@ -243,7 +110,7 @@ dump_git()
 dump_main()
 {
     local OPTIND OPTION OPTARG
-    local dump_project next_dumpname
+    local dump_project next_dumpname service
 
     OPTIND=1
     dump_project='local'
@@ -256,15 +123,17 @@ dump_main()
         esac
     done
     shift $(expr ${OPTIND} - 1)
+    config_setup
     next_dumpname="$(dump_next_dumpname)"
-
+    wlog_prefix="dump: ${next_dumpname}"
     tmpdir_initializer
     exec 1> "${tmpdir}/cid_dump.log"
-    wlog 'Info' '%s: Starting to dump.' "${next_dumpname}"
-    dump_trac "${next_dumpname}"
-    dump_git "${next_dumpname}"
+    wlog 'Info' 'Start the dump.'
+    for service in ${config_service_list}; do
+        when ${service}_is_enabled ${service}_dump "${next_dumpname}"
+    done
     tar cJfC "${backupdir}/${next_dumpname}.txz" "${tmpdir}" .
-    wlog 'Info' '%s: Dump complete.' "${next_dumpname}"
+    wlog 'Info' 'Dump complete.'
 }
 
 dump_main "$@"

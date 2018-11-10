@@ -19,46 +19,26 @@
 : ${prefix:=@prefix@}
 : ${libexecdir:=@libexecdir@}
 : ${localstatedir:=@localstatedir@}
+: ${subrdir:=@datadir@/subr}
 : ${cachedir:=${localstatedir}/cache${packagedir}}
-: ${tracdir:=/var/trac}
-: ${gitdir:=/var/git}
+: ${config_dir:=/opt/cid/var/config}
 
+. "${subrdir}/stdlib.sh"
+. "${subrdir}/config.sh"
 
-# failwith [-x STATUS] PRINTF-LIKE-ARGV
-#  Fail with the given diagnostic message
-#
-# The -x flag can be used to convey a custom exit status, instead of
-# the value 1.  A newline is automatically added to the output.
+. "${subrdir}/trac.sh"
+. "${subrdir}/gitserver.sh"
 
-failwith()
-{
-    local OPTIND OPTION OPTARG status
-
-    status=1
-    OPTIND=1
-
-    while getopts 'x:' OPTION; do
-        case ${OPTION} in
-            x)	status="${OPTARG}";;
-            *)	1>&2 printf 'failwith: %s: Unsupported option.\n' "${OPTION}";;
-        esac
-    done
-
-    shift $(expr ${OPTIND} - 1)
-    {
-        printf 'Failure: '
-        printf "$@"
-        printf '\n'
-    } 1>&2
-    exit "${status}"
-}
 
 # repository_ls
 #  List repositories for the given project
 
 repository_ls()
 {
-    find "${gitdir}/${repository_project}" \
+    if ! [ -d "${gitserverdir}/${repository_environment}" ]; then
+        return 0
+    fi
+    find "${gitserverdir}/${repository_environment}" \
          -maxdepth 1\
          -name '.*' -prune\
          -o\
@@ -69,10 +49,10 @@ s|.*/||
 '
 }
 
-# repository_hook [REPO-1 …]
+# repository_install_hook [REPO-1 …]
 #  Install hoos for git REPO-1 or all repos
 
-repository_hook()
+repository_install_hook()
 {
     local repo
 
@@ -82,9 +62,13 @@ repository_hook()
         printf '%s\n' "$@"
     fi | while read repo; do
         (
-            cd "${gitdir}/${repository_project}/${repo}.git" || exit 1
-            git config trac.addchangeset yes
-            git config trac.environment "${tracdir}/${repository_project}"
+            cd "${gitserverdir}/${repository_environment}/${repo}.git" || exit 1
+            if trac_is_enabled; then
+                git config trac.addchangeset yes
+            else
+                git config trac.addchangeset no
+            fi
+            git config trac.environment "${tracdir}/${repository_environment}"
             git config trac.repositoryname "${repo}"
             rm -f 'hooks/post-receive'
             ln -s "${libexecdir}/cid/cid_githook_postreceive" 'hooks/post-receive'
@@ -97,11 +81,11 @@ repository_hook()
 
 repository_config()
 {
-    if [ ! -d "${gitdir}/${repository_project}/$1.git" ]; then
+    if [ ! -d "${gitserverdir}/${repository_environment}/$1.git" ]; then
         failwith 'repository_config: %s: Nothing is known about this repository'\
-                 "${repository_project}/$1"
+                 "${repository_environment}/$1"
     else
-        cd "${gitdir}/${repository_project}/$1.git"
+        cd "${gitserverdir}/${repository_environment}/$1.git"
         shift
         if [ $# -le 0 ]; then
             set -- --list
@@ -117,31 +101,31 @@ repository_create()
 {
     local repo repodir envdir
 
-    envdir="${tracdir}/${repository_project}"
+    envdir="${tracdir}/${repository_environment}"
     for repo in "$@"; do
-        repodir="${gitdir}/${repository_project}/${repo}.git"
+        repodir="${gitserverdir}/${repository_environment}/${repo}.git"
         if [ -d "${repodir}" ]; then
             wlog 'Warning' '%s: Repository already exists.' "${repo}"
         else
             install -d -o git -g git -m 750 "${repodir}"
-            (cd "${repodir}" && git init --bare . )
+            (cd "${repodir}" && sudo -u git git init --bare . )
             sudo -u www-data trac-admin "${envdir}"\
                  repository add "${repo}" "${repodir}" 'git'
         fi
     done
-    repository_hook "$@"
+    repository_install_hook "$@"
 }
 
-# repository_delete REPO-1 [REPO-2 …]
+# repository_rm REPO-1 [REPO-2 …]
 #  Delete a repository
 
-repository_delete()
+repository_rm()
 {
     local repo repodir envdir
 
-    envdir="${tracdir}/${repository_project}"
+    envdir="${tracdir}/${repository_environment}"
     for repo in "$@"; do
-        repodir="${gitdir}/${repository_project}/${repo}.git"
+        repodir="${gitserverdir}/${repository_environment}/${repo}.git"
         sudo -u www-data trac-admin "${envdir}"\
              repository remove "${repo}"
         rm -Rf "${repodir:?}"
@@ -158,16 +142,18 @@ repository_delete()
 repository_usage()
 {
     iconv -f utf-8 <<EOF
-Usage: cid_repository [-p PROJECT] SUBCOMMAND [REPOSITORY]
+Usage: cid_repository [-t TRAC-ENVIRONMENT] SUBCOMMAND [REPOSITORY]
  Operate on cid repositories
 Subcommands:
  ls
  config
  create
- delete
+ rm
 Options:
- -p PROJECT
+ -t TRAC-ENVIRONMENT
  -h Display a help message.
+Description:
+ A repository belongs to at most one trac environment.
 EOF
 }
 
@@ -175,20 +161,27 @@ EOF
 repository_main()
 {
     local OPTIND OPTION OPTARG
-    local subcommand repository_project
+    local subcommand repository_environment
 
-    repository_project='local'
+    repository_environment='NOT-SET'
     subcommand='usage'
     OPTIND=1
 
-    while getopts 'p:' OPTION; do
+    while getopts 'ht:' OPTION; do
         case ${OPTION} in
             h)	repository_usage; exit 0;;
-            p)	repository_project="${OPTARG}";;
+            t)	repository_environment="${OPTARG}";;
             *)	failwith -x 70 'cid_repository: %s: Unsupported option.' "${OPTION}";;
         esac
     done
     shift $(expr ${OPTIND} - 1)
+    config_setup
+
+    if [ "${repository_environment}" = 'NOT-SET' ]; then
+        if trac_is_enabled; then
+            repository_environment=$(trac_environment_db | head -n 1)
+        fi
+    fi
 
     if [ $# -eq 0 ]; then
         repository_usage
@@ -199,7 +192,7 @@ repository_main()
     shift
 
     case "${subcommand}" in
-        ls|config|create|delete|hook)
+        ls|config|create|rm|hook)
             : 'NOP'
             ;;
         *)

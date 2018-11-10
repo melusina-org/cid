@@ -16,6 +16,7 @@
 hier_directories='
  bin
  lib
+ libexec
  man
  share
  var
