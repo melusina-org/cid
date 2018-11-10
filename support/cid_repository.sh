@@ -35,7 +35,10 @@
 
 repository_ls()
 {
-    find "${gitdir}/${repository_environment}" \
+    if ! [ -d "${gitserverdir}/${repository_environment}" ]; then
+        return 0
+    fi
+    find "${gitserverdir}/${repository_environment}" \
          -maxdepth 1\
          -name '.*' -prune\
          -o\
@@ -46,10 +49,10 @@ s|.*/||
 '
 }
 
-# repository_hook [REPO-1 …]
+# repository_install_hook [REPO-1 …]
 #  Install hoos for git REPO-1 or all repos
 
-repository_hook()
+repository_install_hook()
 {
     local repo
 
@@ -59,7 +62,7 @@ repository_hook()
         printf '%s\n' "$@"
     fi | while read repo; do
         (
-            cd "${gitdir}/${repository_environment}/${repo}.git" || exit 1
+            cd "${gitserverdir}/${repository_environment}/${repo}.git" || exit 1
             git config trac.addchangeset yes
             git config trac.environment "${tracdir}/${repository_environment}"
             git config trac.repositoryname "${repo}"
@@ -74,11 +77,11 @@ repository_hook()
 
 repository_config()
 {
-    if [ ! -d "${gitdir}/${repository_environment}/$1.git" ]; then
+    if [ ! -d "${gitserverdir}/${repository_environment}/$1.git" ]; then
         failwith 'repository_config: %s: Nothing is known about this repository'\
                  "${repository_environment}/$1"
     else
-        cd "${gitdir}/${repository_environment}/$1.git"
+        cd "${gitserverdir}/${repository_environment}/$1.git"
         shift
         if [ $# -le 0 ]; then
             set -- --list
@@ -96,17 +99,17 @@ repository_create()
 
     envdir="${tracdir}/${repository_environment}"
     for repo in "$@"; do
-        repodir="${gitdir}/${repository_environment}/${repo}.git"
+        repodir="${gitserverdir}/${repository_environment}/${repo}.git"
         if [ -d "${repodir}" ]; then
             wlog 'Warning' '%s: Repository already exists.' "${repo}"
         else
             install -d -o git -g git -m 750 "${repodir}"
-            (cd "${repodir}" && git init --bare . )
+            (cd "${repodir}" && sudo -u git git init --bare . )
             sudo -u www-data trac-admin "${envdir}"\
                  repository add "${repo}" "${repodir}" 'git'
         fi
     done
-    repository_hook "$@"
+    repository_install_hook "$@"
 }
 
 # repository_rm REPO-1 [REPO-2 …]
@@ -118,7 +121,7 @@ repository_rm()
 
     envdir="${tracdir}/${repository_environment}"
     for repo in "$@"; do
-        repodir="${gitdir}/${repository_environment}/${repo}.git"
+        repodir="${gitserverdir}/${repository_environment}/${repo}.git"
         sudo -u www-data trac-admin "${envdir}"\
              repository remove "${repo}"
         rm -Rf "${repodir:?}"

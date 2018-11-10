@@ -1,0 +1,1 @@
+git     ALL=(www-data:www-data) NOPASSWD: /usr/bin/trac-admin /var/trac/* changeset added *

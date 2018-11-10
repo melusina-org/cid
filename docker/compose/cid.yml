@@ -16,6 +16,7 @@ services:
   #command: /usr/sbin/sshd -D -d
   volumes:
    - cid-git:/var/git
+   - cid-trac:/var/trac
   networks:
    - frontend
   ports:
