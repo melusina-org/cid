@@ -1,9 +1,10 @@
+subr/autoconf.sh
 autom4te.cache/
 config.log
 config.status
 configure
 Makefile.config
 Makefile.local
-Library/Config/
 *.fasl
 backup/
+project/

@@ -1,4 +1,4 @@
-### support.sh -- Install support programs in a docker image
+### subr.sh -- Install subroutines in a docker image
 
 # El Cid (https://github.com/melusina-org/cid)
 # This file is part of El Cid
@@ -13,12 +13,12 @@
 
 su -l cid -c '
  set -e
- cd /opt/cid/var/src/support
+ cd /opt/cid/var/src/subr
  autoconf
  ./configure --prefix=/opt/cid
  bmake -I/usr/local/share/bsdowl all
 '
 
-( cd /opt/cid/var/src/support && bmake -I/usr/local/share/bsdowl install )
+( cd /opt/cid/var/src/subr && bmake -I/usr/local/share/bsdowl install )
 
-### End of file `support.sh'
+### End of file `subr.sh'

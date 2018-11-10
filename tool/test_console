@@ -1,0 +1,62 @@
+#!/bin/sh
+
+### test_console -- The Test Console
+
+# El Cid (https://github.com/melusina-org/cid)
+# This file is part of El Cid
+#
+# Copyright © 2018 Michaël Le Barbier
+#
+# This file must be used under the terms of the MIT license.
+# This source file is licensed as described in the file LICENSE, which
+# you should have received as part of this distribution. The terms
+# are also available at
+# https://opensource.org/licenses/MIT
+
+: ${TOPLEVELDIR:=$(git rev-parse --show-toplevel)}
+: ${subrdir:=${TOPLEVELDIR}/subr}
+
+. "${subrdir}/stdlib.sh"
+. "${subrdir}/config.sh"
+. "${subrdir}/role.sh"
+
+admin_console()
+(
+    cd "${TOPLEVELDIR}"
+    ./tool/admin_console -c "${TOPLEVELDIR}/example" "$@"
+)
+
+docker_compose()
+(
+    cd "${TOPLEVELDIR}"
+    ./tool/docker_compose -c "${TOPLEVELDIR}/example" "$@"
+)
+
+docker_build()
+(
+    cd "${TOPLEVELDIR}"
+    ./tool/docker_build "$@"
+)
+
+test_main()
+{
+    case "$1" in
+        create|configure|rm|dump|restore|shell)
+            admin_console "$@"
+            ;;
+        up|down)
+            docker_compose "$@"
+            ;;
+        build)
+            shift
+            docker_build "$@"
+            ;;
+        *)
+            exit 64
+            ;;
+    esac
+}
+
+test_main "$@"
+
+### End of file `test_console'

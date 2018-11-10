@@ -1,4 +1,6 @@
-### support.sh -- Install support programs in a docker image
+#!/bin/sh
+
+### generate_cid_conf_md -- Generate the cid_conf.md documentation
 
 # El Cid (https://github.com/melusina-org/cid)
 # This file is part of El Cid
@@ -11,14 +13,20 @@
 # are also available at
 # https://opensource.org/licenses/MIT
 
-su -l cid -c '
- set -e
- cd /opt/cid/var/src/support
- autoconf
- ./configure --prefix=/opt/cid
- bmake -I/usr/local/share/bsdowl all
-'
+: ${TOPLEVELDIR:=$(git rev-parse --show-toplevel)}
 
-( cd /opt/cid/var/src/support && bmake -I/usr/local/share/bsdowl install )
 
-### End of file `support.sh'
+generate_filter()
+{
+    cat <<EOF
+# cid.conf — Project configuration
+
+~~~ conf
+EOF
+    cat -
+cat <<EOF
+~~~
+EOF
+}
+
+generate_filter < "${TOPLEVELDIR}/example/cid.conf" > "${TOPLEVELDIR}/doc/cid.conf.md"

@@ -1,5 +1,3 @@
-### support.sh -- Install support programs in a docker image
-
 # El Cid (https://github.com/melusina-org/cid)
 # This file is part of El Cid
 #
@@ -11,14 +9,12 @@
 # are also available at
 # https://opensource.org/licenses/MIT
 
-su -l cid -c '
- set -e
- cd /opt/cid/var/src/support
- autoconf
- ./configure --prefix=/opt/cid
- bmake -I/usr/local/share/bsdowl all
-'
+env DEBIAN_FRONTEND=noninteractive apt-get install -y\
+ python3\
+ python3-matplotlib\
+ python3-pip\
+ python3-pymysql\
+ sqlite3
 
-( cd /opt/cid/var/src/support && bmake -I/usr/local/share/bsdowl install )
-
-### End of file `support.sh'
+env DEBIAN_FRONTEND=noninteractive apt-get install -y\
+ nginx-extras

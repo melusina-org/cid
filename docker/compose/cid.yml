@@ -4,13 +4,23 @@ services:
  reverseproxy:
   restart: unless-stopped
   image: cid/reverseproxy
-  deploy:
-   mode: global
   networks:
+   - service
    - frontend
   ports:
    - "80:80"
    - "443:443"
+
+ gitserver:
+  image: cid/gitserver
+  #command: /usr/sbin/sshd -D -d
+  volumes:
+   - cid-git:/var/git
+   - cid-trac:/var/trac
+  networks:
+   - frontend
+  ports:
+   - "2022:22"
 
  trac:
   image: cid/trac
@@ -18,28 +28,22 @@ services:
    - cid-trac:/var/trac
    - cid-git:/var/git
    - cid-www:/var/www
-  deploy:
-   mode: global
   networks:
-   - frontend
-  ports:
-   - "2022:22"
+   - service
 
  jenkins:
   user: jenkins
-  image: cid/jenkins:${cid_jenkinsversion}
-  deploy:
-   mode: global
+  image: cid/jenkins
   volumes:
    - /var/run/docker.sock:/var/run/docker.sock
    - cid-jenkins:/var/lib/jenkins
    - cid-git:/var/git
   networks:
-   - frontend
+   - service
 
 networks:
  frontend:
- backend:
+ service:
 
 volumes:
   cid-jenkins:
