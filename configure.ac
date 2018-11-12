@@ -5,15 +5,14 @@
 #
 # Copyright © 2018 Michaël Le Barbier
 #
-# This file must be used under the terms of the CeCILL-B.
-# This source file is licensed as described in the file COPYING, which
+# This file must be used under the terms of the MIT license.
+# This source file is licensed as described in the file LICENSE, which
 # you should have received as part of this distribution. The terms
 # are also available at
-# http://www.cecill.info/licences/Licence_CeCILL-B_V1-en.txt
+# https://opensource.org/licenses/MIT
 
-AC_INIT([stdlib.sh])
-AC_CONFIG_FILES([autoconf.sh])
-AC_CONFIG_FILES([Makefile.config])
+AC_INIT([example/cid.conf])
+AC_CONFIG_FILES([subr/autoconf.sh])
 
 # AC_PATH_PROG_REQUIRE(VARIABLE-NAME, PROGRAM-NAME, HELP-MESSAGE)
 # ---------------------------------------------------------------
@@ -26,10 +25,10 @@ AC_DEFUN([AC_PATH_PROG_REQUIRE],
 
 AC_PATH_PROG_REQUIRE([prog_cpio], [cpio])
 AC_PATH_PROG_REQUIRE([prog_git], [git])
+AC_PATH_PROG_REQUIRE([prog_docker], [docker])
+AC_PATH_PROG_REQUIRE([prog_docker_compose], [docker-compose])
 
 AC_SUBST([runstatedir], [${prefix}/var/run])
-AC_OUTPUT
-
 AC_OUTPUT
 
 ### End of file `configure.ac'
