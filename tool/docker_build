@@ -69,7 +69,7 @@ docker_build_main()
     docker_build_cacheflag=''
     OPTIND=1
 
-    while getopts 'n:r:t:h' OPTION; do
+    while getopts 'nr:t:h' OPTION; do
         case ${OPTION} in
             h)	docker_build_usage; exit 0;;
             n)	docker_build_cacheflag="--no-cache";;

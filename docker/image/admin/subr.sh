@@ -13,12 +13,12 @@
 
 su -l cid -c '
  set -e
- cd /opt/cid/var/src/subr
+ cd /opt/cid/var/src/cid/subr
  autoconf
  ./configure --prefix=/opt/cid
  bmake -I/usr/local/share/bsdowl all
 '
 
-( cd /opt/cid/var/src/subr && bmake -I/usr/local/share/bsdowl install )
+( cd /opt/cid/var/src/cid/subr && bmake -I/usr/local/share/bsdowl install )
 
 ### End of file `subr.sh'
