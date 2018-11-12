@@ -108,9 +108,14 @@ trac_configure_environment()
 
         su -l www-data -s '/bin/sh' <<TRAC-ADMIN
 trac-admin "${tracdir}/$1" initenv "$1" sqlite:db/trac.db
-trac-admin "${tracdir}/$1" deploy "${wwwdir}/$1"
 TRAC-ADMIN
     fi
+
+    chown www-data:www-data /var/www/.
+
+    su -l www-data -s '/bin/sh' <<TRAC-ADMIN
+trac-admin "${tracdir}/$1" deploy "${wwwdir}/$1"
+TRAC-ADMIN
 
     install -o www-data -g www-data -m 640 /dev/null "${tracdir}/sites/$1.htpasswd"
     install -o www-data -g www-data -m 640 /dev/null "${tracdir}/sites/$1.conf"
