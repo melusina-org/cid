@@ -552,6 +552,7 @@ apt-get remove cmdtest
 apt-get install -y\
   apt-transport-https\
   apt-utils\
+  bzip2\
   ca-certificates\
   curl\
   debconf-utils\
