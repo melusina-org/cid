@@ -21,6 +21,8 @@
 . "${subrdir}/config.sh"
 
 docker_build_package='cid'
+docker_build_registry=''
+docker_build_tag='latest'
 
 # docker_build_db
 #  The database of systems we can build
@@ -42,7 +44,7 @@ docker_build_db()
 docker_build_image()
 {
     cd "${TOPLEVELDIR}"
-    docker build ${docker_build_cacheflag} -t "${docker_build_package}/$1" -f "./docker/image/$1/Dockerfile" .
+    docker build ${docker_build_cacheflag} -t "${docker_build_registry}${docker_build_registry:+/}${docker_build_package}/$1" -f "./docker/image/$1/Dockerfile" .
 }
 
 docker_build_usage()
@@ -53,10 +55,8 @@ Usage: docker_build [-c CONFIG-DIR] [-n] IMAGE-1 …
 Options:
  -h Display this help message.
  -n Build without cache.
- -c CONFIG-DIR
-    Configuration directory.
- -p PROJECT-NAME
-    Project name, used by docker-compose and volume ressources.
+ -t ARTEFACT-TAG
+    Tag the produced image with ARTEFACT-TAG instead of 'latest'.
 EOF
 }
 
