@@ -13,12 +13,12 @@
 
 su -l cid -c '
  set -e
- cd /opt/cid/var/src/support
+ cd /opt/cid/var/src/cid/support
  autoconf
  ./configure --prefix=/opt/cid
  bmake -I/usr/local/share/bsdowl all
 '
 
-( cd /opt/cid/var/src/support && bmake -I/usr/local/share/bsdowl install )
+( cd /opt/cid/var/src/cid/support && bmake -I/usr/local/share/bsdowl install )
 
 ### End of file `support.sh'

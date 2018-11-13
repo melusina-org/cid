@@ -1,0 +1,64 @@
+pipeline {
+  agent any
+  stages {
+    stage('Base Linux Image') {
+      steps {
+        build job: 'Cid-docker-build-image-linux',
+              parameters: [
+                gitParameter(name: 'CID_GIT_REFERENCE', value: params.CID_GIT_REFERENCE),
+                string(name: 'CID_ARTEFACT_TAG', value:  "${env.BUILD_TAG}"),
+                booleanParam(name: 'CID_DOCKER_CACHE', value: params.CID_DOCKER_CACHE)
+              ]
+      }
+    }
+    stage('Other Docker Images') {
+      parallel {
+        stage('reverseproxy') {
+          steps {
+            build job: 'Cid-docker-build-image-reverseproxy',
+                  parameters: [
+                    gitParameter(name: 'CID_GIT_REFERENCE', value: params.CID_GIT_REFERENCE),
+                    string(name: 'CID_ARTEFACT_TAG', value:  "${env.BUILD_TAG}")
+                  ]
+          }
+        }
+        stage('admin') {
+          steps {
+            build job: 'Cid-docker-build-image-admin',
+                  parameters: [
+                    gitParameter(name: 'CID_GIT_REFERENCE', value: params.CID_GIT_REFERENCE),
+                    string(name: 'CID_ARTEFACT_TAG', value:  "${env.BUILD_TAG}")
+                  ]
+          }
+        }
+        stage('trac') {
+          steps {
+            build job: 'Cid-docker-build-image-trac',
+                  parameters: [
+                    gitParameter(name: 'CID_GIT_REFERENCE', value: params.CID_GIT_REFERENCE),
+                    string(name: 'CID_ARTEFACT_TAG', value:  "${env.BUILD_TAG}")
+                  ]
+          }
+        }
+        stage('gitserver') {
+          steps {
+            build job: 'Cid-docker-build-image-gitserver',
+                  parameters: [
+                    gitParameter(name: 'CID_GIT_REFERENCE', value: params.CID_GIT_REFERENCE),
+                    string(name: 'CID_ARTEFACT_TAG', value:  "${env.BUILD_TAG}")
+                  ]
+          }
+        }
+        stage('jenkins') {
+          steps {
+            build job: 'Cid-docker-build-image-jenkins',
+                  parameters: [
+                    gitParameter(name: 'CID_GIT_REFERENCE', value: params.CID_GIT_REFERENCE),
+                    string(name: 'CID_ARTEFACT_TAG', value:  "${env.BUILD_TAG}")
+                  ]
+          }
+        }
+      }
+    }
+  }
+}
