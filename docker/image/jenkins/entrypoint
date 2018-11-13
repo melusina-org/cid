@@ -1,8 +1,19 @@
 #!/bin/sh
 set -e
 
+chown root:docker /var/run/docker.sock
+chown jenkins:jenkins /var/lib/jenkins
+
 if [ "$#" -le 0 ]; then
-    set -- java -jar /usr/share/jenkins/jenkins.war
+    #set -- sudo -u jenkins java -jar /usr/share/jenkins/jenkins.war
+    set -- su - jenkins -l -s /bin/sh -c '
+set -a
+JENKINS_HOME=/var/lib/jenkins
+LC_ALL="en_US.UTF_8"
+LANG="en_US.UTF-8"
+set +a
+java -jar /usr/share/jenkins/jenkins.war
+'
 fi
 
 exec "$@"
