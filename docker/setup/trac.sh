@@ -19,6 +19,7 @@ env DEBIAN_FRONTEND=noninteractive apt-get install -y\
  python-flup\
  python-pip\
  python-psycopg2\
+ python-pygments\
  subversion\
  trac-accountmanager\
  trac-authopenid\

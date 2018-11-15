@@ -11,7 +11,8 @@
 # are also available at
 # https://opensource.org/licenses/MIT
 
-FROM cid/linux
+ARG CID_LINUX_REFERENCE=latest
+FROM cid/linux:${CID_LINUX_REFERENCE}
 
 RUN env DEBIAN_FRONTEND=noninteractive apt-get install -y\
  cpio
