@@ -11,6 +11,8 @@
 # are also available at
 # https://opensource.org/licenses/MIT
 
+set -e
+
 su -l cid -c '
  set -e
  cd /opt/cid/var/src/cid/subr
