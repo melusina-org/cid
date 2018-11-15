@@ -26,7 +26,6 @@ AC_DEFUN([AC_PATH_PROG_REQUIRE],
 AC_PATH_PROG_REQUIRE([prog_cpio], [cpio])
 AC_PATH_PROG_REQUIRE([prog_git], [git])
 AC_PATH_PROG_REQUIRE([prog_docker], [docker])
-AC_PATH_PROG_REQUIRE([prog_docker_compose], [docker-compose])
 
 AC_SUBST([runstatedir], [${prefix}/var/run])
 AC_OUTPUT
