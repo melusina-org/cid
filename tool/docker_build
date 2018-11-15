@@ -44,7 +44,11 @@ docker_build_db()
 docker_build_image()
 {
     cd "${TOPLEVELDIR}"
-    docker build ${docker_build_cacheflag} -t "${docker_build_registry}${docker_build_registry:+/}${docker_build_package}/$1:${docker_build_tag}" -f "./docker/image/$1/Dockerfile" .
+    docker build\
+           ${docker_build_argv}\
+           ${docker_build_cacheflag}\
+           -t "${docker_build_registry}${docker_build_registry:+/}${docker_build_package}/$1:${docker_build_tag}"\
+           -f "./docker/image/$1/Dockerfile" .
 }
 
 docker_build_usage()
@@ -58,23 +62,27 @@ Options:
  -t ARTEFACT-TAG
     Tag the produced image with ARTEFACT-TAG instead of 'latest'.
  -r The docker registry to use for tagging the images.
+ -A DOCKER-BUILD-ARG
+    Pass an argument to the docker build.
 EOF
 }
 
 docker_build_main()
 {
     local OPTIND OPTION OPTARG
-    local image docker_build_cacheflag
+    local image docker_build_cacheflag docker_argv
 
     docker_build_cacheflag=''
+    docker_build_argv=''
     OPTIND=1
 
-    while getopts 'nr:t:h' OPTION; do
+    while getopts 'nr:t:hA:' OPTION; do
         case ${OPTION} in
             h)	docker_build_usage; exit 0;;
             n)	docker_build_cacheflag="--no-cache";;
             r)	docker_build_registry="${OPTARG}";;
             t)	docker_build_tag="${OPTARG}";;
+            A)	docker_build_argv="${docker_build_argv}${docker_build_argv:+ }--build-arg ${OPTARG}";;
             *)	docker_build_usage; failwith -x 70 'docker_build: %s: Unsupported option.' "${OPTION}";;
         esac
     done

@@ -18,7 +18,8 @@ pipeline {
             build job: 'Cid-docker-build-image-reverseproxy',
                   parameters: [
                     gitParameter(name: 'CID_GIT_REFERENCE', value: params.CID_GIT_REFERENCE),
-                    string(name: 'CID_ARTEFACT_TAG', value:  "${env.BUILD_TAG}")
+                    string(name: 'CID_ARTEFACT_TAG', value:  "${env.BUILD_TAG}"),
+                    string(name: 'CID_LINUX_REFERENCE', value:  "${env.BUILD_TAG}")
                   ]
           }
         }
@@ -27,7 +28,8 @@ pipeline {
             build job: 'Cid-docker-build-image-admin',
                   parameters: [
                     gitParameter(name: 'CID_GIT_REFERENCE', value: params.CID_GIT_REFERENCE),
-                    string(name: 'CID_ARTEFACT_TAG', value:  "${env.BUILD_TAG}")
+                    string(name: 'CID_ARTEFACT_TAG', value:  "${env.BUILD_TAG}"),
+                    string(name: 'CID_LINUX_REFERENCE', value:  "${env.BUILD_TAG}")
                   ]
           }
         }
@@ -36,7 +38,8 @@ pipeline {
             build job: 'Cid-docker-build-image-trac',
                   parameters: [
                     gitParameter(name: 'CID_GIT_REFERENCE', value: params.CID_GIT_REFERENCE),
-                    string(name: 'CID_ARTEFACT_TAG', value:  "${env.BUILD_TAG}")
+                    string(name: 'CID_ARTEFACT_TAG', value:  "${env.BUILD_TAG}"),
+                    string(name: 'CID_LINUX_REFERENCE', value:  "${env.BUILD_TAG}")
                   ]
           }
         }
@@ -45,7 +48,8 @@ pipeline {
             build job: 'Cid-docker-build-image-gitserver',
                   parameters: [
                     gitParameter(name: 'CID_GIT_REFERENCE', value: params.CID_GIT_REFERENCE),
-                    string(name: 'CID_ARTEFACT_TAG', value:  "${env.BUILD_TAG}")
+                    string(name: 'CID_ARTEFACT_TAG', value:  "${env.BUILD_TAG}"),
+                    string(name: 'CID_LINUX_REFERENCE', value:  "${env.BUILD_TAG}")
                   ]
           }
         }
@@ -54,7 +58,8 @@ pipeline {
             build job: 'Cid-docker-build-image-jenkins',
                   parameters: [
                     gitParameter(name: 'CID_GIT_REFERENCE', value: params.CID_GIT_REFERENCE),
-                    string(name: 'CID_ARTEFACT_TAG', value:  "${env.BUILD_TAG}")
+                    string(name: 'CID_ARTEFACT_TAG', value:  "${env.BUILD_TAG}"),
+                    string(name: 'CID_LINUX_REFERENCE', value:  "${env.BUILD_TAG}")
                   ]
           }
         }
