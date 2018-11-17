@@ -1,0 +1,146 @@
+#!/bin/sh
+
+### jenkins_console -- Start the Jenkins Console
+
+# El Cid (https://github.com/melusina-org/cid)
+# This file is part of El Cid
+#
+# Copyright © 2018 Michaël Le Barbier
+#
+# This file must be used under the terms of the MIT license.
+# This source file is licensed as described in the file LICENSE, which
+# you should have received as part of this distribution. The terms
+# are also available at
+# https://opensource.org/licenses/MIT
+
+: ${TOPLEVELDIR:=$(git rev-parse --show-toplevel)}
+: ${subrdir:=${TOPLEVELDIR}/subr}
+: ${dockerimage:=cid/admin}
+: ${console_package:='cid'}
+: ${console_user:='root'}
+: ${console_interaction:=confirm}
+
+. "${subrdir}/stdlib.sh"
+. "${subrdir}/config.sh"
+
+. "${subrdir}/trac.sh"
+. "${subrdir}/jenkins.sh"
+. "${subrdir}/gitserver.sh"
+
+console_config()
+{
+    git config --file "${config_dir}/cid.conf" "$@"
+}
+
+console_docker()
+{
+    docker run --rm\
+           --user "${console_user}"\
+           $(console_docker__volume)\
+           --volume "${config_dir}:/opt/cid/var/config"\
+           "$@"
+}
+
+console_docker__volume()
+{
+    config_volume_db | awk -F '|' '{printf(" --volume %s:%s", $2, $3)}'
+}
+
+console_shell()
+{
+    console_docker -it "${dockerimage}" bash -l
+}
+
+console_ls()
+{
+    console_docker "${dockerimage}" cid_jenkins_tool ls
+}
+
+console_export()
+{
+    local OPTIND OPTION OPTARG
+    local destdir include_pattern exclude_pattern
+
+    OPTIND=1
+    include_pattern='*'
+    exclude_pattern=''
+
+    while getopts 'i:x:' OPTION; do
+        case ${OPTION} in
+            i)	include_pattern="${OPTARG}";;
+            x)	exclude_pattern="${OPTARG}";;
+            *)	failwith -x 64 'jenkins_console: export: %s: Unsupported option.' "${OPTION}";;
+        esac
+    done
+    shift $(expr ${OPTIND} - 1)
+
+    case $# in
+        0)	destdir='.';;
+        1)	destdir="$1"; shift;;
+        *)	failwith -x 64 'jenkins_console: export: %s: Wrong number of arguments.' "$#";;
+    esac
+
+    if ! [ -d "${destdir}" ]; then
+        failwith -x 70 'jenkins_console: export: %s: Destination directory does not exist.' "${srcdir}"
+    fi
+
+    if [ -z "${exclude_pattern}" ]; then
+        console_docker -i "${dockerimage}" cid_jenkins_tool export\
+                       -i "${include_pattern}"
+    else
+        console_docker -i "${dockerimage}" cid_jenkins_tool export\
+                       -i "${include_pattern}"\
+                       -x "${exclude_pattern}"
+    fi | tar xfC - "${destdir}"
+}
+
+console_import()
+{
+    local srcdir
+    case $# in
+        0)	srcdir='.';;
+        1)	srcdir="$1"; shift;;
+        *)	failwith -x 64 'jenkins_console: import: %s: Wrong number of arguments.' "$#";;
+    esac
+
+    if ! [ -d "${srcdir}" ]; then
+        failwith -x 70 'jenkins_console: import: %s: Source directory does not exist.' "${srcdir}"
+    fi
+    (
+        cd "${srcdir}"
+        find . -type f -name 'config.xml' | cpio -ov -H ustar
+    ) | console_docker -i "${dockerimage}" cid_jenkins_tool import
+}
+
+console_main()
+{
+    local OPTIND OPTION OPTARG
+
+    subcommand='shell'
+    OPTIND=1
+
+    while getopts 'c:dhp:' OPTION; do
+        case ${OPTION} in
+            c)	config_dir="${OPTARG%/}";;
+            d)	console_subcommand='subshell';;
+            h)	console_usage; exit 0;;
+            p)	config_project="${OPTARG}";;
+            *)	failwith -x 64 'jenkins_console: %s: Unsupported option.' "${OPTION}";;
+        esac
+    done
+    shift $(expr ${OPTIND} - 1)
+    config_setup
+
+    case "$1" in
+        ls|export|import|subshell)
+            subcommand="$1"
+            shift
+            ;;
+    esac
+
+    console_${subcommand} "$@"
+}
+
+console_main "$@"
+
+### End of file `jenkins_console'

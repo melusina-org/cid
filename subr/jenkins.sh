@@ -80,18 +80,52 @@ jenkins_job_ls()
 }
 
 
-# jenkins_job_export
+# jenkins_job_export [-i INCLUDE-PATTERN] [-x EXCLUDE-PATTERN]
 #  Export Jenkins job definitions
 #
 # This writes a tarball to stdout, containing all Jenkins job
 # definitions.
+#
+# Options:
+# -x EXCLUDE-PATTERN
+#    All jobs whose path match the EXCLUDE-PATTERN are excluded from
+#    the export.
+# -i INCLUDE-PATTERN
+#    Only jobs whose path match the INCLUDE-PATTERN are eligible for
+#    the export.  The EXCLUDE-PATTERN, if given, is still applied.
 
 jenkins_job_export()
 {
+    local OPTIND OPTION OPTARG
+    local include_pattern exclude_pattern
+    OPTIND=1
+
+    include_pattern='*'
+    exclude_pattern=''
+
+    while getopts 'i:x:' OPTION; do
+        case ${OPTION} in
+            i)	include_pattern="${OPTARG}";;
+            x)	exclude_pattern="${OPTARG}";;
+            *)	failwith -x 70 'cid_job_export: %s: Unsupported option.' "${OPTION}";;
+        esac
+    done
+    shift $(expr ${OPTIND} - 1)
     wlog 'Info' 'Export Jenkins job definitions.'
     (
-        cd "${jenkinsdir}"
-        find config.xml jobs -type f -name 'config.xml' | cpio -ov -H tar
+        cd "${jenkinsdir}/jobs"
+        if [ -z "${exclude_pattern}" ]; then
+            find .\
+                 -type f\
+                 -name 'config.xml'\
+                 -path "${include_pattern}"
+        else
+            find .\
+                 -type f\
+                 -name 'config.xml'\
+                 -path "${include_pattern}"\
+                 -not -path "${exclude_pattern}"
+        fi | cpio -ov -H ustar
     ) || failwith '%s: Cannot export Jenkins job definitions from this directory.' "${jenkinsdir}"
 }
 
@@ -104,8 +138,10 @@ jenkins_job_export()
 
 jenkins_job_import()
 {
+    local script
     wlog 'Info' 'Import Jenkins job definitions.'
-    tar xfC - "${jenkindir}"
+    script=$(printf "tar xfC - '%s'" "${jenkinsdir}/jobs")
+    su jenkins -l -s /bin/sh -c "${script}"
 }
 
 ### End of file `jenkins.sh'

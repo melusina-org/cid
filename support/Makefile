@@ -16,6 +16,7 @@ PROGRAM+=		cid_dump.sh
 PROGRAM+=		cid_restore.sh
 PROGRAM+=		cid_repository.sh
 PROGRAM+=		cid_githook_postreceive.sh
+PROGRAM+=		cid_jenkins_tool.sh
 
 .for githook in ${PROGRAM:Mcid_githook_*}
 BINDIR.${githook:R}=	${libexecdir}/cid
