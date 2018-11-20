@@ -11,8 +11,33 @@
 # are also available at
 # https://opensource.org/licenses/MIT
 
+# Arguments:
+#
+# DEBIAN_MIRROR (none)
+#  Debian is distributed (mirrored) on hundreds of servers on the
+#  Internet. Using a nearby server will probably speed up your
+#  download, and also reduce the load on our central servers and on
+#  the Internet as a whole. Example values are
+#  ftp.fr.debian.org/debian/ or ftp.de.debian.org/debian/.
+#
+#  See Also: https://www.debian.org/mirror/list
+
+: ${DEBIAN_MIRROR:=none}
+
 DEBIAN_FRONTEND=noninteractive
 export DEBIAN_FRONTEND
+
+
+if [ "${DEBIAN_MIRROR}" = 'none' ]; then
+    : 'Do not use a specific mirror'
+else
+# At the time of writing, there is a problem with Debian CDN.
+sed -e "s|@DEBIAN_MIRROR@|${DEBIAN_MIRROR}|g" > /etc/apt/sources.list <<APT-CONF
+deb http://@DEBIAN_MIRROR@ stretch main
+deb http://@DEBIAN_MIRROR@ stretch-updates main
+deb http://security.debian.org/debian-security stretch/updates main
+APT-CONF
+fi
 
 apt-get update -y
 apt-get upgrade -y

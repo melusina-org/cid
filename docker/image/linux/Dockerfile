@@ -11,7 +11,19 @@
 # are also available at
 # https://opensource.org/licenses/MIT
 
+# Arguments:
+#
+# ARG_DEBIAN_MIRROR (none)
+#  Debian is distributed (mirrored) on hundreds of servers on the
+#  Internet. Using a nearby server will probably speed up your
+#  download, and also reduce the load on our central servers and on
+#  the Internet as a whole. Example values are
+#  ftp.fr.debian.org/debian/ or ftp.de.debian.org/debian/.
+#
+#  See Also: https://www.debian.org/mirror/list
+
 FROM debian:stretch
+ARG DEBIAN_MIRROR=none
 
 RUN install -d -o root -g root -m 700 /root/setup
 
