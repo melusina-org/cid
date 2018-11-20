@@ -8,6 +8,7 @@ env DEBIAN_FRONTEND=noninteractive apt-get install -y\
  gnupg\
  jenkins\
  m4\
+ ssh\
  pkg-config
 
 sed -i -e '
