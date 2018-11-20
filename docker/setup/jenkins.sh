@@ -1,4 +1,5 @@
 env DEBIAN_FRONTEND=noninteractive apt-get install -y\
+ ansible\
  autoconf\
  bmake\
  curl\
