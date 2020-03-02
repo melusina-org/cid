@@ -1,0 +1,128 @@
+#!/bin/sh
+
+### tenant_shell.sh -- Start a tenant shell
+
+# El Cid (https://github.com/melusina-conseil/cid)
+# This file is part of El Cid.
+#
+# Copyright © 2017–2022 Michaël Le Barbier
+# All rights reserved.
+
+# This software is governed by the CeCILL-B license under French law and
+# abiding by the rules of distribution of free software.  You can  use,
+# modify and/ or redistribute the software under the terms of the CeCILL-B
+# license as circulated by CEA, CNRS and INRIA at the following URL
+# "https://cecill.info/licences/Licence_CeCILL-B_V1-en.txt"
+
+
+: ${TOPLEVELDIR:=$(git rev-parse --show-toplevel)}
+: ${TENANTBASEDIR:=${HOME}/Library/com.github.michipili.cid}
+: ${subrdir:=${TOPLEVELDIR}/subr}
+
+. "${subrdir}/stdlib.sh"
+. "${subrdir}/config.sh"
+
+tenant_resolve_designator_or_die()
+{
+    local classification
+
+    case "$1" in
+	/*|./*|../*)
+	    classification='qualified'
+	    ;;
+	*)
+	    classification='unqualified'
+	    ;;
+    esac
+
+    if [ -d "$1" ] && [ -x "$1" ]; then
+	CID_TENANT_DIR=$(cd "$1" && pwd)
+    elif [ "${classification}" = 'unqualified' ] && [ -d "${TENANTBASEDIR}/$1" ] && [ -x "${TENANTBASEDIR}/$1" ]; then
+	CID_TENANT_DIR=$(cd "${TENANTBASEDIR}/$1" && pwd)
+    else
+	failwith 70 '%s: This directory cannot be read.' "$1"
+    fi
+}
+
+tenant_maybe_instant_configuration()
+{
+    : ${CID_TENANT_DIR:-?}
+    config_file="${CID_TENANT_DIR}/cid.ini"
+    if [ -r "${config_file}" ]; then
+	return 0
+    fi
+    cat > "${config_file}" <<EOF
+[tenant]
+name = ${CID_TENANT_DIR##*/}
+EOF
+}
+
+tenant_usage()
+{
+    iconv -f utf-8 <<'EOF'
+./tool/tenant_shell TENANT-DESIGNATOR
+ Run a tenant shell positioned on TENANT-DESIGNATOR.
+EOF
+}
+
+tenant_shell()
+{
+    if [ -n "${CID_TENANT_DIR}" ]; then
+	failwith 2 'tenant_shell: %s: We are already running a tenant shell for this tenant.' "${CID_TENANT_DIR}"
+    fi
+
+    tenant_resolve_designator_or_die "$1"
+    tenant_maybe_instant_configuration
+    export CID_TENANT_DIR
+    printf -- "---> Start a shell for tenant '%s'\n" "$(config tenant.name)"
+    ${SHELL}
+    printf -- "---> End the shell for tenant '%s'\n" "$(config tenant.name)"
+}
+
+tenant_list()
+{
+    if [ -d "${TENANTBASEDIR}" ] && [ -x "${TENANTBASEDIR}" ]; then
+	(cd "${TENANTBASEDIR}" && ls -1)
+    fi
+}
+
+tenant_main()
+{
+    local OPTIND OPTION OPTARG
+    local tenant_designator tenant_action
+
+    tenant_action='shell'
+    tenant_designator=''
+    OPTIND=1
+
+    while getopts 'hl' OPTION; do
+        case ${OPTION} in
+	    l)  tenant_action='list';;
+            h)	tenant_usage; exit 0;;
+            *)	failwith 64 'tenant_shell: %s: Unsupported option.' "${OPTION}";;
+        esac
+    done
+    shift $(expr ${OPTIND} - 1)
+
+    case "${tenant_action}-$#" in
+	shell-0)
+	    tenant_shell "${TOPLEVELDIR}/local"
+	    ;;
+	shell-1)
+	    tenant_shell "${tenant_designator}"
+	    ;;
+	list-0)
+	    tenant_list
+	    ;;
+	shell-*|list-*)
+	    tenant_usage; exit 64
+	    ;;
+	*)
+	    exit 70
+	    ;;
+    esac
+}
+
+tenant_main "$@"
+
+### End of file `tenant_shell.sh'
