@@ -1,0 +1,119 @@
+#!/bin/sh
+
+### docker_build -- Docker build images
+
+# El Cid (https://github.com/melusina-conseil/cid)
+# This file is part of El Cid.
+#
+# Copyright © 2017–2022 Michaël Le Barbier
+# All rights reserved.
+
+# This software is governed by the CeCILL-B license under French law and
+# abiding by the rules of distribution of free software.  You can  use,
+# modify and/ or redistribute the software under the terms of the CeCILL-B
+# license as circulated by CEA, CNRS and INRIA at the following URL
+# "https://cecill.info/licences/Licence_CeCILL-B_V1-en.txt"
+
+
+: ${TOPLEVELDIR:=$(git rev-parse --show-toplevel)}
+: ${subrdir:=${TOPLEVELDIR}/subr}
+: ${servicedir:=${TOPLEVELDIR}/service}
+
+. "${subrdir}/stdlib.sh"
+. "${subrdir}/config.sh"
+
+docker_build_registry=''
+docker_build_package='cid'
+docker_build_version='latest'
+
+# docker_build_tag SYSTEM-DESIGNATOR
+#  The tag for generated docker images
+
+docker_build_tag()
+{
+    printf "${docker_build_registry}${docker_build_registry:+/}${docker_build_package}/$1:${docker_build_version}"
+}
+
+
+# docker_build_db
+#  The database of systems we can build
+#
+# It has the following columns:
+#
+#  SYSTEM-DESIGNATOR
+
+docker_build_db()
+{
+    find "${servicedir}" -type f -name 'Dockerfile' \
+         | sed -e 's@/Dockerfile@@;s@.*/@@'
+}
+
+
+# docker_build_image SYSTEM-NAME
+#  Build the image for SYSTEM-NAME
+
+docker_build_image()
+(
+    if [ ! -d "${servicedir}/$1" ]; then
+	failwith 1 "docker_build: %s: Nothing is known about this service." "$1"
+    fi
+    
+    docker build\
+           ${docker_build_argv}\
+           ${docker_build_cacheflag}\
+           -t $(docker_build_tag "$1")\
+	   -f "${servicedir}/$1/Dockerfile"\
+           .
+)
+
+docker_build_usage()
+{
+    iconv -f utf-8 <<EOF
+Usage: docker_build [-v ARTEFACT-VERSION] [-r REGISTRY] [-n] IMAGE-1
+ Build docker image defined in current git working copy
+Options:
+ -h Display this help message.
+ -n Build without cache.
+ -v ARTEFACT-VERSION
+    Tag the produced image with ARTEFACT-TAG ending with the given
+    ARTEFACT-VERSION.
+ -r REGISTRY
+    The docker registry to use for tagging the images.
+ -A DOCKER-BUILD-ARG
+    Pass an argument to the docker build.
+EOF
+}
+
+docker_build_main()
+{
+    local OPTIND OPTION OPTARG
+    local image docker_build_cacheflag docker_argv
+
+    docker_build_cacheflag=''
+    docker_build_argv=''
+    OPTIND=1
+
+    while getopts 'nr:v:hA:' OPTION; do
+        case ${OPTION} in
+            h)	docker_build_usage; exit 0;;
+            n)	docker_build_cacheflag="--no-cache";;
+            r)	docker_build_registry="${OPTARG}";;
+            v)	docker_build_version="${OPTARG}";;
+            A)	docker_build_argv="${docker_build_argv}${docker_build_argv:+ }--build-arg ${OPTARG}";;
+            *)	docker_build_usage; failwith -x 70 'docker_build: %s: Unsupported option.' "${OPTION}";;
+        esac
+    done
+    shift $(expr ${OPTIND} - 1)
+
+    if [ $# -eq 0 ]; then
+	set -- 'linux'
+    fi
+
+    for image in "$@"; do
+        docker_build_image "${image}"
+    done
+}
+
+docker_build_main "$@"
+
+### End of file `docker_build'
