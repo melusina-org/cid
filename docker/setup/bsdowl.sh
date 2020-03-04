@@ -1,5 +1,3 @@
-### users.conf -- Users for El Cid
-
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
 #
@@ -13,26 +11,21 @@
 # "https://cecill.info/licences/Licence_CeCILL-B_V1-en.txt"
 
 
-[group "go"]
-comment = "Continuous Delivery"
-gid = 1000
+env DEBIAN_FRONTEND=noninteractive apt-get install -y\
+ autoconf\
+ bmake\
+ bsdtar\
+ curl
 
-[user "go"]
-comment = "Continuous Delivery"
-homedir = /home/go
-createhome = yes
-uid = 1000
-gid = 1000
+install -d -o cid -g cid -m 700 /usr/local/src
+su -l cid -c '
+ set -e
+ cd /usr/local/src
+ curl -L https://github.com/michipili/bsdowl/archive/master.zip | bsdtar xf -
+ cd bsdowl-master
+ autoconf
+ ./configure --prefix=/usr/local --with-credentials=sudo
+ bmake all
+'
 
-[user "cid"]
-comment = "Continuous Integration and Delivery Suite"
-homedir = /home/cid
-createhome = yes
-
-[user "git"]
-comment = "Version Control System"
-homedir = /var/git
-createhome = yes
-system = yes
-shell = /usr/sbin/nologin
-additionalusers = www-data
+( cd /usr/local/src/bsdowl-master && bmake install )

@@ -1,0 +1,7 @@
+autom4te.cache/
+autoconf.sh
+config.log
+config.status
+configure
+Makefile.config
+Makefile.local

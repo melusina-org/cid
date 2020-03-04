@@ -100,11 +100,12 @@ users_config()
 users_db()
 {
     git config --file "${users_configfile}" --list\
-        | awk -F '[.]' '
-!($1 in s){
-   s[$1]
-   u[n++] = $1
+        | awk -F '[.]' -v "key=$1" '
+($1 == key) && !($2 in s){
+   s[$2]
+   u[n++] = $2
 }
+
 END {
   for (i = 0; i < n; ++i) {
     print u[i]
@@ -113,17 +114,35 @@ END {
 '
 }
 
+groups_make()
+{
+    local groupname gid gidflag __varname__
+    groupname="$1"
+
+    for __varname__ in gid; do
+        eval ${__varname__}=\$\(users_config "group.$1.${__varname__}"\)
+    done
+
+    if [ -n "${gid}" ]; then
+	gidflag="--gid ${gid}"
+    fi
+
+    groupadd\
+	${gidflag}\
+        "${groupname}"
+}
+
 users_make()
 {
-    local username comment homedir createhome system shell
+    local username comment homedir createhome system shell uid gid
     local additionalusers additionalgroups
-    local systemflag createhomeflag
+    local systemflag createhomeflag uidflag groupflag
     local additional
     local __varname__
 
     username="$1"
-    for __varname__ in comment homedir createhome system shell additionalusers additionalgroups; do
-        eval ${__varname__}=\$\(users_config "$1.${__varname__}"\)
+    for __varname__ in comment homedir createhome system shell additionalusers additionalgroups uid gid; do
+        eval ${__varname__}=\$\(users_config "user.$1.${__varname__}"\)
     done
 
     if is_true "${createhome}"; then
@@ -138,13 +157,24 @@ users_make()
         systemflag=''
     fi
 
+    if [ -n "${uid}" ]; then
+	uidflag="--uid ${uid}"
+    fi
+
+    if [ -n "${gid}" ]; then
+	groupflag="--gid ${gid}"
+    else
+	groupflag='--user-group'
+    fi
+
 
     useradd\
         --comment "${comment:-I am too lazy to document my users}"\
-        --user-group\
         --home-dir "${homedir:-/home/$1}"\
         ${systemflag}\
         ${createhomeflag}\
+	${uidflag}\
+	${groupflag}\
         --shell "${shell:-/bin/bash}"\
         ${additionalgroups:+--groups }${additionalgroups}\
         "${username}"
@@ -158,9 +188,13 @@ users_make()
 
 users_main()
 {
-    local username
+    local groupname username
 
-    users_db | while read username; do
+    users_db 'group' | while read groupname; do
+        groups_make "${groupname}" || exit 1
+    done || exit 1
+
+    users_db 'user' | while read username; do
         users_make "${username}" || exit 1
     done || exit 1
 

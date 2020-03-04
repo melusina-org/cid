@@ -1,4 +1,4 @@
-### users.conf -- Users for El Cid
+### tenant.sh -- Functions for tenants
 
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
@@ -13,26 +13,27 @@
 # "https://cecill.info/licences/Licence_CeCILL-B_V1-en.txt"
 
 
-[group "go"]
-comment = "Continuous Delivery"
-gid = 1000
+tenant_name()
+{
+    if config 'tenant.name'; then
+	:
+    else
+	printf 'local.cid'
+    fi
+}
 
-[user "go"]
-comment = "Continuous Delivery"
-homedir = /home/go
-createhome = yes
-uid = 1000
-gid = 1000
 
-[user "cid"]
-comment = "Continuous Integration and Delivery Suite"
-homedir = /home/cid
-createhome = yes
+tenant_backupdir()
+{
+    if config 'tenant.backupdir'; then
+	:
+    else
+	printf '%s/backups' $(tenant_dir)
+    fi
+}
 
-[user "git"]
-comment = "Version Control System"
-homedir = /var/git
-createhome = yes
-system = yes
-shell = /usr/sbin/nologin
-additionalusers = www-data
+
+tenant_dir()
+{
+    printf '%s' "${CID_TENANT_DIR}"
+}

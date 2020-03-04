@@ -1,0 +1,221 @@
+#!/bin/sh
+
+### admin_console -- Start the Admin Console
+
+# El Cid (https://github.com/melusina-conseil/cid)
+# This file is part of El Cid.
+#
+# Copyright © 2017–2022 Michaël Le Barbier
+# All rights reserved.
+
+# This software is governed by the CeCILL-B license under French law and
+# abiding by the rules of distribution of free software.  You can  use,
+# modify and/ or redistribute the software under the terms of the CeCILL-B
+# license as circulated by CEA, CNRS and INRIA at the following URL
+# "https://cecill.info/licences/Licence_CeCILL-B_V1-en.txt"
+
+
+: ${TOPLEVELDIR:=$(git rev-parse --show-toplevel)}
+: ${TENANTBASEDIR:=${HOME}/Library/com.github.michipili.cid}
+: ${subrdir:=${TOPLEVELDIR}/subr}
+: ${servicedir:=${TOPLEVELDIR}/service}
+: ${package:='cid'}
+: ${dockerimage:='cid/admin'}
+: ${admin_user:='root'}
+: ${admin_interaction:=confirm}
+
+. "${subrdir}/stdlib.sh"
+. "${subrdir}/config.sh"
+. "${subrdir}/service.sh"
+. "${subrdir}/tenant.sh"
+
+_admin_docker()
+{
+    docker run --rm\
+           --user "${_admin_user}"\
+           $(_admin_docker__volume)\
+           --volume "$(tenant_backupdir):/opt/cid/var/backups"\
+           --volume "$(tenant_dir):/opt/cid/var/config"\
+           "$@"
+}
+
+_admin_docker__volume()
+{
+    service_volume_database "$(tenant_name)" | awk -F '|' '{printf(" --volume %s:/service/%s/%s", $1, $3, $2)}'
+}
+
+_admin_shell()
+{
+    _admin_docker -it "${dockerimage}" bash -l
+}
+
+_admin_devshell()
+{
+    _admin_docker\
+        --volume "${TOPLEVELDIR}:/opt/cid/var/src/cid"\
+        -it "${dockerimage}" bash -l
+}
+
+_admin_dump()
+{
+    if ! [ -d "$(tenant_backupdir)" ]; then
+        wlog 'Error' 'admin: %s: The backup directory does not exist.' "$(tenant_backupdir)"
+        exit 1
+    fi
+    _admin_docker -it "${dockerimage}" cid_dump
+}
+
+_admin_restore()
+{
+    local dumpfile shortname
+    case "$1" in
+        /*)
+            dumpfile="$1"
+            ;;
+        *)
+            dumpfile="$(pwd -P)/$1"
+            ;;
+    esac
+    shortname="${dumpfile##*/}"
+    if [ -f "${dumpfile}" ]; then
+        _admin_docker\
+            --volume "${dumpfile}:/var/backups/${shortname}:ro"\
+            -it "${dockerimage}" cid_restore "/var/backups/${shortname}"
+    else
+        failwith '%s: Cannot restore, file not found.' "${dumpfile}"
+    fi
+}
+
+_admin_rm()
+{
+    case "${_admin_interaction}" in
+        confirm)
+            confirm '%s: Remove data volumes for this tenant.' "$(tenant_name)";;
+        yes)
+            : 'NOP'
+            ;;
+        no)
+            failwith '_admin_rm: Interaction set to no, abort.'
+            ;;
+    esac
+
+    service_volume_list "$(tenant_name)" | awk -F '|' '
+BEGIN {
+  docker_volume_ls = sprintf("docker volume ls --format \047{{.Name}}\047")
+  while((docker_volume_ls | getline v) > 0 ) {
+    volume[v]
+  }
+}
+
+$1 in volume
+'\
+	| xargs docker volume rm
+}
+
+_admin_maybe_docker_volume_create()
+{
+    if ( docker volume ls --format '{{.Name}}' | grep -q -F "$1" ); then
+	:
+    else
+	wlog 'Info' '%s: Create docker volume.' "$1"
+	docker volume create "$1" 1>&-
+    fi
+}
+
+
+_admin_configure()
+{
+    local volume
+
+    service_wizard
+
+    service_volume_list "$(tenant_name)" | while read volume; do
+        _admin_maybe_docker_volume_create "${volume}"
+    done
+
+    _admin_docker -it "${dockerimage}" cid_configure
+}
+
+_admin_test()
+{
+    :
+    service_volume_database "$(tenant_name)"
+}
+
+_admin_usage()
+{
+    iconv -f utf-8 <<EOF
+Usage: admin_console [-h] [-d]
+ Administrator console
+Options:
+ -h Display this help message.
+ -d Start development shell.
+ -l List configured tenants.
+ -B Batch mode.
+Environment:
+ This admin console requires the CID_TENANT_DIR to be set. See tenant_shell.
+EOF
+}
+
+_admin_ls()
+{
+    if [ -d "${TENANTBASEDIR}" ] && [ -x "${TENANTBASEDIR}" ]; then
+	(cd "${TENANTBASEDIR}" && ls -1)
+    fi
+}
+
+
+_admin_main()
+{
+    local OPTIND OPTION OPTARG
+
+    subcommand='shell'
+    OPTIND=1
+
+    while getopts 'Bb:c:dlh' OPTION; do
+        case ${OPTION} in
+            c)	config_dir="${OPTARG%/}";;
+            b)	config_backupdir="${OPTARG}";;
+	    B)	admin_interaction='yes';;
+            d)	subcommand='devshell';;
+            l)	subcommand='ls';;
+            h)	_admin_usage; exit 0;;
+            *)	failwith -x 64 '_admin_console: %s: Unsupported option.' "${OPTION}";;
+        esac
+    done
+    shift $(expr ${OPTIND} - 1)
+
+    service_load
+
+    case "$#-$1" in
+	1-ls)
+            subcommand="$1"
+            shift
+	    ;;
+        1-configure|1-dump|2-restore|1-rm|1-shell|1-devshell|1-test)
+	    : ${CID_TENANT_DIR:?This admin console requires the CID_TENANT_DIR to be set. See tenant_shell.}
+	    config_file="${CID_TENANT_DIR}/cid.conf"
+            subcommand="$1"
+            shift    
+            ;;
+	0-)
+	    : ${CID_TENANT_DIR:?This admin console requires the CID_TENANT_DIR to be set. See tenant_shell.}
+	    config_file="${CID_TENANT_DIR}/cid.conf"
+            shift    
+            ;;
+	*)
+	    _admin_usage
+	    exit 64
+	    ;;
+    esac
+
+    wlog 'Debug' "CID_TENANT_DIR='%s'" "${CID_TENANT_DIR}"
+    wlog 'Debug' "$(tenant_name)=%s" "$(tenant_name)" 
+    wlog 'Debug' "subcommand='%s'" "${subcommand}"
+    
+    _admin_${subcommand} "$@"
+}
+
+_admin_main "$@"
+
+### End of file `admin_console'

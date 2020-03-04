@@ -106,7 +106,7 @@ docker_build_main()
     shift $(expr ${OPTIND} - 1)
 
     if [ $# -eq 0 ]; then
-	set -- 'linux'
+	set -- 'linux' 'admin' 'gocd_server' 'gocd_agent' 'reverseproxy'
     fi
 
     for image in "$@"; do

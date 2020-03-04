@@ -1,4 +1,4 @@
-### users.conf -- Users for El Cid
+### Makefile -- Shell Standard Library
 
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
@@ -13,26 +13,14 @@
 # "https://cecill.info/licences/Licence_CeCILL-B_V1-en.txt"
 
 
-[group "go"]
-comment = "Continuous Delivery"
-gid = 1000
+PACKAGE=		subr
 
-[user "go"]
-comment = "Continuous Delivery"
-homedir = /home/go
-createhome = yes
-uid = 1000
-gid = 1000
+LIBRARY=		stdlib.sh
+LIBRARY+=		autoconf.sh
+LIBRARY+=		config.sh
+LIBRARY+=		service.sh
+LIBRARY+=		tenant.sh
 
-[user "cid"]
-comment = "Continuous Integration and Delivery Suite"
-homedir = /home/cid
-createhome = yes
+.include "shell.lib.mk"
 
-[user "git"]
-comment = "Version Control System"
-homedir = /var/git
-createhome = yes
-system = yes
-shell = /usr/sbin/nologin
-additionalusers = www-data
+### End of file `Makefile'

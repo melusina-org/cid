@@ -1,4 +1,4 @@
-### users.conf -- Users for El Cid
+### assert_docker_images.sh -- Assert that the docker images have been built
 
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
@@ -13,26 +13,19 @@
 # "https://cecill.info/licences/Licence_CeCILL-B_V1-en.txt"
 
 
-[group "go"]
-comment = "Continuous Delivery"
-gid = 1000
+test_docker_image()
+{
+    docker image ls | grep -q -F "$1"
+}
 
-[user "go"]
-comment = "Continuous Delivery"
-homedir = /home/go
-createhome = yes
-uid = 1000
-gid = 1000
+test_main()
+{
+    for service in 'linux' 'admin' 'gocd_server' 'gocd_agent'; do
+	assert_that "the docker image 'cid/%s' has been built" "${service}"
+	assert test_docker_image "cid/${service}"
+    done
+}
 
-[user "cid"]
-comment = "Continuous Integration and Delivery Suite"
-homedir = /home/cid
-createhome = yes
+test_main
 
-[user "git"]
-comment = "Version Control System"
-homedir = /var/git
-createhome = yes
-system = yes
-shell = /usr/sbin/nologin
-additionalusers = www-data
+### End of file `assert_docker_images.sh'

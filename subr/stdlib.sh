@@ -135,7 +135,7 @@ confirm()
 #
 # A newline is automatically added to the output.
 
-wlog_level='Info'
+: ${wlog_level:='Info'}
 
 wlog__numeric_level()
 {
@@ -209,7 +209,7 @@ logfile()
 tmpfile_initializer()
 {
     local _tmpfile _script
-    _tmpfile=$(mktemp -t "${PACKAGE}-XXXXXX")
+    _tmpfile=$(mktemp -t "${package}-XXXXXX")
     _script=$(printf 'rm -f "%s"' "${_tmpfile}")
     trap "${_script}" INT TERM EXIT
     eval $1="${_tmpfile}"
@@ -230,7 +230,7 @@ tmpdir_initializer()
     export tmpdir
 }
 
-# tmpdir_initializer
+# tmpdir_reclaim
 #  Reclaim the created temporary directory
 
 tmpdir_reclaim()

@@ -1,4 +1,4 @@
-### users.conf -- Users for El Cid
+### admin.sh -- Install admin programs in a docker image
 
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
@@ -13,26 +13,18 @@
 # "https://cecill.info/licences/Licence_CeCILL-B_V1-en.txt"
 
 
-[group "go"]
-comment = "Continuous Delivery"
-gid = 1000
+set -e
 
-[user "go"]
-comment = "Continuous Delivery"
-homedir = /home/go
-createhome = yes
-uid = 1000
-gid = 1000
+su -l cid -c '
+ set -e
+ cd /opt/cid/var/src/cid/admin
+ autoconf
+ ./configure --prefix=/opt/cid
+ bmake -I/usr/local/share/bsdowl all
+'
 
-[user "cid"]
-comment = "Continuous Integration and Delivery Suite"
-homedir = /home/cid
-createhome = yes
+( cd /opt/cid/var/src/cid/admin && bmake -I/usr/local/share/bsdowl install )
 
-[user "git"]
-comment = "Version Control System"
-homedir = /var/git
-createhome = yes
-system = yes
-shell = /usr/sbin/nologin
-additionalusers = www-data
+cp -R /opt/cid/var/src/cid/service  /opt/cid/share/service
+
+### End of file `admin.sh'

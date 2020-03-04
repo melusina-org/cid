@@ -1,4 +1,4 @@
-### users.conf -- Users for El Cid
+### assert.sh -- A library to build test cases
 
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
@@ -13,26 +13,35 @@
 # "https://cecill.info/licences/Licence_CeCILL-B_V1-en.txt"
 
 
-[group "go"]
-comment = "Continuous Delivery"
-gid = 1000
+assert_outcome='success'
 
-[user "go"]
-comment = "Continuous Delivery"
-homedir = /home/go
-createhome = yes
-uid = 1000
-gid = 1000
+assert_that()
+{
+    printf 'Assert that '
+    printf "$@"
+    printf ' … '
+}
 
-[user "cid"]
-comment = "Continuous Integration and Delivery Suite"
-homedir = /home/cid
-createhome = yes
+assert()
+{
+    if "$@"; then
+	printf 'yes\n'
+    else
+	printf 'no\n'
+	assert_outcome='failure'
+    fi
+}
 
-[user "git"]
-comment = "Version Control System"
-homedir = /var/git
-createhome = yes
-system = yes
-shell = /usr/sbin/nologin
-additionalusers = www-data
+assert_outcome()
+{
+    case "${assert_outcome}" in
+	failure)
+	    exit 1
+	    ;;
+	*)
+	    exit 0
+	    ;;
+    esac
+}
+
+### End of file `assert.sh'

@@ -1,0 +1,132 @@
+### autoconf.sh -- Compile-Time Configuration for El Cid
+
+# El Cid (https://github.com/melusina-conseil/cid)
+# This file is part of El Cid.
+#
+# Copyright © 2017–2022 Michaël Le Barbier
+# All rights reserved.
+
+# This software is governed by the CeCILL-B license under French law and
+# abiding by the rules of distribution of free software.  You can  use,
+# modify and/ or redistribute the software under the terms of the CeCILL-B
+# license as circulated by CEA, CNRS and INRIA at the following URL
+# "https://cecill.info/licences/Licence_CeCILL-B_V1-en.txt"
+
+
+### SYNOPSIS
+
+# : ${subrdir:?}
+# . "${subrdir}/autoconf.sh"
+
+# We implement symbolic directory names following the GNU coding
+# standards.  Most of the comments are citations from the GNU coding
+# standards:
+#
+#   The GNU coding standards, last updated September 13, 2013.
+#   http://www.gnu.org/prep/standards/html_node/index.html
+
+
+### IMPLEMENTATION
+
+# These first two variables set the root for the installation. All the
+# other installation directories should be subdirectories of one of
+# these two, and nothing should be directly installed into these two
+# directories.
+
+PACKAGE='cid'
+
+#
+# Directories
+#
+
+# prefix
+#  Installation prefix for machine independant files
+: ${prefix:=@prefix@}
+
+
+# exec_prefix
+#  Installation prefix for machine dependant data
+: ${exec_prefix:=@exec_prefix@}
+
+
+# bindir
+#  Destination of executable programs that users can run
+: ${bindir:=@bindir@}
+
+
+# sbindir
+#  Destination of executable programs that admins can run
+: ${sbindir:=@sbindir@}
+
+
+# libexecdir
+#  Destination for programs to be run by other programs
+: ${libexecdir:=@libexecdir@/${PACKAGE}}
+
+
+# datarootdir
+#  Subsystem where machine-independant files are stored
+#
+# This variable is useful to define mandir, etc. but not on its own.
+: ${datarootdir:=@datarootdir@}
+
+
+# datadir
+#  Destination of idiosyncratic read-only architecture-independent data files
+: ${datadir:=@datarootdir@/${PACKAGE}}
+
+
+# sysconfdir
+#  Destination of read-only data files that pertain to a single machine
+#
+# To put it another way, this is where host-specific configuration
+#  should go.
+: ${sysconfidr:=@sysconfdir@}
+
+
+# sharedstatedir
+#  Destination of host-independent files holding program state
+: ${sharedstatedir:=@sharedstatedir@/${PACKAGE}}
+
+
+# localstatedir
+#  Destination of host-specific files holding program state
+: ${localstatedir:=@localstatedir@/${PACKAGE}}
+
+
+# runstatedir
+#  Destination of host-specific files holding volatile program state
+: ${runstatedir:=@runstatedir@/${PACKAGE}}
+
+
+# docdir
+#  Destination of documentation files
+#
+# This is not for info files, that are stored somewhere else.
+: ${docdir:=@docdir@}
+
+
+# infodir
+#  Destination of info files
+: ${infodir:=@infodir@}
+
+
+# libdir
+#  Destination of object files and libraries of object code
+: ${libdir:=@libdir@}
+
+
+# localedir
+#  Destination of locale-specific message catalogs
+: ${localedir:=@localedir@}
+
+#
+# Programs
+#
+
+: ${prog_cpio:=@prog_cpio@}
+: ${prog_docker:=@prog_docker@}
+: ${prog_docker_compose:=@prog_docker_compose@}
+: ${prog_git:=@prog_git@}
+
+### End of file `autoconf.sh'

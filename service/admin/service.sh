@@ -1,4 +1,4 @@
-### users.conf -- Users for El Cid
+### service.sh -- Service Definitions for admin
 
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
@@ -13,26 +13,14 @@
 # "https://cecill.info/licences/Licence_CeCILL-B_V1-en.txt"
 
 
-[group "go"]
-comment = "Continuous Delivery"
-gid = 1000
+admin_wizard()
+{
+    local backupdir
+    backupdir="$(tenant_backupdir)"
 
-[user "go"]
-comment = "Continuous Delivery"
-homedir = /home/go
-createhome = yes
-uid = 1000
-gid = 1000
+    if [ ! -d "${backupdir}" ]; then
+	install -d "${backupdir}"
+    fi
+}
 
-[user "cid"]
-comment = "Continuous Integration and Delivery Suite"
-homedir = /home/cid
-createhome = yes
-
-[user "git"]
-comment = "Version Control System"
-homedir = /var/git
-createhome = yes
-system = yes
-shell = /usr/sbin/nologin
-additionalusers = www-data
+### End of file `service.sh'

@@ -1,0 +1,202 @@
+#!/bin/sh
+
+### test_console -- Start the Admin Console
+
+# El Cid (https://github.com/melusina-conseil/cid)
+# This file is part of El Cid.
+#
+# Copyright © 2017–2022 Michaël Le Barbier
+# All rights reserved.
+
+# This software is governed by the CeCILL-B license under French law and
+# abiding by the rules of distribution of free software.  You can  use,
+# modify and/ or redistribute the software under the terms of the CeCILL-B
+# license as circulated by CEA, CNRS and INRIA at the following URL
+# "https://cecill.info/licences/Licence_CeCILL-B_V1-en.txt"
+
+
+: ${TOPLEVELDIR:=$(git rev-parse --show-toplevel)}
+: ${TENANTBASEDIR:=${HOME}/Library/com.github.michipili.cid}
+: ${subrdir:=${TOPLEVELDIR}/subr}
+: ${testdir:=${TOPLEVELDIR}/test}
+: ${tenant:='local.test.XXXX'}
+
+. "${subrdir}/stdlib.sh"
+. "${subrdir}/config.sh"
+
+test_create_tenant()
+{
+    tenant="local.test.$$"
+    tenantdir=$(mktemp -d "/tmp/${tenant}.XXXXXX")
+    wlog 'Debug' 'tmpdir_initializer: %s' "${tenantdir}"
+    trap 'test_reclaim_tenant' INT TERM EXIT
+
+    sed -e "
+s/name = local[.]cid/name = ${tenant}/
+" < "${TOPLEVELDIR}/local/cid.conf" > "${tenantdir}/cid.conf"
+}
+
+test_reclaim_tenant()
+{
+    wlog 'Debug' 'test_reclaim_tenant: %s' "${tenant}"
+    rm -r -f "${tenantdir:?}"
+}
+
+test_sh()
+(
+    local testname rootname
+    testname="$1"
+    shift
+    rootname="$1"
+    rootname="${rootname##*/}"
+    rootname="${rootname%.sh}"
+
+    wlog_level='Debug'
+    export wlog_level
+
+    sh -x "$@"\
+       1> "${tenantdir}/${testname}_${rootname}.1.log"\
+       2> "${tenantdir}/${testname}_${rootname}.2.log"
+)
+
+test_print_debug_information()
+{
+    local logfile
+
+    printf 'CID_TENANT_DIR=%s\n' "${CID_TENANT_DIR}"
+    printf '$(config tenant.name)=%s\n' "$(config tenant.name)"
+
+    test_dumpfile "${tenantdir}/cid.conf"
+
+    for logfile in "${tenantdir}/$1"_*.[12].log; do
+	test_dumpfile "${logfile}"
+    done
+}
+
+test_dumpfile()
+{
+    printf -- '---- BEGIN \047%s\047 ----\n' "$1"
+    cat "$1"
+    printf -- '---- END \047%s\047 ----\n' "$1"
+}
+
+test_run1()
+(
+    test_create_tenant
+    CID_TENANT_DIR="${tenantdir}"
+    export CID_TENANT_DIR
+
+    config_file="${CID_TENANT_DIR}/cid.conf"
+
+    if [ -r "${testdir}/$1/setup.sh" ]; then
+	wlog 'Debug' '%s: Setup' "$1"
+	test_sh "$1" "${testdir}/$1/setup.sh"
+    fi
+
+    if [ -r "${testdir}/$1/journey.sh" ]; then
+	wlog 'Debug' '%s: Journey' "$1"
+	test_sh "$1" "${testdir}/$1/journey.sh"
+    fi
+
+    printf '\n*** Run assertions\n'
+    for assertion in "${testdir}/$1/assert_"*.sh; do
+	wlog 'Debug' '%s: Assertion \047%s\047' "$1" "${assertion}"
+	if ( . "${subrdir}/assert.sh" ; . "${assertion}" ; assert_outcome ); then
+	    :
+	else
+	    sleep 2
+	    test_print_debug_information "$1"
+	    exit 1
+	fi
+    done    
+
+    if [ -r "${testdir}/$1/cleanup.sh" ]; then
+	wlog 'Debug' '%s: Cleanup' "$1"
+	test_sh "$1" "${testdir}/$1/cleanup.sh"
+    fi
+
+)
+
+test_run()
+{
+    test_run1 quickstart
+}
+
+test_assertion_name()
+{
+    printf '%s' "$1" | sed -e '
+s|^.*/assert_||
+s|[.]sh$||
+s|_| |g
+'
+}
+
+test_print_assertion_prologue()
+{
+    printf 'Assert that %s … ' $(test_assertion_name "$1")
+}
+
+test_print_assertion_epilogue()
+{
+    case "$1" in
+	SUCCESS)
+	    printf 'yes\n'
+	    ;;
+	failure)
+	    printf 'no\n'
+	    ;;
+	*)
+	    printf '?\n'
+	    ;;
+    esac
+}
+
+test_usage()
+{
+    iconv -f utf-8 <<EOF
+Usage: test_console [-h] [-d]
+ Test console
+Options:
+ -h Display this help message.
+ -l List test cases.
+Environment:
+ This admin console requires the CID_TENANT_DIR to be set. See tenant_shell.
+EOF
+}
+
+test_main()
+{
+    local OPTIND OPTION OPTARG
+
+    subcommand='run'
+    OPTIND=1
+
+    while getopts 'hl' OPTION; do
+        case ${OPTION} in
+            l)	subcommand='ls';;
+            h)	test_usage; exit 0;;
+            *)	failwith -x 64 'test_console: %s: Unsupported option.' "${OPTION}";;
+        esac
+    done
+    shift $(expr ${OPTIND} - 1)
+
+    case "$#-$1" in
+	1-ls|1-run)
+            subcommand="$1"
+            shift
+	    ;;
+	0-)
+            subcommand='run'
+            ;;
+	*)
+	    test_usage
+	    exit 64
+	    ;;
+    esac
+
+    test_${subcommand} "$@"
+}
+
+test_main "$@"
+
+### End of file `test_console'

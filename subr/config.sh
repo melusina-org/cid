@@ -13,7 +13,6 @@
 # "https://cecill.info/licences/Licence_CeCILL-B_V1-en.txt"
 
 
-: ${config_service_list:=gitserver trac jenkins}
 : ${config_file:=/dev/null}
 
 # config CONFIGURATION-KEY
