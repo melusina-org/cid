@@ -1,0 +1,90 @@
+#!/bin/sh
+
+### docker_compose -- Tool to run docker compose
+
+# El Cid (https://github.com/melusina-conseil/cid)
+# This file is part of El Cid.
+#
+# Copyright © 2017–2022 Michaël Le Barbier
+# All rights reserved.
+
+# This software is governed by the CeCILL-B license under French law and
+# abiding by the rules of distribution of free software.  You can  use,
+# modify and/ or redistribute the software under the terms of the CeCILL-B
+# license as circulated by CEA, CNRS and INRIA at the following URL
+# "https://cecill.info/licences/Licence_CeCILL-B_V1-en.txt"
+
+
+: ${TOPLEVELDIR:=$(git rev-parse --show-toplevel)}
+: ${package:=cid}
+: ${packagedir:=/cid}
+: ${prefix:=/usr/local}
+: ${cachedir:=${prefix}/var/cache${packagedir}}
+: ${subrdir:=${TOPLEVELDIR}/subr}
+: ${composedir:=${TOPLEVELDIR}/docker/compose}
+
+. "${subrdir}/stdlib.sh"
+. "${subrdir}/config.sh"
+. "${subrdir}/tenant.sh"
+
+: ${compose_project:=NOT-SET}
+: ${compose_environment:=docker-compose}
+
+#
+# Main
+#
+
+compose_project()
+{
+    if [ "${compose_project}" = 'NOT-SET' ]; then
+	printf '%s' "$(tenant_name)"
+    else
+	printf '%s' "${compose_project}"
+    fi
+}
+
+compose_file()
+{
+    if [ -f "${CID_TENANT_DIR}/${compose_environment}.yml" ]; then
+	printf '%s' "${CID_TENANT_DIR}/${compose_environment}.yml"
+    elif [ -f "${composedir}/${compose_environment}.yml" ]; then
+	printf '%s' "${composedir}/${compose_environment}.yml"
+    else
+	failwith '%s: Nothing is known about this docker environment' "${compose_environment}"
+    fi	   
+}
+
+compose_main()
+{
+    local OPTIND OPTION OPTARG
+
+    status=1
+    OPTIND=1
+
+    while getopts 'hp:e:' OPTION; do
+        case ${OPTION} in
+            e)	compose_environment="${OPTARG}";;
+	    p)	compose_project="${OPTARG}";;
+            *)	failwith -x 70 'docker_compose: %s: Unsupported option.' "${OPTION}";;
+        esac
+    done
+    shift $(expr ${OPTIND} - 1)
+
+    (
+	: ${CID_TENANT_DIR:?This docker-compose requires the CID_TENANT_DIR to be set. See tenant_shell.}
+	config_file="${CID_TENANT_DIR}/cid.conf"
+
+	CID_TENANT_NAME="$(tenant_name)"
+	
+	export CID_TENANT_DIR
+	export CID_TENANT_NAME
+        exec docker-compose\
+             --file "$(compose_file)"\
+             --project-name "$(compose_project)"\
+             "$@"
+    )
+}
+
+compose_main "$@"
+
+### End of file `docker_compose'
