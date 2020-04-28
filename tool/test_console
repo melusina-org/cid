@@ -159,8 +159,6 @@ Usage: test_console [-h] [-d]
 Options:
  -h Display this help message.
  -l List test cases.
-Environment:
- This admin console requires the CID_TENANT_DIR to be set. See tenant_shell.
 EOF
 }
 

@@ -1,0 +1,62 @@
+version: '3.1'
+
+services:
+  reverseproxy:
+    image: cid/reverseproxy
+    ports:
+      - "80:80"
+      - "443:443"
+    secrets:
+      - bundle.pem
+    depends_on:
+      - gocd_server
+      - nevergreen
+      - trac
+  nevergreen:
+    image: buildcanariesteam/nevergreen:3.2.0
+  trac:
+    image: cid/trac
+    volumes:
+      - 'trac_data:/var/trac'
+  gocd_server:
+    image: 'cid/gocd_server'
+    volumes:
+      - 'gocd_server_home:/home/go'
+      - 'gocd_server_data:/godata'
+      - "${CID_TENANT_DIR}/ssh/:/home/go/.ssh/"
+  docker:
+    image: docker:stable-dind
+    environment:
+      DOCKER_TLS_CERTDIR: ""
+    privileged: true
+  gocd_agent:
+    image: "cid/gocd_agent"
+    depends_on:
+      - gocd_server
+    environment:
+      GO_AGENT_SYSTEM_PROPERTIES: '-Xms1024m -Xmx1024m'
+      GO_SERVER_URL: https://gocd_server:8154/go
+      DOCKER_HOST: tcp://docker:2375
+    volumes:
+      - 'gocd_agent_home:/home/go'
+      - 'gocd_agent_data:/godata'
+      - "${CID_TENANT_DIR}/ssh/:/home/go/.ssh/"
+volumes:
+  gocd_server_home:
+    external:
+      name: "${CID_TENANT_NAME}.gocd_server_home"
+  gocd_server_data:
+    external:
+      name: "${CID_TENANT_NAME}.gocd_server_data"
+  gocd_agent_home:
+    external:
+      name: "${CID_TENANT_NAME}.gocd_agent_home"
+  gocd_agent_data:
+    external:
+      name: "${CID_TENANT_NAME}.gocd_agent_data"
+  trac_data:
+    external:
+      name: "${CID_TENANT_NAME}.trac_data"
+secrets:
+  bundle.pem:
+    file: "${CID_TENANT_DIR}/ssl/${CID_TENANT_NAME}.bundle.pem"

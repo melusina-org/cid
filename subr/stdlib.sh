@@ -92,11 +92,7 @@ failwith()
 	    :
     esac
 
-    {
-        printf 'Failure: '
-        printf "$@"
-        printf '\n'
-    } 1>&2
+    wlog 'Error' "$@"
     exit "${status}"
 }
 

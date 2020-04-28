@@ -1,4 +1,4 @@
-### cleanup.sh -- Assert that the wizard and configuration are working
+### Dockerfile -- Trac System for El Cid
 
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
@@ -13,6 +13,15 @@
 # "https://cecill.info/licences/Licence_CeCILL-B_V1-en.txt"
 
 
-sh -x ./tool/admin_console -B rm
+ARG CID_LINUX_REFERENCE=latest
+FROM cid/linux:${CID_LINUX_REFERENCE}
 
-### End of file `cleanup.sh'
+COPY ./docker/setup/trac.sh /root/setup/
+RUN sh /root/setup/trac.sh
+
+ADD ./service/trac/entrypoint /usr/local/bin/entrypoint
+
+ENTRYPOINT ["/usr/local/bin/entrypoint"]
+VOLUME ["/var/git","/var/www","/var/trac"]
+
+### End of file `Dockerfile'

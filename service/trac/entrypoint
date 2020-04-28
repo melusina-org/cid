@@ -1,4 +1,6 @@
-### cleanup.sh -- Assert that the wizard and configuration are working
+#!/bin/sh
+
+### entrypoint -- Entrypoint for trac
 
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
@@ -13,6 +15,21 @@
 # "https://cecill.info/licences/Licence_CeCILL-B_V1-en.txt"
 
 
-sh -x ./tool/admin_console -B rm
+run_apache()
+{
+    /usr/sbin/apache2ctl -DFOREGROUND
+}
 
-### End of file `cleanup.sh'
+main()
+{
+    if [ $# -gt 0 ]; then
+	exec "$@"
+    else
+	run_apache
+    fi
+}
+
+main "$@"
+
+### End of file `entrypoint'
+

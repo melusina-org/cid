@@ -1,4 +1,4 @@
-### cleanup.sh -- Assert that the wizard and configuration are working
+### Makefile -- El Cid tools
 
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
@@ -13,6 +13,15 @@
 # "https://cecill.info/licences/Licence_CeCILL-B_V1-en.txt"
 
 
-sh -x ./tool/admin_console -B rm
+PROGRAM=		cid_configure.sh
+PROGRAM+=		cid_console.sh
+PROGRAM+=		cid_dump.sh
+PROGRAM+=		cid_restore.sh
 
-### End of file `cleanup.sh'
+.for githook in ${PROGRAM:Mcid_githook_*}
+BINDIR.${githook:R}=	${libexecdir}/cid
+.endfor
+
+.include "shell.prog.mk"
+
+### End of file `Makefile'

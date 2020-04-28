@@ -16,14 +16,14 @@
 gocd_agent_volume_database()
 {
     cat <<'EOF'
-gocd_agent_home|/home/go
-gocd_agent_data|/godata
+gocd_agent_home|/var/gocd_agent/home/go
+gocd_agent_data|/var/gocd_agent/godata
 EOF
 }
 
 gocd_agent_configure()
 {
-    chown -R go:go /service/gocd_agent/*
+    chown -R go:go /var/gocd_agent/*
 }
 
 gocd_agent_dump()
@@ -33,22 +33,26 @@ gocd_agent_dump()
 
     wlog 'Info' 'gocd_agent: Dump home directory.'
     install -d -o go -g go "${CID_NEXT_DUMPDIR}/gocd_agent/home/go"
-    ( cd "/service/gocd_agent/home/go" && find '.' | cpio -dump "${CID_NEXT_DUMPDIR}/gocd_agent/home/go" )\
-        2>&1
+    (
+	cd "/var/gocd_agent/home/go" && find '.'\
+		| cpio -dump "${CID_NEXT_DUMPDIR}/gocd_agent/home/go"
+    ) 2>&1
 
     wlog 'Info' 'gocd_agent: Dump data directory.'
     install -d -o go -g go "${CID_NEXT_DUMPDIR}/gocd_agent/godata"
-    ( cd "/service/gocd_agent/godata" && find '.' | cpio -dump "${CID_NEXT_DUMPDIR}/gocd_agent/godata" )\
-        2>&1
+    (
+	cd "/var/gocd_agent/godata" && find '.'\
+		| cpio -dump "${CID_NEXT_DUMPDIR}/gocd_agent/godata"
+    ) 2>&1
 }
 
 gocd_agent_restore()
 {
     wlog 'Info' 'gocd_agent: Restore home directory.'
-    tar xJfC "$1" '/service/gocd_agent' --strip-components 2 './gocd_agent/home/go'
+    tar xJfC "$1" '/var/gocd_agent' --strip-components 2 './gocd_agent/home/go'
 
     wlog 'Info' 'gocd_agent: Restore data directory.'
-    tar xJfC "$1" '/service/gocd_agent' --strip-components 2 './gocd_agent/godata'
+    tar xJfC "$1" '/var/gocd_agent' --strip-components 2 './gocd_agent/godata'
 }
 
 

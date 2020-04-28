@@ -117,7 +117,9 @@ service_load1()
     service_stub "$1"
     if [ -r "${servicedir}/$1/service.sh" ]; then
 	. "${servicedir}/$1/service.sh"
-    fi    
+    elif [ -r "${servicedir}/$1.sh" ]; then
+	. "${servicedir}/$1.sh"
+    fi
 }
 
 # service_volume_database [ TENANT ]
@@ -160,6 +162,17 @@ END {
 }
 ' | sort -u
 }
+
+
+# service_volume_docker_args
+#  Docker arguments to mount service volumes
+
+service_volume_docker_args()
+{
+    service_volume_database "$(tenant_name)"\
+	| awk -F '|' '{printf(" --volume %s:%s", $1, $2)}'
+}
+
 
 
 # service_admin_container_mount_point SERVICE VOLUME

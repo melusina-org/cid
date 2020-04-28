@@ -21,27 +21,27 @@
 : ${servicedir:=${TOPLEVELDIR}/service}
 : ${package:='cid'}
 : ${dockerimage:='cid/admin'}
-: ${admin_user:='root'}
-: ${admin_interaction:=confirm}
+: ${_admin_user:='root'}
+: ${_admin_interaction:=confirm}
+: ${wlog_prefix:="admin_console: $$"}
 
 . "${subrdir}/stdlib.sh"
 . "${subrdir}/config.sh"
 . "${subrdir}/service.sh"
 . "${subrdir}/tenant.sh"
 
+
 _admin_docker()
 {
     docker run --rm\
            --user "${_admin_user}"\
-           $(_admin_docker__volume)\
+	   --env "wlog_prefix=${wlog_prefix}"\
+	   --volume "${subrdir}:/opt/cid/share/subr"\
+	   --volume "${servicedir}:/opt/cid/share/service"\
+           $(service_volume_docker_args)\
            --volume "$(tenant_backupdir):/opt/cid/var/backups"\
            --volume "$(tenant_dir):/opt/cid/var/config"\
            "$@"
-}
-
-_admin_docker__volume()
-{
-    service_volume_database "$(tenant_name)" | awk -F '|' '{printf(" --volume %s:/service/%s/%s", $1, $3, $2)}'
 }
 
 _admin_shell()
@@ -59,8 +59,7 @@ _admin_devshell()
 _admin_dump()
 {
     if ! [ -d "$(tenant_backupdir)" ]; then
-        wlog 'Error' 'admin: %s: The backup directory does not exist.' "$(tenant_backupdir)"
-        exit 1
+        failwith '%s: The backup directory does not exist.' "$(tenant_backupdir)"
     fi
     _admin_docker -it "${dockerimage}" cid_dump
 }
@@ -150,14 +149,13 @@ Usage: admin_console [-h] [-d]
 Options:
  -h Display this help message.
  -d Start development shell.
- -l List configured tenants.
  -B Batch mode.
 Environment:
  This admin console requires the CID_TENANT_DIR to be set. See tenant_shell.
 EOF
 }
 
-_admin_ls()
+_admin_list_tenants()
 {
     if [ -d "${TENANTBASEDIR}" ] && [ -x "${TENANTBASEDIR}" ]; then
 	(cd "${TENANTBASEDIR}" && ls -1)
@@ -172,13 +170,12 @@ _admin_main()
     subcommand='shell'
     OPTIND=1
 
-    while getopts 'Bb:c:dlh' OPTION; do
+    while getopts 'Bb:c:dh' OPTION; do
         case ${OPTION} in
             c)	config_dir="${OPTARG%/}";;
             b)	config_backupdir="${OPTARG}";;
-	    B)	admin_interaction='yes';;
+	    B)	_admin_interaction='yes';;
             d)	subcommand='devshell';;
-            l)	subcommand='ls';;
             h)	_admin_usage; exit 0;;
             *)	failwith -x 64 '_admin_console: %s: Unsupported option.' "${OPTION}";;
         esac
@@ -188,8 +185,8 @@ _admin_main()
     service_load
 
     case "$#-$1" in
-	1-ls)
-            subcommand="$1"
+	1-ls|1-list_tenants)
+            subcommand="list_tenants"
             shift
 	    ;;
         1-configure|1-dump|2-restore|1-rm|1-shell|1-devshell|1-test)

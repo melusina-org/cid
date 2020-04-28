@@ -16,14 +16,14 @@
 gocd_server_volume_database()
 {
     cat <<'EOF'
-gocd_server_home|/home/go
-gocd_server_data|/godata
+gocd_server_home|/var/gocd_server/home/go
+gocd_server_data|/var/gocd_server/godata
 EOF
 }
 
 gocd_server_configure()
 {
-    chown -R go:go /service/gocd_agent/*
+    chown -R go:go /var/gocd_server/*
 }
 
 
@@ -34,22 +34,26 @@ gocd_server_dump()
 
     wlog 'Info' 'gocd_server: Dump home directory.'
     install -d -o go -g go "${CID_NEXT_DUMPDIR}/gocd_server/home/go"
-    ( cd "/service/gocd_server/home/go" && find '.' | cpio -dump "${CID_NEXT_DUMPDIR}/gocd_server/home/go" )\
-        2>&1
+    (
+	cd "/var/gocd_server/home/go" && find '.'\
+		| cpio -dump "${CID_NEXT_DUMPDIR}/gocd_server/home/go"
+    ) 2>&1
 
     wlog 'Info' 'gocd_server: Dump data directory.'
     install -d -o go -g go "${CID_NEXT_DUMPDIR}/gocd_server/godata"
-    ( cd "/service/gocd_server/godata" && find '.' | cpio -dump "${CID_NEXT_DUMPDIR}/gocd_server/godata" )\
-        2>&1
+    (
+	cd "/var/gocd_server/godata" && find '.'\
+		| cpio -dump "${CID_NEXT_DUMPDIR}/gocd_server/godata"
+    ) 2>&1
 }
 
 gocd_server_restore()
 {
     wlog 'Info' 'gocd_server: Restore home directory.'
-    tar xJfC "$1" '/service/gocd_server' --strip-components 2 './gocd_server/home/go'
+    tar xJfC "$1" '/var/gocd_server' --strip-components 2 './gocd_server/home/go'
 
     wlog 'Info' 'gocd_server: Restore data directory.'
-    tar xJfC "$1" '/service/gocd_server' --strip-components 2 './gocd_server/godata'
+    tar xJfC "$1" '/var/gocd_server' --strip-components 2 './gocd_server/godata'
 }
 
 gocd_server_wizard()

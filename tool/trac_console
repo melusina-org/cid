@@ -1,0 +1,162 @@
+#!/bin/sh
+
+### trac_console -- Administration tool for trac deployments
+
+# El Cid (https://github.com/melusina-conseil/cid)
+# This file is part of El Cid.
+#
+# Copyright © 2017–2022 Michaël Le Barbier
+# All rights reserved.
+
+# This software is governed by the CeCILL-B license under French law and
+# abiding by the rules of distribution of free software.  You can  use,
+# modify and/ or redistribute the software under the terms of the CeCILL-B
+# license as circulated by CEA, CNRS and INRIA at the following URL
+# "https://cecill.info/licences/Licence_CeCILL-B_V1-en.txt"
+
+
+: ${TOPLEVELDIR:=$(git rev-parse --show-toplevel)}
+: ${TENANTBASEDIR:=${HOME}/Library/com.github.michipili.cid}
+: ${subrdir:=${TOPLEVELDIR}/subr}
+: ${servicedir:=${TOPLEVELDIR}/service}
+: ${package:='cid'}
+: ${dockerimage:='cid/admin'}
+: ${trac_user:='root'}
+: ${wlog_prefix:="trac_console: $$"}
+
+
+. "${subrdir}/stdlib.sh"
+. "${subrdir}/config.sh"
+. "${subrdir}/service.sh"
+. "${subrdir}/tenant.sh"
+
+trac_docker()
+{
+    docker run --rm\
+           --user "${trac_user}"\
+	   --env "wlog_prefix=${wlog_prefix}"\
+           $(service_volume_docker_args)\
+	   --volume "${subrdir}:/opt/cid/share/subr"\
+	   --volume "${servicedir}:/opt/cid/share/service"\
+           --volume "$(tenant_backupdir):/opt/cid/var/backups"\
+           --volume "$(tenant_dir):/opt/cid/var/config"\
+           "$@"
+}
+
+trac_shell()
+{
+    trac_docker -it "${dockerimage}" bash -l
+}
+
+trac_devshell()
+{
+    trac_docker\
+        --volume "${TOPLEVELDIR}:/opt/cid/var/src/cid"\
+        -it "${dockerimage}" bash -l
+}
+
+trac_cid_console()
+{
+    trac_docker -it "${dockerimage}" '/opt/cid/bin/cid_console' "$@"
+}
+
+trac_list_roles()
+{
+    trac_permission_db | awk -F'|' '
+{ roles[$1] }
+END {
+  for(role in roles) {
+    print(role)
+  }
+}'
+}
+
+trac_describe_role()
+{
+    trac_permission_db | awk -F'|' -v role="$1" '
+($1 == role) {
+  permissions[$2]
+}
+
+END {
+  for(permission in permissions) {
+    print(permission)
+  }
+}'
+}
+
+trac_delegate_functions()
+{
+    local f stub
+    stub=$(mktemp -t 'stub-XXXXXX')
+    {
+	for f in "$@"; do
+	    printf '%s()\n{\n    trac_cid_console %s "$@"\n}\n' "${f}" "${f}" 
+	done
+    } > "${stub}"
+    . "${stub}"
+    rm -f "${stub}"
+}
+
+trac_usage()
+{
+    iconv -f utf-8 <<EOF
+Usage: trac_console [-h] ACTION [ENVIRONMENT …]
+ Administration tool for trac deployments
+Options:
+ -h Display this help message.
+Actions:
+ list_roles, describe_role, list_users, describe_user, create_user
+Environment:
+ This admin console requires the CID_TENANT_DIR to be set. See tenant_shell.
+EOF
+}
+
+trac_main()
+{
+    local OPTIND OPTION OPTARG
+
+    subcommand='shell'
+    OPTIND=1
+
+    while getopts 'hdD' OPTION; do
+        case ${OPTION} in
+            d)	subcommand='devshell';;
+            h)	trac_usage; exit 0;;
+            *)	failwith -x 64 'trac_console: %s: Unsupported option.' "${OPTION}";;
+        esac
+    done
+    shift $(expr ${OPTIND} - 1)
+
+    case "$#-$1" in
+        1-devshell|1-shell|1-list_roles|2-describe_role|1-list_environments|2-create_environment|3-create_environment|2-delete_environment|2-list_users|4-create_user|3-delete_user)
+	    : ${CID_TENANT_DIR:?This admin console requires the CID_TENANT_DIR to be set. See tenant_shell.}
+	    config_file="${CID_TENANT_DIR}/cid.conf"
+            subcommand="$1"
+            shift
+            ;;
+	*)
+	    trac_usage
+	    exit 64
+	    ;;
+    esac
+
+    wlog 'Debug' "CID_TENANT_DIR='%s'" "${CID_TENANT_DIR}"
+    wlog 'Debug' "\$(tenant_name)='%s'" "$(tenant_name)" 
+    wlog 'Debug' "subcommand='%s'" "${subcommand}"
+
+    service_load
+
+    trac_delegate_functions\
+	trac_list_environments\
+	trac_create_environment\
+	trac_delete_environment\
+	trac_list_users\
+	trac_create_user\
+	trac_delete_user
+    trac_${subcommand} "$@"
+}
+
+trac_main "$@"
+
+### End of file `trac_console'
