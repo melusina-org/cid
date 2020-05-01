@@ -55,14 +55,13 @@ restore_main()
 
     OPTIND=1
 
-    while getopts 'n' OPTION; do
+    while getopts 'h' OPTION; do
         case ${OPTION} in
             h)	restore_usage; exit 0;;
             *)	failwith 70 'cid_restore: %s: Unsupported option.' "${OPTION}";;
         esac
     done
     shift $(expr ${OPTIND} - 1)
-    config_setup
 
     if [ $# -ne 1 ]; then
         failwith 64 "cid_restore: Can only restore exactly one dump file."

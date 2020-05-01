@@ -287,4 +287,43 @@ trac_user_secret()
     printf '%s' "${secret}"
 }
 
+
+# trac_dump
+#  Dump trac environments to dumpdir
+
+trac_dump()
+{
+    local environment
+    install -d -o www-data -g www-data "${CID_NEXT_DUMPDIR}/trac"
+
+    wlog 'Info' 'trac: Copy trac sites.'
+    (
+	cd "${tracdir}" && find 'sites'\
+		| cpio -dump "${CID_NEXT_DUMPDIR}/trac"
+    ) 2>&1
+
+    wlog 'Info' 'trac: Copy trac webserver configuration.'
+    (
+	cd "${tracdir}" && find 'www'\
+		| cpio -dump "${CID_NEXT_DUMPDIR}/trac"
+    ) 2>&1
+
+    
+    install -d -o www-data -g www-data "${CID_NEXT_DUMPDIR}/trac/environment"
+    trac_list_environments | while read environment; do
+        wlog 'Info' 'trac: %s: Copy trac environment.' "${environment}"
+        trac-admin "${tracdir}/environment/${environment}" hotcopy "${CID_NEXT_DUMPDIR}/trac/environment/${environment}"
+        chown -R www-data:www-data "${CID_NEXT_DUMPDIR}/trac"
+    done
+}
+
+# trac_restore DUMPFILE
+#  Restore trac environments
+
+trac_restore()
+{
+    wlog 'Info' 'Restore trac sites and environments.'
+    tar xJfC "$1" "${tracdir}" --strip-components 2 './trac/'
+}
+
 ### End of file `service.sh'
