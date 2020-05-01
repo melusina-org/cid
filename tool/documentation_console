@@ -1,0 +1,113 @@
+#!/bin/sh
+
+### documentation_console -- The Documentation Console
+
+# El Cid (https://github.com/melusina-conseil/cid)
+# This file is part of El Cid.
+#
+# Copyright © 2017–2022 Michaël Le Barbier
+# All rights reserved.
+
+# This software is governed by the CeCILL-B license under French law and
+# abiding by the rules of distribution of free software.  You can  use,
+# modify and/ or redistribute the software under the terms of the CeCILL-B
+# license as circulated by CEA, CNRS and INRIA at the following URL
+# "https://cecill.info/licences/Licence_CeCILL-B_V1-en.txt"
+
+
+: ${TOPLEVELDIR:=$(git rev-parse --show-toplevel)}
+: ${subrdir:=${TOPLEVELDIR}/subr}
+: ${servicedir:=${TOPLEVELDIR}/service}
+: ${package:='cid'}
+
+. "${subrdir}/stdlib.sh"
+. "${subrdir}/config.sh"
+
+documentation_environment()
+{
+    if [ ! -d "${TOPELVELDIR}/mkdocs" ]; then
+        python3 -m venv "${TOPLEVELDIR}/mkdocs"
+    fi
+
+    . "${TOPLEVELDIR}/mkdocs/bin/activate"
+}
+
+documentation_setup()
+(
+    documentation_environment
+
+    pip install --upgrade\
+        pip
+
+    pip install\
+        wheel
+
+    pip install\
+        mkdocs\
+        mkdocs-material\
+        mkdocs-git-revision-date-localized-plugin\
+        mkdocs-git-authors-plugin\
+        mkdocs-minify-plugin\
+        mkdocs-awesome-pages-plugin\
+        mkdocs-mermaid2-plugin
+)
+
+documentation_serve()
+(
+    documentation_environment
+    mkdocs serve
+)
+
+documentation_visit()
+{
+    open http://127.0.0.1:8000
+}
+
+documentation_publish()
+(
+    documentation_environment
+    mkdocs gh-deploy
+)
+
+documentation_usage()
+{
+    iconv -f utf-8 <<EOF
+Usage: documentation_console [-h] [ setup | serve | visit | publish ]
+ Documentation console
+Options:
+ -h Display this help message.
+EOF
+}
+
+documentation_main()
+{
+    local OPTIND OPTION OPTARG
+
+    subcommand='shell'
+    OPTIND=1
+
+    while getopts 'h' OPTION; do
+        case ${OPTION} in
+            h)	documentation_usage; exit 0;;
+            *)	failwith -x 64 'documentation_console: %s: Unsupported option.' "${OPTION}";;
+        esac
+    done
+    shift $(expr ${OPTIND} - 1)
+
+    case "$#-$1" in
+	1-setup|1-serve|1-visit|1-publish)
+            subcommand="$1"
+            shift
+	    ;;
+	*)
+	    documentation_usage
+	    exit 64
+	    ;;
+    esac
+
+    documentation_${subcommand} "$@"
+}
+
+documentation_main "$@"
+
+### End of file `documentation_console'
