@@ -17,7 +17,15 @@ services:
   trac:
     image: cid/trac
     volumes:
+      - 'git_data:/var/git'
       - 'trac_data:/var/trac'
+  git:
+    image: cid/git
+    volumes:
+      - 'git_data:/var/git'
+      - 'trac_data:/var/trac'
+    ports:
+      - "2022:22"
   gocd_server:
     image: 'cid/gocd_server'
     volumes:
@@ -57,6 +65,9 @@ volumes:
   trac_data:
     external:
       name: "${CID_TENANT_NAME}.trac_data"
+  git_data:
+    external:
+      name: "${CID_TENANT_NAME}.git_data"
 secrets:
   bundle.pem:
     file: "${CID_TENANT_DIR}/ssl/${CID_TENANT_NAME}.bundle.pem"

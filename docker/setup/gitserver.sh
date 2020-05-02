@@ -1,5 +1,3 @@
-### Makefile -- El Cid tools
-
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
 #
@@ -13,17 +11,31 @@
 # "https://cecill.info/licences/Licence_CeCILL-B_V1-en.txt"
 
 
-PROGRAM=		cid_configure.sh
-PROGRAM+=		cid_console.sh
-PROGRAM+=		cid_dump.sh
-PROGRAM+=		cid_restore.sh
+env DEBIAN_FRONTEND=noninteractive apt-get install -y\
+ openssh-server\
+ subversion\
+ git
 
-PROGRAM+=		cid_githook_postreceive.sh
+install -d /run/sshd
 
-.for githook in ${PROGRAM:Mcid_githook_*}
-BINDIR.${githook:R}=	${libexecdir}/cid
-.endfor
+sed -i -E -e '
+/PubkeyAuthentication (yes|no)/{
+ i\
+PubkeyAuthentication yes
+ d
+}
 
-.include "shell.prog.mk"
+/PasswordAuthentication (yes|no)/{
+ i\
+PasswordAuthentication no
+ d
+}
+' /etc/ssh/sshd_config
 
-### End of file `Makefile'
+
+chsh -s /usr/bin/git-shell\
+ git
+
+install -d -o git -g git -m 750 /var/git
+install -d -o git -g git -m 700 /var/git/.ssh
+install -o git -g git -m 600 /dev/null /var/git/.ssh/authorized_keys

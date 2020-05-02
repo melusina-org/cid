@@ -154,6 +154,7 @@ trac_main()
 	trac_list_users\
 	trac_create_user\
 	trac_delete_user
+
     trac_${subcommand} "$@"
 }
 
