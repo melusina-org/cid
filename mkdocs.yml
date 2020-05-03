@@ -1,0 +1,16 @@
+site_name: Continuous Integration and Delivery
+theme:
+  name: 'material'
+  features:
+    - tabs
+
+docs_dir: 'doc'
+plugins:
+  - search
+  - git-revision-date-localized
+  - mermaid2
+  - awesome-pages
+  - minify:
+      minify_html: true
+extra_javascript:
+    - https://unpkg.com/mermaid@8.5.0/dist/mermaid.min.js
