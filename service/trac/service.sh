@@ -276,15 +276,15 @@ trac_delete_user()
 }
 
 
-# trac_user_secret NAME
-#  Generate a secret for user NAME
+# trac_edit_environment NAME
+#  Edit the configuration for project NAME
 
-trac_user_secret()
+trac_edit_environment()
 {
-    local secret
-    secret=$(apg -n 1 -m 40)
-    wlog 'Info' 'trac: %s: The secret for this user is \047%s\047' "$1" "${secret}"
-    printf '%s' "${secret}"
+    if [ ! -f "${tracdir}/environment/$1/conf/trac.ini" ]; then
+	failwith 'trac: %s: Cannot find configuration for this project.' "$1"
+    fi
+    nvi "${tracdir}/environment/$1/conf/trac.ini"
 }
 
 

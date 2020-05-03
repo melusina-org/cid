@@ -129,7 +129,7 @@ trac_main()
     shift $(expr ${OPTIND} - 1)
 
     case "$#-$1" in
-        1-devshell|1-shell|1-list_roles|2-describe_role|1-list_environments|2-create_environment|3-create_environment|2-delete_environment|2-list_users|4-create_user|3-delete_user)
+        1-devshell|1-shell|1-list_roles|2-describe_role|1-list_environments|2-create_environment|3-create_environment|2-edit_environment|2-delete_environment|2-list_users|4-create_user|3-delete_user)
 	    : ${CID_TENANT_DIR:?This admin console requires the CID_TENANT_DIR to be set. See tenant_shell.}
 	    config_file="${CID_TENANT_DIR}/cid.conf"
             subcommand="$1"
@@ -153,7 +153,8 @@ trac_main()
 	trac_delete_environment\
 	trac_list_users\
 	trac_create_user\
-	trac_delete_user
+	trac_delete_user\
+	trac_edit_environment
 
     trac_${subcommand} "$@"
 }
