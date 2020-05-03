@@ -1,0 +1,144 @@
+#!/bin/sh
+
+### git_console -- Administration tool for trac deployments
+
+# El Cid (https://github.com/melusina-conseil/cid)
+# This file is part of El Cid.
+#
+# Copyright © 2017–2022 Michaël Le Barbier
+# All rights reserved.
+
+# This software is governed by the CeCILL-B license under French law and
+# abiding by the rules of distribution of free software.  You can  use,
+# modify and/ or redistribute the software under the terms of the CeCILL-B
+# license as circulated by CEA, CNRS and INRIA at the following URL
+# "https://cecill.info/licences/Licence_CeCILL-B_V1-en.txt"
+
+
+: ${TOPLEVELDIR:=$(git rev-parse --show-toplevel)}
+: ${TENANTBASEDIR:=${HOME}/Library/com.github.michipili.cid}
+: ${subrdir:=${TOPLEVELDIR}/subr}
+: ${servicedir:=${TOPLEVELDIR}/service}
+: ${package:='cid'}
+: ${dockerimage:='cid/admin'}
+: ${git_user:='root'}
+: ${wlog_prefix:="git_console: $$"}
+
+
+. "${subrdir}/stdlib.sh"
+. "${subrdir}/config.sh"
+. "${subrdir}/service.sh"
+. "${subrdir}/tenant.sh"
+
+git_docker()
+{
+    docker run --rm\
+           --user "${git_user}"\
+	   --env "wlog_prefix=${wlog_prefix}"\
+           $(service_volume_docker_args)\
+	   --volume "${subrdir}:/opt/cid/share/subr"\
+	   --volume "${servicedir}:/opt/cid/share/service"\
+           --volume "$(tenant_backupdir):/opt/cid/var/backups"\
+           --volume "$(tenant_dir):/opt/cid/var/config"\
+           "$@"
+}
+
+git_shell()
+{
+    git_docker -it "${dockerimage}" bash -l
+}
+
+git_devshell()
+{
+    git_docker\
+        --volume "${TOPLEVELDIR}:/opt/cid/var/src/cid"\
+        -it "${dockerimage}" bash -l
+}
+
+git_cid_console()
+{
+    git_docker -it "${dockerimage}" '/opt/cid/bin/cid_console' "$@"
+}
+
+git_delegate_functions()
+{
+    local f stub
+    stub=$(mktemp -t 'stub-XXXXXX')
+    {
+	for f in "$@"; do
+	    printf '%s()\n{\n    git_cid_console %s "$@"\n}\n' "${f}" "${f}" 
+	done
+    } > "${stub}"
+    . "${stub}"
+    rm -f "${stub}"
+}
+
+git_add_key()
+{
+    if [ ! -f "$1" ]; then
+	failwith '%s: Cannot read public SSH key file.' "$1"
+    fi
+
+    cat "$1" | git_docker -i "${dockerimage}" '/opt/cid/bin/cid_console' git_add_key_stdin
+}
+
+git_usage()
+{
+    iconv -f utf-8 <<EOF
+Usage: git_console [-h] ACTION [ENVIRONMENT …]
+ Administration tool for trac deployments
+Options:
+ -h Display this help message.
+Actions:
+ list_roles, describe_role, list_users, describe_user, create_user
+Environment:
+ This admin console requires the CID_TENANT_DIR to be set. See tenant_shell.
+EOF
+}
+
+git_main()
+{
+    local OPTIND OPTION OPTARG
+
+    subcommand='shell'
+    OPTIND=1
+
+    while getopts 'hdD' OPTION; do
+        case ${OPTION} in
+            d)	subcommand='devshell';;
+            h)	git_usage; exit 0;;
+            *)	failwith -x 64 'git_console: %s: Unsupported option.' "${OPTION}";;
+        esac
+    done
+    shift $(expr ${OPTIND} - 1)
+
+    case "$#-$1" in
+        1-devshell|1-shell|1-list_repositories|3-describe-repository|2-create_repository|3-create-repository|2-delete_repository|3-delete_repository|2-add_key)
+	    : ${CID_TENANT_DIR:?This admin console requires the CID_TENANT_DIR to be set. See tenant_shell.}
+	    config_file="${CID_TENANT_DIR}/cid.conf"
+            subcommand="$1"
+            shift
+            ;;
+	*)
+	    git_usage
+	    exit 64
+	    ;;
+    esac
+
+    wlog 'Debug' "CID_TENANT_DIR='%s'" "${CID_TENANT_DIR}"
+    wlog 'Debug' "\$(tenant_name)='%s'" "$(tenant_name)" 
+    wlog 'Debug' "subcommand='%s'" "${subcommand}"
+
+    service_load
+
+    git_delegate_functions\
+	git_list_repositories\
+	git_create_repository\
+	git_delete_repository
+
+    git_${subcommand} "$@"
+}
+
+git_main "$@"
+
+### End of file `git_console'
