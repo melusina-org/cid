@@ -10,10 +10,7 @@ services:
       - bundle.pem
     depends_on:
       - gocd_server
-      - nevergreen
       - trac
-  nevergreen:
-    image: buildcanariesteam/nevergreen:3.2.0
   trac:
     image: cid/trac
     volumes:
