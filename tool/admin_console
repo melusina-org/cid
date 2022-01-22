@@ -117,7 +117,7 @@ _admin_maybe_docker_volume_create()
 	:
     else
 	wlog 'Info' '%s: Create docker volume.' "$1"
-	docker volume create "$1" 1>&-
+	docker volume create "$1" 1>/dev/null
     fi
 }
 

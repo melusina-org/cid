@@ -53,9 +53,6 @@ RUN sh /root/setup/quicklisp.sh -o cid -g cid
 COPY ./docker/setup/bsdowl.sh /root/setup/
 RUN sh /root/setup/bsdowl.sh
 
-COPY ./docker/setup/docker.sh /root/setup/
-RUN sh /root/setup/docker.sh
-
 ADD ./ /opt/cid/var/src/cid/.
 RUN chown -R cid:cid /opt/cid/var/src/cid/.
 

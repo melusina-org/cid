@@ -51,23 +51,17 @@ services:
       - "${CID_TENANT_DIR}/ssh/:/home/go/.ssh/"
 volumes:
   gocd_server_home:
-    external:
-      name: "${CID_TENANT_NAME}.gocd_server_home"
+    name: "${CID_TENANT_NAME}.gocd_server_home"
   gocd_server_data:
-    external:
-      name: "${CID_TENANT_NAME}.gocd_server_data"
+    name: "${CID_TENANT_NAME}.gocd_server_data"
   gocd_agent_home:
-    external:
-      name: "${CID_TENANT_NAME}.gocd_agent_home"
+    name: "${CID_TENANT_NAME}.gocd_agent_home"
   gocd_agent_data:
-    external:
-      name: "${CID_TENANT_NAME}.gocd_agent_data"
+    name: "${CID_TENANT_NAME}.gocd_agent_data"
   trac_data:
-    external:
-      name: "${CID_TENANT_NAME}.trac_data"
+    name: "${CID_TENANT_NAME}.trac_data"
   git_data:
-    external:
-      name: "${CID_TENANT_NAME}.git_data"
+    name: "${CID_TENANT_NAME}.git_data"
 secrets:
   bundle.pem:
     file: "${CID_TENANT_DIR}/ssl/${CID_TENANT_NAME}.bundle.pem"
