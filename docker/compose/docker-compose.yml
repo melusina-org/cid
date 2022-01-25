@@ -2,63 +2,63 @@ version: '3.1'
 
 services:
   reverseproxy:
-    image: cid/reverseproxy
+    image: 'cid/reverseproxy'
     ports:
       - "80:80"
       - "443:443"
     secrets:
       - bundle.pem
     depends_on:
-      - gocd_server
+      - gocdserver
       - trac
   trac:
-    image: cid/trac
+    image: 'cid/trac'
     volumes:
-      - 'git_data:/var/git'
+      - 'gitserver_data:/var/git'
       - 'trac_data:/var/trac'
-  git:
-    image: cid/git
+  gitserver:
+    image: 'cid/gitserver'
     volumes:
-      - 'git_data:/var/git'
+      - 'gitserver_data:/var/git'
       - 'trac_data:/var/trac'
     ports:
       - "2022:22"
-  gocd_server:
-    image: 'cid/gocd_server'
+  gocdserver:
+    image: 'cid/gocdserver'
     volumes:
-      - 'gocd_server_home:/home/go'
-      - 'gocd_server_data:/godata'
+      - 'gocdserver_home:/home/go'
+      - 'gocdserver_data:/godata'
       - "${CID_TENANT_DIR}/ssh/:/home/go/.ssh/"
   docker:
-    image: docker:stable-dind
+    image: 'docker:stable-dind'
     environment:
       DOCKER_TLS_CERTDIR: ""
     privileged: true
-  gocd_agent:
-    image: "cid/gocd_agent"
+  gocdagent:
+    image: "cid/gocdagent"
     depends_on:
-      - gocd_server
+      - gocdserver
     environment:
       GO_AGENT_SYSTEM_PROPERTIES: '-Xms1024m -Xmx1024m'
-      GO_SERVER_URL: https://gocd_server:8154/go
+      GO_SERVER_URL: https://gocdserver:8154/go
       DOCKER_HOST: tcp://docker:2375
     volumes:
-      - 'gocd_agent_home:/home/go'
-      - 'gocd_agent_data:/godata'
+      - 'gocdagent_home:/home/go'
+      - 'gocdagent_data:/godata'
       - "${CID_TENANT_DIR}/ssh/:/home/go/.ssh/"
 volumes:
-  gocd_server_home:
-    name: "${CID_TENANT_NAME}.gocd_server_home"
-  gocd_server_data:
-    name: "${CID_TENANT_NAME}.gocd_server_data"
-  gocd_agent_home:
-    name: "${CID_TENANT_NAME}.gocd_agent_home"
-  gocd_agent_data:
-    name: "${CID_TENANT_NAME}.gocd_agent_data"
+  gocdserver_home:
+    name: "${CID_TENANT_NAME}.gocdserver_home"
+  gocdserver_data:
+    name: "${CID_TENANT_NAME}.gocdserver_data"
+  gocdagent_home:
+    name: "${CID_TENANT_NAME}.gocdagent_home"
+  gocdagent_data:
+    name: "${CID_TENANT_NAME}.gocdagent_data"
   trac_data:
     name: "${CID_TENANT_NAME}.trac_data"
-  git_data:
-    name: "${CID_TENANT_NAME}.git_data"
+  gitserver_data:
+    name: "${CID_TENANT_NAME}.gitserver_data"
 secrets:
   bundle.pem:
     file: "${CID_TENANT_DIR}/ssl/${CID_TENANT_NAME}.bundle.pem"

@@ -65,8 +65,8 @@ RUN sh /root/setup/admin.sh
 COPY ./docker/setup/gitserver.sh /root/setup/
 RUN sh /root/setup/gitserver.sh
 
-COPY ./service/git/sudoers-git /etc/sudoers.d/git
-COPY ./service/git/entrypoint /usr/local/bin/entrypoint
+COPY ./service/gitserver/sudoers-git /etc/sudoers.d/git
+COPY ./service/gitserver/entrypoint /usr/local/bin/entrypoint
 
 ENTRYPOINT ["/usr/local/bin/entrypoint"]
 VOLUME ["/var/git"]

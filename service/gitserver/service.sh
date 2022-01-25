@@ -1,4 +1,4 @@
-### service.sh -- Service Definitions for git
+### service.sh -- Service Definitions for gitserver
 
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
@@ -15,23 +15,23 @@
 
 : ${gitdir:=/var/git}
 
-# git_volume_database
+# gitserver_volume_database
 #  List data volumes for git environments
 
-git_volume_database()
+gitserver_volume_database()
 {
     cat <<'EOF'
-git_data|/var/git
+gitserver_data|/var/git
 EOF
 }
 
-git_list_repositories()
+gitserver_list_repositories()
 {
     find "${gitdir}" -mindepth 2 -maxdepth 2 -type d -name '*.git'\
 	| sed -e 's|^/var/git/||'
 }
 
-git_add_key_stdin()
+gitserver_add_key_stdin()
 {
     local key
     if [ ! -d "${gitdir}/.ssh" ]; then
@@ -45,7 +45,7 @@ git_add_key_stdin()
     cat >> "${gitdir}/.ssh/authorized_keys"
 }
 
-git_create_repository()
+gitserver_create_repository()
 {
     local repository
     case "$#-$1-$2" in
@@ -59,7 +59,7 @@ git_create_repository()
 	    repository="${gitdir}/$1/"
 	    ;;
 	*)
-	    failwith 'git_create_repository'
+	    failwith 'gitserver_create_repository'
     esac
 
     install -d -o git -g git -m 750 "${repository}"
@@ -72,7 +72,7 @@ git_create_repository()
     )
 }
 
-git_delete_repository()
+gitserver_delete_repository()
 {
     local repository
     case "$#-$1-$2" in
@@ -86,31 +86,31 @@ git_delete_repository()
 	    repository="${gitdir}/$1/"
 	    ;;
 	*)
-	    failwith 'git_create_repository'
+	    failwith 'gitserver_create_repository'
     esac
 
     rm -rf "${repository}"
 }
 
-# git_dump
+# gitserver_dump
 #  Dump git repositories to dumpdir
 
-git_dump()
+gitserver_dump()
 {
     install -d -o git -g git "${CID_NEXT_DUMPDIR}/git"
 
-    wlog 'Info' 'git: Copy git repositories.'
+    wlog 'Info' 'gitserver: Dump git repositories.'
     (
 	cd "${gitdir}" && find '.' | cpio -dump "${CID_NEXT_DUMPDIR}/git"
     ) 2>&1
 }
 
-# git_restore DUMPFILE
+# gitserver_restore DUMPFILE
 #  Restore git repositories
 
-git_restore()
+gitserver_restore()
 {
-    wlog 'Info' 'Restore git repositories.'
+    wlog 'Info' 'gitserver: Restore git repositories.'
     tar xJfC "$1" "${gitdir}" --strip-components 2 './git/'
 }
 

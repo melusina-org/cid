@@ -1,4 +1,4 @@
-### service.sh -- Service Definitions for gocd_agent
+### service.sh -- Service Definitions for gocdagent
 
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
@@ -12,51 +12,50 @@
 # license as circulated by CEA, CNRS and INRIA at the following URL
 # "https://cecill.info/licences/Licence_CeCILL-B_V1-en.txt"
 
-
-gocd_agent_volume_database()
+gocdagent_volume_database()
 {
     cat <<'EOF'
-gocd_agent_home|/var/gocd_agent/home/go
-gocd_agent_data|/var/gocd_agent/godata
+gocdagent_home|/var/gocd_agent/home/go
+gocdagent_data|/var/gocd_agent/godata
 EOF
 }
 
-gocd_agent_configure()
+gocdagent_configure()
 {
     chown -R go:go /var/gocd_agent/*
 }
 
-gocd_agent_dump()
+gocdagent_dump()
 {
     : "${CID_NEXT_DUMPDIR:?}"
-    install -d -o go -g go "${CID_NEXT_DUMPDIR}/gocd_agent"
+    install -d -o go -g go "${CID_NEXT_DUMPDIR}/gocdagent"
 
-    wlog 'Info' 'gocd_agent: Dump home directory.'
-    install -d -o go -g go "${CID_NEXT_DUMPDIR}/gocd_agent/home/go"
+    wlog 'Info' 'gocdagent: Dump home directory.'
+    install -d -o go -g go "${CID_NEXT_DUMPDIR}/gocdagent/home/go"
     (
 	cd "/var/gocd_agent/home/go" && find '.'\
-		| cpio -dump "${CID_NEXT_DUMPDIR}/gocd_agent/home/go"
+		| cpio -dump "${CID_NEXT_DUMPDIR}/gocdagent/home/go"
     ) 2>&1
 
-    wlog 'Info' 'gocd_agent: Dump data directory.'
-    install -d -o go -g go "${CID_NEXT_DUMPDIR}/gocd_agent/godata"
+    wlog 'Info' 'gocdagent: Dump data directory.'
+    install -d -o go -g go "${CID_NEXT_DUMPDIR}/gocdagent/godata"
     (
 	cd "/var/gocd_agent/godata" && find '.'\
-		| cpio -dump "${CID_NEXT_DUMPDIR}/gocd_agent/godata"
+		| cpio -dump "${CID_NEXT_DUMPDIR}/gocdagent/godata"
     ) 2>&1
 }
 
-gocd_agent_restore()
+gocdagent_restore()
 {
-    wlog 'Info' 'gocd_agent: Restore home directory.'
-    tar xJfC "$1" '/var/gocd_agent' --strip-components 2 './gocd_agent/home/go'
+    wlog 'Info' 'gocdagent: Restore home directory.'
+    tar xJfC "$1" '/var/gocd_agent' --strip-components 2 './gocdagent/home/go'
 
-    wlog 'Info' 'gocd_agent: Restore data directory.'
-    tar xJfC "$1" '/var/gocd_agent' --strip-components 2 './gocd_agent/godata'
+    wlog 'Info' 'gocdagent: Restore data directory.'
+    tar xJfC "$1" '/var/gocd_agent' --strip-components 2 './gocdagent/godata'
 }
 
 
-gocd_agent_wizard()
+gocdagent_wizard()
 {
     local sshprivatekeydir sshprivatekeyfile tenant
     sshdir="${CID_TENANT_DIR}/ssh"
