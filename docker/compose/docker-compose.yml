@@ -49,16 +49,22 @@ services:
 volumes:
   gocdserver_home:
     name: "${CID_TENANT_NAME}.gocdserver_home"
+    external: True
   gocdserver_data:
     name: "${CID_TENANT_NAME}.gocdserver_data"
+    external: True
   gocdagent_home:
     name: "${CID_TENANT_NAME}.gocdagent_home"
+    external: True
   gocdagent_data:
     name: "${CID_TENANT_NAME}.gocdagent_data"
+    external: True
   trac_data:
     name: "${CID_TENANT_NAME}.trac_data"
+    external: True
   gitserver_data:
     name: "${CID_TENANT_NAME}.gitserver_data"
+    external: True
 secrets:
   bundle.pem:
     file: "${CID_TENANT_DIR}/ssl/${CID_TENANT_NAME}.bundle.pem"

@@ -12,7 +12,6 @@
 # license as circulated by CEA, CNRS and INRIA at the following URL
 # "https://cecill.info/licences/Licence_CeCILL-B_V1-en.txt"
 
-
 # Variables:
 #
 #  GOCD_VERSION (v19.2.0)
@@ -21,17 +20,19 @@
 ARG GOCD_VERSION=v19.2.0
 FROM gocd/gocd-agent-ubuntu-18.04:${GOCD_VERSION}
 
-RUN mkdir -p /root/docker/setup
+RUN mkdir -p /opt/cid/libexec/setup
 
-COPY ./docker/setup/apt.sh /root/docker/setup/
-RUN sh -x /root/docker/setup/apt.sh
+COPY libexec/setup/apt /opt/cid/libexec/setup/
+RUN /opt/cid/libexec/setup/apt
 
-COPY ./docker/setup/sbcl.sh /root/docker/setup/
-RUN sh -x /root/docker/setup/sbcl.sh
+COPY libexec/setup/sbcl /opt/cid/libexec/setup/
+RUN /opt/cid/libexec/setup/sbcl
 
-COPY ./docker/setup/quicklisp.sh /root/docker/setup/
-RUN sh -x /root/docker/setup/quicklisp.sh -o go -g go\
+COPY libexec/setup/quicklisp /opt/cid/libexec/setup/
+RUN /opt/cid/libexec/setup/quicklisp -o go -g go\
   alexandria trivia\
   cl-yaml cl-json cxml\
   hunchentoot cl+ssl\
   cl-prevalence
+
+### End of file `Dockerfile'

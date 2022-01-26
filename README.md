@@ -50,10 +50,10 @@ assets used to setup and operate the system. Just start with the
 As suggested by the example, it is possible to use reverse DNS
 notation to label tenants.
 
-## Build docker images
+## Build artefacts
 
 ~~~ console
-% ./tool/docker_build
+% development/build
 ~~~
 
 
@@ -73,7 +73,7 @@ passphrase-less SSH key to be used by GoCD to retrieve repositories.
 We can then run the environment with
 
 ~~~ console
-% ./tool/docker_compose up
+% operation/start
 ~~~
 
 adjust our local host database with the record
@@ -84,7 +84,7 @@ adjust our local host database with the record
 
 and visit our GoCD instance on `gocd.cid.local`.  The tool is a thin
 wrapper around docker compose, and the containers can be stopped by
-hitting Ctrl-C or using the command `./tool/docker_compose stop`.
+hitting Ctrl-C or using the command `% operation/stop`.
 
 
 ## Dump and restore data volumes
@@ -118,4 +118,11 @@ This destroys data volumes for the current tenant:
 
 ~~~ console
 % ./tool/admin_console rm
+~~~
+
+### Build and use administration tools
+
+~~~ console
+% development/build service/admin
+% docker run --security-opt seccomp=unconfined -it --rm cid/admin /opt/cid/bin/cid
 ~~~

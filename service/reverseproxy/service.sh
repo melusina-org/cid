@@ -12,7 +12,6 @@
 # license as circulated by CEA, CNRS and INRIA at the following URL
 # "https://cecill.info/licences/Licence_CeCILL-B_V1-en.txt"
 
-
 reverseproxy_wizard()
 {
     local tenant ssldir certfile keyfile

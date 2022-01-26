@@ -12,7 +12,6 @@
 # license as circulated by CEA, CNRS and INRIA at the following URL
 # "https://cecill.info/licences/Licence_CeCILL-B_V1-en.txt"
 
-
 : ${tracdir:=/var/trac}
 
 # trac_environment_location NAME
@@ -286,7 +285,6 @@ trac_edit_environment()
     fi
     nvi "${tracdir}/environment/$1/conf/trac.ini"
 }
-
 
 # trac_dump
 #  Dump trac environments to dumpdir

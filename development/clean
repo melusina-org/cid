@@ -1,0 +1,91 @@
+#!/bin/sh
+
+### clean -- Perform the clean step of lifecycle
+
+# El Cid (https://github.com/melusina-conseil/cid)
+# This file is part of El Cid.
+#
+# Copyright © 2017–2022 Michaël Le Barbier
+# All rights reserved.
+
+# This software is governed by the CeCILL-B license under French law and
+# abiding by the rules of distribution of free software.  You can  use, 
+# modify and/ or redistribute the software under the terms of the CeCILL-B
+# license as circulated by CEA, CNRS and INRIA at the following URL
+# "https://cecill.info/licences/Licence_CeCILL-B_V1-en.txt"
+
+: ${TOPLEVELDIR:=$(git rev-parse --show-toplevel)}
+: ${subrdir:=${TOPLEVELDIR}/subr}
+
+. "${subrdir}/stdlib.sh"
+. "${subrdir}/config.sh"
+
+clean_objdir()
+(
+    : "${OBJDIR:?}"
+
+    if [ -d "${OBJDIR}" ]; then
+	confirm 'clean: %s: Confirm object directory deletion?' "${OBJDIR}"
+	rm -rf "${OBJDIR}"
+    fi
+
+    rmdir "${OBJDIR%/*}" 1>/dev/null 2>/dev/null
+    return 0
+)
+
+clean_docker_containers()
+(
+    _query()
+    {
+	docker ps --all --format '{{ .ID }}|{{ .State }}|{{ .Status }}|{{ .Image }}|{{ .Command }}'
+    }
+
+    _select()
+    {
+	awk -F '|' '$2 == "exited"'
+    }
+
+    _delete()
+    {
+	local id _
+	while IFS='|' read id _; do
+	    docker rm "${id}"
+	done
+    }
+
+    _query | _select | _delete
+)
+
+clean_docker_images()
+(
+    _query()
+    {
+	docker image ls --format '{{ .ID }}|{{ .Repository }}|{{ .Tag }}'
+    }
+
+    _select()
+    {
+	awk -F '|' -v OFS='|' '$2 == "<none>" || $3 == "<none>"'
+    }
+
+    _delete()
+    {
+	local id repository tag
+	while IFS='|' read id repository tag; do
+	    docker image rm "${id}"
+	done
+    }
+
+    _query | _select | _delete
+)
+
+main()
+{
+    clean_objdir
+    clean_docker_containers
+    clean_docker_images
+}
+
+main "$@"
+
+### End of file `clean'

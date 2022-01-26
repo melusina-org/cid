@@ -1,0 +1,161 @@
+#!/bin/sh
+
+### build -- Build software artefacts for El Cid
+
+# El Cid (https://github.com/melusina-conseil/cid)
+# This file is part of El Cid.
+#
+# Copyright © 2017–2022 Michaël Le Barbier
+# All rights reserved.
+
+# This software is governed by the CeCILL-B license under French law and
+# abiding by the rules of distribution of free software.  You can  use, 
+# modify and/ or redistribute the software under the terms of the CeCILL-B
+# license as circulated by CEA, CNRS and INRIA at the following URL
+# "https://cecill.info/licences/Licence_CeCILL-B_V1-en.txt"
+
+: ${TOPLEVELDIR:=$(git rev-parse --show-toplevel)}
+: ${subrdir:=${TOPLEVELDIR}/subr}
+: ${servicedir:=${TOPLEVELDIR}/service}
+
+. "${subrdir}/stdlib.sh"
+. "${subrdir}/config.sh"
+. "${subrdir}/lisp.sh"
+
+build_docker_registry=''
+build_docker_package='cid'
+build_docker_version='latest'
+
+
+# build_docker_tag SYSTEM-DESIGNATOR
+#  The tag for generated docker images
+
+build_docker_tag()
+{
+    printf "${build_docker_registry}${build_docker_registry:+/}${build_docker_package}/$1:${build_docker_version}"
+}
+
+
+# build_docker_db
+#  The database of docker images we can build
+#
+# It has the following columns:
+#
+#  SYSTEM-DESIGNATOR
+
+build_docker_db()
+{
+    find "${servicedir}" -type f -name 'Dockerfile' \
+         | sed -e 's|/Dockerfile$||;s|.*/||'
+}
+
+
+# build_docker_image SYSTEM-DESIGNATOR
+#  Build the docker image for SYSTEM-DESIGNATOR
+#
+# The resulting image is tagged with the tag provided by
+# `build_docker_tag'.
+
+build_docker_image()
+(
+    local docker_tag
+    docker_tag=$(build_docker_tag "$1")
+
+    if [ ! -d "${servicedir}/$1" ]; then
+	failwith 1 "build: docker: %s: Nothing is known about this service." "$1"
+    fi
+
+    docker build\
+           -t "${docker_tag}"\
+	   -f "${servicedir}/$1/Dockerfile"\
+           "${TOPLEVELDIR}"
+)
+
+
+# build_lisp_bundle SYSTEM-DESIGNATOR [ OTHER-SYSTEM-DESIGNATORS ]
+#  Build a lisp bundle
+#
+# The lisp bundle is saved in the subdirectory 'lisp/bundle' and in
+# the the tarball 'lisp/bundle.tar'.
+
+build_lisp_bundle()
+(    
+    : ${OBJDIR:?}
+
+    lisp_bundle="$1"
+    shift
+
+    lisp_systems=$(printf ' "%s"' "$@")
+
+    lisp_unsafe_batch\
+        --eval "(ql:register-local-projects)"\
+        --eval "(ql:bundle-systems '(${lisp_systems}) :include-local-projects t :to #p\"${OBJDIR}/bundle/${lisp_bundle}\")"
+)
+
+
+# build_lisp_image SYSTEM-NAME
+#  Build the Lisp image for SYSTEM-NAME
+
+build_lisp_image()
+{
+    : ${OBJDIR:?}
+ 
+    local lisp_os lisp_system
+    lisp_system="$1"
+    lisp_os=$(uname)
+
+    install -d "${OBJDIR}/lisp/${lisp_os}"
+
+    lisp_unsafe_batch\
+	--eval "(ql:quickload \"${lisp_system}\")"\
+	--eval "(save-lisp-and-die #p\"${OBJDIR}/lisp/${lisp_os}/${lisp_system}\" :executable t :purify t :toplevel #'${lisp_system}:toplevel)"
+}
+
+
+# build_artefact SYSTEM-DESIGNATOR
+#  Build the software artefact for SYSTEM-DESIGNATOR
+
+build_artefact()
+{
+    local artefact
+    for artefact in "$@"; do
+        case "${artefact}" in
+            service/*)
+                build_docker_image "${artefact#service/}"
+                ;;
+            docker/*)
+                wlog 'Warning' '%s: The preferred reference for this artefact is \037%s\037.'\
+                     "${artefact}" "service/${artefact#docker/}"
+                build_docker_image "${artefact#docker/}"
+                ;;
+	    bundle/cid)
+		build_lisp_bundle 'org.melusina.cid' 'hunchentoot' 'swank' 'parse-float' 'kaputt' 'cl-ppcre' 'unix-opts'
+		;;
+	    lisp/cid)
+		build_lisp_image 'org.melusina.cid'
+		;;
+            *)
+                failwith '%s: Nothing is known about this kind of artefact.' "${artefact#/*}"
+                ;;
+        esac
+    done
+}
+
+build_main()
+{
+    if [ $# -eq 0 ]; then
+        set --\
+	    'lisp/cid'\
+	    'service/linux'\
+	    'service/reverseproxy'\
+	    'service/trac'\
+	    'service/gitserver'\
+	    'service/gocdserver'\
+	    'service/gocdagent'
+    fi
+    build_artefact "$@"
+}
+
+build_main "$@"
+
+### End of file `build'

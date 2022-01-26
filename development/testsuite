@@ -1,0 +1,50 @@
+#!/bin/sh
+
+### testsuite -- Run test suite
+
+# El Cid (https://github.com/melusina-conseil/cid)
+# This file is part of El Cid.
+#
+# Copyright © 2017–2022 Michaël Le Barbier
+# All rights reserved.
+
+# This software is governed by the CeCILL-B license under French law and
+# abiding by the rules of distribution of free software.  You can  use, 
+# modify and/ or redistribute the software under the terms of the CeCILL-B
+# license as circulated by CEA, CNRS and INRIA at the following URL
+# "https://cecill.info/licences/Licence_CeCILL-B_V1-en.txt"
+
+: ${TOPLEVELDIR:=$(git rev-parse --show-toplevel)}
+
+testsuite_sbcl()
+{
+    sbcl --noinform --disable-debugger "$@"
+}
+
+testsuite_run_all_tests()
+(
+    cd "${TOPLEVELDIR}"
+    testsuite_sbcl\
+	--eval '
+(unless (ql:where-is-system "org.melusina.cid/testsuite")
+ (push #p"./" ql:*local-project-directories*)
+ (ql:register-local-projects))
+'\
+	--eval '(ql:quickload "org.melusina.cid/testsuite" :silent t)'\
+	--eval '(org.melusina.cid/testsuite:run-all-tests-batch)'
+)
+
+testsuite_main()
+{
+    testsuite_run_all_tests
+    status="$?"
+
+    if [ "${status}" -gt 0 ]; then
+	1>&2 printf 'testsuite: Failure: There were some failed tests.\n'
+    fi
+    return "${status}"
+}
+
+testsuite_main "$@"
+
+### End of file `testsuite'

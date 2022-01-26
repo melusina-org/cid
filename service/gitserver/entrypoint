@@ -1,5 +1,7 @@
 #!/bin/sh
 
+### entrypoint – Entrypoint for the gitserver
+
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
 #
@@ -24,3 +26,5 @@ if [ $# -gt 0 ]; then
 else
     run_sshd
 fi
+
+### End of file `entrypoint'

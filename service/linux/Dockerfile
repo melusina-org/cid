@@ -15,7 +15,12 @@
 
 # Arguments:
 #
-# ARG_DEBIAN_MIRROR (none)
+# PACKAGE (cid)
+#  The Unix safe name for the package on the docker image.
+#  This name is used in pathnames for various resource, to isolate
+#  them from the operating system and third-party software.
+#
+# DEBIAN_MIRROR (none)
 #  Debian is distributed (mirrored) on hundreds of servers on the
 #  Internet. Using a nearby server will probably speed up your
 #  download, and also reduce the load on our central servers and on
@@ -26,15 +31,36 @@
 
 FROM debian:stretch
 ARG DEBIAN_MIRROR=none
+ARG PACKAGE=cid
 
-RUN install -d -o root -g root -m 700 /root/setup
+RUN install -d -o root -g root -m 700\
+ /opt/${PACKAGE}/etc/setup\
+ /opt/${PACKAGE}/etc/verify\
+ /opt/${PACKAGE}/libexec/setup\
+ /opt/${PACKAGE}/libexec/verify
 
-COPY ./docker/setup/apt.sh /root/setup/
-RUN sh -x /root/setup/apt.sh
+COPY libexec/setup/apt /opt/${PACKAGE}/libexec/setup/apt
+RUN /opt/${PACKAGE}/libexec/setup/apt
 
-COPY ./docker/setup/hier.sh /root/setup
-RUN env PACKAGE=cid sh -x /root/setup/hier.sh
+COPY libexec/setup/hier /opt/${PACKAGE}/libexec/setup/hier
+RUN env PACKAGE=${PACKAGE} /opt/${PACKAGE}/libexec/setup/hier
 
-COPY ./docker/setup/users.sh /root/setup
-COPY ./service/linux/users.conf /root/setup/
-RUN env PACKAGE=cid sh -x /root/setup/users.sh
+COPY libexec/setup/users /opt/${PACKAGE}/libexec/setup/users
+COPY service/linux/users.conf /opt/${PACKAGE}/etc/setup/users.conf
+RUN env PACKAGE=${PACKAGE} /opt/${PACKAGE}/libexec/setup/users
+
+COPY libexec/setup/sbcl /opt/${PACKAGE}/libexec/setup/sbcl
+RUN /opt/${PACKAGE}/libexec/setup/sbcl
+
+COPY libexec/setup/quicklisp /opt/${PACKAGE}/libexec/setup/quicklisp
+RUN /opt/${PACKAGE}/libexec/setup/quicklisp -o ${PACKAGE} -g ${PACKAGE}
+
+COPY libexec/setup/bsdowl /opt/cid/libexec/setup/bsdowl
+RUN /opt/cid/libexec/setup/bsdowl
+
+COPY libexec/setup/testimage /opt/${PACKAGE}/libexec/setup/testimage
+COPY service/linux/testimage /opt/${PACKAGE}/libexec/testimage/linux
+
+ENV PATH="/opt/${PACKAGE}/sbin:/opt/${PACKAGE}/bin:/opt/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
+### End of file `Dockerfile'

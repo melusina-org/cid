@@ -37,4 +37,24 @@ config_db()
     git config -f "${config_file}" --list | sed -e 's/=/|/'
 }
 
+# objdir
+#  Compute the desired OBJDIR
+
+objdir()
+{
+    local objdir localpwd
+    localpwd="$(pwd)"
+    localpwd="${localpwd#${HOME}}"
+    localpwd="${localpwd#/}"
+    if [ -n "${OBJDIR}" ]; then
+	objdir="${OBJDIR}"
+    else
+	objdir="$(pwd)/obj"
+    fi
+    install -d "${objdir}"
+    printf '%s' "${objdir}"
+}
+
+: ${OBJDIR:=$(objdir)}
+
 ### End of file `config.sh'

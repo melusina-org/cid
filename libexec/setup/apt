@@ -1,4 +1,6 @@
-### apt.sh -- Setup apt
+#!/bin/sh
+
+### apt -- Setup apt
 
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
@@ -70,6 +72,7 @@ apt-get install -y\
   apt-utils\
   bzip2\
   ca-certificates\
+  cpio\
   curl\
   debconf-utils\
   git\

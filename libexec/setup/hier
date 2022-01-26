@@ -1,4 +1,6 @@
-### hier.sh -- Setup directory hierarchy
+#!/bin/sh
+
+### hier -- Setup directory hierarchy
 
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.

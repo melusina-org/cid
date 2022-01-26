@@ -12,16 +12,15 @@
 # license as circulated by CEA, CNRS and INRIA at the following URL
 # "https://cecill.info/licences/Licence_CeCILL-B_V1-en.txt"
 
-
 ARG CID_LINUX_REFERENCE=latest
 FROM cid/linux:${CID_LINUX_REFERENCE}
 
-COPY ./docker/setup/trac.sh /root/setup/
-RUN sh /root/setup/trac.sh
+COPY libexec/setup/trac /opt/cid/libexec/setup/
+RUN /opt/cid/libexec/setup/trac
 
-ADD ./service/trac/entrypoint /usr/local/bin/entrypoint
+ADD service/trac/entrypoint /opt/cid/bin/entrypoint
 
-ENTRYPOINT ["/usr/local/bin/entrypoint"]
+ENTRYPOINT ["/opt/cid/bin/entrypoint"]
 VOLUME ["/var/git","/var/www","/var/trac"]
 
 ### End of file `Dockerfile'

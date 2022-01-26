@@ -1,3 +1,5 @@
+#!/bin/sh
+
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
 #
@@ -12,20 +14,30 @@
 
 
 env DEBIAN_FRONTEND=noninteractive apt-get install -y\
- autoconf\
- bmake\
- bsdtar\
- curl
+ openssh-server\
+ subversion\
+ git
 
-install -d -o cid -g cid -m 700 /usr/local/src
-su -l cid -c '
- set -e
- cd /usr/local/src
- curl -L https://github.com/michipili/bsdowl/archive/master.zip | bsdtar xf -
- cd bsdowl-master
- autoconf
- ./configure --prefix=/usr/local --with-credentials=sudo
- bmake all
-'
+install -d /run/sshd
 
-( cd /usr/local/src/bsdowl-master && bmake install )
+sed -i -E -e '
+/PubkeyAuthentication (yes|no)/{
+ i\
+PubkeyAuthentication yes
+ d
+}
+
+/PasswordAuthentication (yes|no)/{
+ i\
+PasswordAuthentication no
+ d
+}
+' /etc/ssh/sshd_config
+
+
+chsh -s /usr/bin/git-shell\
+ git
+
+install -d -o git -g git -m 750 /var/git
+install -d -o git -g git -m 700 /var/git/.ssh
+install -o git -g git -m 600 /dev/null /var/git/.ssh/authorized_keys

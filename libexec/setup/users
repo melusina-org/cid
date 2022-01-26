@@ -1,4 +1,6 @@
-### users.sh -- Setup users
+#!/bin/sh
+
+### users -- Setup users
 
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
@@ -14,7 +16,7 @@
 
 
 : ${users_package:=${PACKAGE}}
-: ${users_configfile:=/root/setup/users.conf}
+: ${users_configfile:=/opt/${users_package}/etc/setup/users.conf}
 
 users_secure_variables='
  BLOCKSIZE
@@ -204,4 +206,4 @@ users_main()
 
 users_main "$@"
 
-### End of file `users.sh'
+### End of file `users'

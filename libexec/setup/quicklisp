@@ -1,4 +1,6 @@
-### quicklisp.sh -- Setup quicklisp
+#!/bin/sh
+
+### quicklisp -- Setup quicklisp
 
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
@@ -46,6 +48,9 @@ quicklisp_install()
 (let ((quicklisp-init #p"${quicklisp_home}/setup.lisp"))
   (when (probe-file quicklisp-init)
     (load quicklisp-init)))
+(let ((srcdir #p"/opt/cid/var/src/"))
+  (when (probe-file srcdir)
+    (pushnew srcdir ql:*local-project-directories*)))
 EOF
 }
 
@@ -184,3 +189,5 @@ quicklisp_main()
 }
 
 quicklisp_main "$@"
+
+### End of file `quicklisp'

@@ -23,3 +23,5 @@ ARG GO_VERSION=v19.2.0
 FROM gocd/gocd-server:${GO_VERSION}
 
 RUN mkdir -p /godata/plugins/external
+
+### End of file `Dockerfile'

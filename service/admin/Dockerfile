@@ -1,3 +1,5 @@
+### Dockerfile – admin docker image
+
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
 #
@@ -37,25 +39,16 @@ RUN env DEBIAN_FRONTEND=noninteractive apt-get install -y\
  trac-xmlrpc\
  trac
 
-RUN env DEBIAN_FRONTEND=noninteractive apt-get install -y\
- cpio
-
-ENV PATH="/opt/cid/bin:/opt/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-
-COPY ./docker/setup/sbcl.sh /root/setup/
-RUN sh /root/setup/sbcl.sh
-
-COPY ./docker/setup/quicklisp.sh /root/setup/
-RUN sh /root/setup/quicklisp.sh -o cid -g cid
-
-COPY ./docker/setup/bsdowl.sh /root/setup/
-RUN sh /root/setup/bsdowl.sh
-
 ADD ./ /opt/cid/var/src/cid/.
-RUN chown -R cid:cid /opt/cid/var/src/cid/.
+RUN chown -R cid:cid /opt/cid/var/src/.
 
-COPY ./service/admin/subr.sh /root/setup/
-RUN sh /root/setup/subr.sh
+RUN su -l cid -c 'cd /opt/cid/var/src/cid && development/build lisp/cid'\
+ && install -m 755 /opt/cid/var/src/cid/obj/lisp/Linux/org.melusina.cid /opt/cid/bin/cid
 
-COPY ./service/admin/admin.sh /root/setup/
-RUN sh /root/setup/admin.sh
+COPY service/admin/subr.sh /opt/cid/libexec/setup/
+RUN sh /opt/cid/libexec/setup/subr.sh
+
+COPY service/admin/admin.sh /opt/cid/libexec/setup/
+RUN sh /opt/cid/libexec/setup/admin.sh
+
+### End of file `Dockerfile'
