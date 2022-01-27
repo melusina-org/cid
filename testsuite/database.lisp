@@ -1,4 +1,4 @@
-;;;; utilities.lisp — Utilities for El Cid tests
+;;;; database.lisp — Database Connection for El Cid
 
 ;;;; El Cid (https://github.com/melusina-conseil/cid)
 ;;;; This file is part of El Cid.
@@ -14,14 +14,10 @@
 
 (in-package #:org.melusina.cid/testsuite)
 
-(defmacro with-test-database (&body body)
-  `(let ((cid:*database-type*
-	   :sqlite3)
-	 (cid:*database-connection-spec*
-	   '("DATABASETESTSUITE")))
-     (unwind-protect
-	  (progn (cid:connect-database) ,@body)
-       (cid:disconnect-database)
-       (clsql:destroy-database cid:*database-connection-spec* :database-type cid:*database-type*))))
+(define-testcase database-testsuite ()
+  (with-test-database
+    (assert-t*(probe-file "DATABASETESTSUITE"))
+    (assert-t (clsql:table-exists-p "tenant")))
+  (assert-nil (probe-file "DATABASETESTSUITE")))
 
-;;;; End of file `utilities.lisp'
+;;;; End of file `database.lisp'

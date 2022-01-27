@@ -16,22 +16,30 @@
   :description "Count of Vivar and Prince of Continuous Integration and Delivery Systems"
   :author "Michaël Le Barbier"
   :license "CeCILL-B Free Software License Agreement"
-  :depends-on (:alexandria)
+  :depends-on (:alexandria :clsql :clsql-sqlite3 :rashell)
   :components
   ((:module "src"
-      :components ((:file "package")
-                   (:file "utilities")
-		   (:file "entrypoint")))))
+    :components ((:file "package")
+                 (:file "utilities")
+		 (:file "tenant")
+		 (:file "identity")
+		 (:file "project")
+		 (:file "database")
+		 (:file "entrypoint")))))
 
 (asdf:defsystem org.melusina.cid/testsuite
   :description "Count of Vivar and Prince of Continuous Integration and Delivery Systems"
   :author "Michaël Le Barbier"
   :license "CeCILL-B Free Software License Agreement"
-  :depends-on (:alexandria :kaputt)
+  :depends-on (:alexandria :kaputt :org.melusina.cid)
   :components
   ((:module "testsuite"
     :components ((:file "package")
 		 (:file "utilities")
+		 (:file "tenant")
+		 (:file "identity")
+		 (:file "project")
+		 (:file "database")
 		 (:file "entrypoint")))))
 
 ;;;; End of file `org.melusina.cid.asd'

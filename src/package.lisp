@@ -13,11 +13,34 @@
 ;;;; "https://cecill.info/licences/Licence_CeCILL-B_V1-en.txt"
 
 (defpackage #:org.melusina.cid
+  (:nicknames #:cid)
   (:use #:cl)
+  (:import-from :alexandria :define-constant)
   (:export
-   #:toplevel
+   ;;; Tenant
+   #:make-tenant
+   #:find-tenant
+   #:tenant-pathname
+   #:tenant-displayname
+   ;;; Project
+   #:make-project
+   #:find-project
+   #:project-pathname
+   #:project-displayname
+   #:project-tenant
+   ;;; Identity
+   #:make-user
+   #:find-user
+   #:user-pathname
+   #:user-displayname
+   #:user-tenant
+   #:user-role
+   ;;; Database
+   #:connect-database
+   #:disconnect-database
+   #:with-database
+   #:*database-type*
+   #:*database-connection-spec*
   ))
-
-(in-package #:org.melusina.cid)
 
 ;;;; End of file `package.lisp'

@@ -1,4 +1,4 @@
-;;;; entrypoint.lisp — Entrypoint for El Cid
+;;;; entrypoint.lisp — Entrypoint for El Cid Testsuite
 
 ;;;; El Cid (https://github.com/melusina-conseil/cid)
 ;;;; This file is part of El Cid.
@@ -14,8 +14,14 @@
 
 (in-package #:org.melusina.cid/testsuite)
 
-(defun run-all-tests ()
-  t)
+(define-testcase run-unit-tests ()
+  (database-testsuite)
+  (tenant-testsuite)
+  (identity-testsuite)
+  (project-testsuite))
+
+(define-testcase run-all-tests ()
+  (run-unit-tests))
 
 (defun run-all-tests-batch ()
   (if (run-all-tests)
