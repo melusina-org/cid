@@ -55,4 +55,35 @@ This is a string of characters from the portable filename character set.")
     (clsql:update-records-from-instance tenant)
     (values tenant)))
 
+
+;;;;
+;;;; Tenant Scope
+;;;;
+
+(clsql:def-view-class tenant-scope ()
+  ((tenantid
+    :type integer
+    :initarg :tenantid)
+   (tenant
+    :db-kind :join
+    :db-info (:join-class tenant
+	      :home-key tenantid
+	      :foreign-key tenantid
+	      :set nil)))
+  (:documentation "The TENANT-SCOPE contains traits for views specific to a tenant."))
+
+(defmacro ensure-tenant-scope ((designator) &body body)
+  "Run BODY and ensures the result is a value of type TENANT-SCOPE that belongs to DESIGNATOR.
+There is an implicit `WITH-SLOTS (TENANTID)' around BODY."
+  (let ((tenant (gensym))
+	(some-tenant-scope (gensym)))
+    `(let ((,tenant
+	     (find-tenant ,designator)))
+       (when ,tenant
+	 (with-slots (tenantid) ,tenant
+	   (let ((,some-tenant-scope (progn ,@body)))
+	     (and ,some-tenant-scope
+		  (eq tenantid (slot-value ,some-tenant-scope 'tenantid))
+		  ,some-tenant-scope)))))))
+
 ;;;; End of file `tenant.lisp'

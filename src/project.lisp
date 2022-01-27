@@ -16,15 +16,12 @@
 
 (clsql:file-enable-sql-reader-syntax)
 
-(clsql:def-view-class project ()
+(clsql:def-view-class project (tenant-scope)
   ((projectid
     :db-kind :key
     :db-constraints :not-null
     :type integer
     :initarg :projectid)
-   (tenantid
-    :type integer
-    :initarg :tenantid)
    (pathname
     :accessor project-pathname
     :db-constraints :unique
@@ -33,34 +30,24 @@
    (displayname
     :accessor project-displayname
     :type string
-    :initarg :displayname)
-   (tenant
-    :accessor project-tenant
-    :db-kind :join
-    :db-info (:join-class tenant
-	      :home-key tenantid
-	      :foreign-key tenantid
-	      :set nil)))
+    :initarg :displayname))
   (:base-table project))
+
+(defun project-tenant (project)
+  "The tenant of PROJECT."
+  (slot-value project 'tenant))
 
 (defun find-project (designator tenant)
   "Find the project associated to DESIGNATOR."
-  (let ((tenant
-	  (find-tenant tenant)))
-    (unless tenant
-      (return-from find-project nil))
-    (with-slots (tenantid) tenant
-      (typecase designator
-	(project
-	 designator)
-	(string
-	 (caar (clsql:select 'project :where [and [= [slot-value 'project 'pathname] designator]
-			                          [= [slot-value 'project 'tenantid] tenantid]])))
+  (ensure-tenant-scope (tenant)
+    (typecase designator
+      (project
+       designator)
+      (string
+       (caar (clsql:select 'project :where [and [= [slot-value 'project 'pathname] designator]
+			                        [= [slot-value 'project 'tenantid] tenantid]])))
       (integer
-	 (let ((some-project
-		 (caar (clsql:select 'project :where [= [slot-value 'project 'projectid] designator]))))
-	   (and (eq tenantid (slot-value some-project 'tenantid))
-		some-project)))))))
+       (caar (clsql:select 'project :where [= [slot-value 'project 'projectid] designator]))))))
 
 (defun make-project (&key pathname displayname tenant)
   "Make a PROJECT with the given attributes."

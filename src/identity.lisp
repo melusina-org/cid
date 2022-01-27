@@ -16,15 +16,12 @@
 
 (clsql:file-enable-sql-reader-syntax)
 
-(clsql:def-view-class user ()
+(clsql:def-view-class user (tenant-scope)
   ((userid
     :db-kind :key
     :db-constraints :not-null
     :type integer
     :initarg :userid)
-   (tenantid
-    :type integer
-    :initarg :tenantid)
    (pathname
     :accessor user-pathname
     :type string
@@ -37,37 +34,25 @@
     :accessor user-role
     :type keyword
     :initarg :role
-    :description "Should be one of :USER, :ADMINISTRATOR, :WITNESS.")
-   (tenant
-    :accessor user-tenant
-    :db-kind :join
-    :db-info (:join-class tenant
-	      :home-key tenantid
-	      :foreign-key tenantid
-	      :set nil)))
+    :description "Should be one of :USER, :ADMINISTRATOR, :WITNESS."))
   (:base-table user))
+
+(defun user-tenant (user)
+  "The tenant of USER."
+  (slot-value user 'tenant))
 
 (defun find-user (designator tenant)
   "Find the user associated to DESIGNATOR in TENANT."
-  (let ((tenant
-	  (find-tenant tenant)))
-    (unless tenant
-      (return-from find-user nil))
-    (with-slots (tenantid) tenant
-      (typecase designator
-	(user
-	 (and (eq tenantid (slot-value designator 'tenantid))
-	      designator))
-	(string
-	 (caar (clsql:select 'user :where [and [= [slot-value 'user 'pathname] designator]
-			                       [= [slot-value 'user 'tenantid] tenantid]])))
-	(integer
-	 (let ((some-user
-		 (caar (clsql:select 'user :where [= [slot-value 'user 'userid] designator]))))
-	   (and (eq tenantid (slot-value some-user 'tenantid))
-		some-user)))
-	(nil
-	 nil)))))
+  (ensure-tenant-scope (tenant)
+    (typecase designator
+      (user
+       (and (eq tenantid (slot-value designator 'tenantid))
+	    designator))
+      (string
+       (caar (clsql:select 'user :where [and [= [slot-value 'user 'pathname] designator]
+                                             [= [slot-value 'user 'tenantid] tenantid]])))
+      (integer
+       (caar (clsql:select 'user :where [= [slot-value 'user 'userid] designator]))))))
 
 (defun make-user (&key pathname displayname role tenant)
   "Make a USER with the given attributes.
