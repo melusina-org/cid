@@ -43,15 +43,24 @@
 	      :set nil)))
   (:base-table project))
 
-(defun find-project (designator)
+(defun find-project (designator tenant)
   "Find the project associated to DESIGNATOR."
-  (typecase designator
-    (project
-     designator)
-    (string
-     (caar (clsql:select 'project :where [= [slot-value 'project 'pathname] designator])))
-    (integer
-     (caar (clsql:select 'project :where [= [slot-value 'project 'projectid] designator])))))
+  (let ((tenant
+	  (find-tenant tenant)))
+    (unless tenant
+      (return-from find-project nil))
+    (with-slots (tenantid) tenant
+      (typecase designator
+	(project
+	 designator)
+	(string
+	 (caar (clsql:select 'project :where [and [= [slot-value 'project 'pathname] designator]
+			                          [= [slot-value 'project 'tenantid] tenantid]])))
+      (integer
+	 (let ((some-project
+		 (caar (clsql:select 'project :where [= [slot-value 'project 'projectid] designator]))))
+	   (and (eq tenantid (slot-value some-project 'tenantid))
+		some-project)))))))
 
 (defun make-project (&key pathname displayname tenant)
   "Make a PROJECT with the given attributes."
