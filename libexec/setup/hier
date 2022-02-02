@@ -61,7 +61,7 @@ hier_prefix()
     if [ -f /etc/login.defs ]; then
         sed -i -e "
 /ENV_SUPATH\|ENV_PATH/{
- s@PATH=@PATH=${prefix}/bin:@
+ s@PATH=@PATH=${prefix}/bin::${prefix}/sbin:@
 }
 " /etc/login.defs
     fi
@@ -69,7 +69,7 @@ hier_prefix()
     if [ -f /etc/profile ]; then
         sed -i -e "
 /PATH=\"/{
- s@PATH=\"@PATH=\"${prefix}/bin:@
+ s@PATH=\"@PATH=\"${prefix}/bin:${prefix}/sbin:@
 }
 " /etc/profile
     fi

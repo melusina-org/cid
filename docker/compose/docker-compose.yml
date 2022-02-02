@@ -46,6 +46,14 @@ services:
       - 'gocdagent_home:/home/go'
       - 'gocdagent_data:/godata'
       - "${CID_TENANT_DIR}/ssh/:/home/go/.ssh/"
+  operator:
+    image: "cid/operator"
+    command: ["/opt/cid/var/src/cid/", "org.melusina.cid"]
+    ports:
+      - "4005:4005"
+    volumes:
+      - "${CID_TOPLEVELDIR}/:/opt/cid/var/src/cid/"
+
 volumes:
   gocdserver_home:
     name: "${CID_TENANT_NAME}.gocdserver_home"

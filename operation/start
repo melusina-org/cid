@@ -74,9 +74,11 @@ compose_main()
 	config_file="${CID_TENANT_DIR}/cid.conf"
 
 	CID_TENANT_NAME="$(tenant_name)"
-	
+	CID_TOPLEVELDIR="${TOPLEVELDIR}"
+
 	export CID_TENANT_DIR
 	export CID_TENANT_NAME
+	export CID_TOPLEVELDIR
         exec docker-compose\
              --file "$(compose_file)"\
              --project-name "$(compose_project)"\

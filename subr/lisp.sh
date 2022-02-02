@@ -18,7 +18,6 @@ lisp_safe_batch()
          --no-userinit\
          --no-sysinit\
          --non-interactive\
-         --disable-debugger\
          "$@"
 }
 
@@ -26,7 +25,6 @@ lisp_unsafe_batch()
 {
     sbcl --noinform\
          --non-interactive\
-         --disable-debugger\
          "$@"
 }
 

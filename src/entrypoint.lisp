@@ -14,9 +14,42 @@
 
 (in-package #:org.melusina.cid)
 
-(defun toplevel ()
-  "The toplevel form for the cid program."
-  (format t "Usage: cid~% Operate an El Cid deployment.~%")
-  (uiop:quit 0))
+(unix-opts:define-opts
+  (:name :environment
+   :description "The environment we are running in."
+   :short #\E
+   :long "environment"
+   :arg-parser #'identity
+   :meta-arg "ENVIRONMENT"))
+
+(defun toplevel (&optional argv)
+  "The toplevel form for the El Cid program."
+  (labels
+      ((usage (&optional (exit-code 0))
+	 (format t "Usage: cid~% Operate an El Cid deployment.~%")
+	 (uiop:quit exit-code))
+       (idle-loop ()
+	 (loop do (sleep 300)))
+       (run-server ()
+	 (restart-case
+	     (progn
+	       (start-server)
+	       (idle-loop))
+	   (abort ()
+	     :report
+	     (lambda (stream) (write-string "Abort system operation." stream))
+	     (uiop:quit))))
+       (entrypoint (&optional argv)
+	 (multiple-value-bind (options free-args)
+	     (if argv
+		 (unix-opts:get-opts argv)
+		 (unix-opts:get-opts))
+	   (declare (ignore options))
+	   (cond
+	     ((= 0 (length free-args))
+	      (run-server))
+	     (t
+	      (usage 64))))))
+    (entrypoint argv)))
 
 ;;;; End of file `entrypoint.lisp'

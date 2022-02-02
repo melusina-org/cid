@@ -17,6 +17,8 @@
 set -ex
 test -x /usr/bin/vi
 test -x /usr/bin/sbcl
+test -x /usr/bin/bsdtar
+test -f /usr/local/share/bsdowl/bps.uses.mk 
 id cid
 id go
 id git

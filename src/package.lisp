@@ -43,6 +43,10 @@
    #:with-database
    #:*database-type*
    #:*database-connection-spec*
-  ))
+   ;;; Toplevel
+   #:start-server
+   #:stop-server
+   #:toplevel
+   ))
 
 ;;;; End of file `package.lisp'

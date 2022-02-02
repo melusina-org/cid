@@ -29,7 +29,7 @@
 #
 #  See Also: https://www.debian.org/mirror/list
 
-FROM debian:stretch
+FROM debian:bullseye
 ARG DEBIAN_MIRROR=none
 ARG PACKAGE=cid
 
@@ -61,6 +61,6 @@ RUN /opt/cid/libexec/setup/bsdowl
 COPY libexec/setup/testimage /opt/${PACKAGE}/libexec/setup/testimage
 COPY service/linux/testimage /opt/${PACKAGE}/libexec/testimage/linux
 
-ENV PATH="/opt/${PACKAGE}/sbin:/opt/${PACKAGE}/bin:/opt/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+ENV PATH="/opt/${PACKAGE}/bin:/opt/${PACKAGE}/sbin:/opt/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
 ### End of file `Dockerfile'

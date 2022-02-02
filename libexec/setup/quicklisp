@@ -17,11 +17,12 @@
 
 : ${PACKAGE:='cid'}
 : ${quicklisp_package:=${PACKAGE}}
-: ${quicklisp_quickstart:='/usr/share/cl-quicklisp/quicklisp.lisp'}
+: ${quicklisp_quickstart:='/usr/share/common-lisp/source/quicklisp/quicklisp.lisp'}
 : ${quicklisp_home:="/opt/${quicklisp_package}/var/quicklisp"}
 : ${quicklisp_local:="${quicklisp_home}/local-projects"}
 : ${quicklisp_own:=root}
 : ${quicklisp_group:=root}
+: ${quicklisp_srcdir:="/opt/${quicklisp_package}/var/src"}
 
 #
 # Install Quicklisp
@@ -42,16 +43,19 @@ quicklisp_install()
     quicklisp_prepare_install_script
     su - "${quicklisp_own}" -s /bin/sh -c 'sbcl --load /tmp/quicklisp-install.lisp'
 
+    chown "${quicklisp_own}:${quicklisp_group}" "${quicklisp_srcdir}"
+
     install -o "${quicklisp_own}" -g "${quicklisp_group}" /dev/null "${homedir}/.sbclrc"
     cat > "${homedir}/.sbclrc" <<EOF
 #-:quicklisp
 (let ((quicklisp-init #p"${quicklisp_home}/setup.lisp"))
   (when (probe-file quicklisp-init)
     (load quicklisp-init)))
-(let ((srcdir #p"/opt/cid/var/src/"))
+(let ((srcdir #p"${quicklisp_srcdir}"))
   (when (probe-file srcdir)
     (pushnew srcdir ql:*local-project-directories*)))
 EOF
+    install -o root -g root "${homedir}/.sbclrc" /root/.sbclrc
 }
 
 quicklisp_remove_install_script()
@@ -148,6 +152,18 @@ quicklisp_prepare_register_script()
 EOF
 }
 
+quicklisp_describe()
+{
+    cat <<EOF
+QuickLisp Package: ${quicklisp_package}
+QuickLisp QuickStart: ${quicklisp_quickstart}
+QuickLisp Home: ${quicklisp_home}
+QuickLisp Local: ${quicklisp_local}
+QuickLisp Owner: ${quicklisp_own}
+QuickLisp Group: ${quicklisp_group}
+EOF
+}
+
 quicklisp_main()
 {
     local OPTIND OPTARG OPTION action
@@ -183,6 +199,9 @@ quicklisp_main()
         load)
             quicklisp_load "$@"
             ;;
+	describe)
+	    quicklisp_describe "$@"
+	    ;;
         *)
             exit 70
     esac

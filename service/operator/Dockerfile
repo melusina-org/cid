@@ -1,4 +1,4 @@
-### Dockerfile – admin docker image
+### Dockerfile – operator docker image
 
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
@@ -20,35 +20,25 @@ RUN env DEBIAN_FRONTEND=noninteractive apt-get install -y\
  apache2\
  git\
  git-core\
- libapache2-mod-wsgi\
+ libsqlite3-dev\
  openssh-server\
  pwgen\
- python-flup\
- python-pip\
- python-psycopg2\
- subversion\
- trac-accountmanager\
- trac-authopenid\
- trac-bitten\
- trac-customfieldadmin\
- trac-diavisview\
- trac-graphviz\
- trac-mastertickets\
- trac-tags\
- trac-wysiwyg\
- trac-xmlrpc\
- trac
+ subversion
 
-ADD ./ /opt/cid/var/src/cid/.
-RUN chown -R cid:cid /opt/cid/var/src/.
+RUN cd /opt/cid/var/src && git clone https://github.com/foretspaisibles/cl-rashell.git rashell
+
+ADD --chown=cid:cid ./ /opt/cid/var/src/cid/.
 
 RUN su -l cid -c 'cd /opt/cid/var/src/cid && development/build lisp/cid'\
  && install -m 755 /opt/cid/var/src/cid/obj/lisp/Linux/org.melusina.cid /opt/cid/bin/cid
 
-COPY service/admin/subr.sh /opt/cid/libexec/setup/
+COPY service/operator/subr.sh /opt/cid/libexec/setup/
 RUN sh /opt/cid/libexec/setup/subr.sh
 
-COPY service/admin/admin.sh /opt/cid/libexec/setup/
+COPY service/operator/admin.sh /opt/cid/libexec/setup/
 RUN sh /opt/cid/libexec/setup/admin.sh
+
+ADD service/operator/entrypoint /opt/cid/bin/entrypoint
+ENTRYPOINT ["/opt/cid/bin/entrypoint"]
 
 ### End of file `Dockerfile'

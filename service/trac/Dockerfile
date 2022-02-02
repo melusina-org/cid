@@ -19,8 +19,8 @@ COPY libexec/setup/trac /opt/cid/libexec/setup/
 RUN /opt/cid/libexec/setup/trac
 
 ADD service/trac/entrypoint /opt/cid/bin/entrypoint
-
 ENTRYPOINT ["/opt/cid/bin/entrypoint"]
+
 VOLUME ["/var/git","/var/www","/var/trac"]
 
 ### End of file `Dockerfile'

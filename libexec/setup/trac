@@ -14,27 +14,21 @@
 
 env DEBIAN_FRONTEND=noninteractive apt-get install -y\
  apache2\
- git\
  git-core\
- libapache2-mod-wsgi\
+ git\
+ libapache2-mod-wsgi-py3\
  openssh-server\
  pwgen\
- python-flup\
- python-pip\
- python-psycopg2\
- python-pygments\
- subversion\
- trac-accountmanager\
- trac-authopenid\
- trac-bitten\
- trac-customfieldadmin\
- trac-diavisview\
- trac-graphviz\
- trac-mastertickets\
- trac-tags\
- trac-wysiwyg\
- trac-xmlrpc\
- trac
+ python3-jinja2\
+ python3-passlib\
+ python3-pip\
+ python3-psycopg2\
+ python3-pygments\
+ python3-setuptools\
+ python3-textile\
+ subversion
+
+python3 -m pip install https://download.edgewall.org/trac/Trac-latest-dev.tar.gz
 
 a2enmod wsgi
 

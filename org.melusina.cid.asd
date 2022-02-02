@@ -16,7 +16,7 @@
   :description "Count of Vivar and Prince of Continuous Integration and Delivery Systems"
   :author "Michaël Le Barbier"
   :license "CeCILL-B Free Software License Agreement"
-  :depends-on (:alexandria :clsql :clsql-sqlite3 :rashell)
+  :depends-on (:alexandria :clsql :clsql-sqlite3 :hunchentoot :rashell :swank :unix-opts)
   :components
   ((:module "src"
     :components ((:file "package")
@@ -25,6 +25,11 @@
 		 (:file "identity")
 		 (:file "project")
 		 (:file "database")
+		 ;;; API
+		 (:file "health")
+		 ;;; Server
+		 (:file "server")
+		 ;;; Toplevel
 		 (:file "entrypoint")))))
 
 (asdf:defsystem org.melusina.cid/testsuite

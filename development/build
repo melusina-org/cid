@@ -151,7 +151,8 @@ build_main()
 	    'service/trac'\
 	    'service/gitserver'\
 	    'service/gocdserver'\
-	    'service/gocdagent'
+	    'service/gocdagent'\
+	    'service/operator'
     fi
     build_artefact "$@"
 }
