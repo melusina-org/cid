@@ -78,7 +78,7 @@ compose_main()
 	
 	export CID_TENANT_DIR
 	export CID_TENANT_NAME
-	export CID_TOPLEVEL_DIR
+	export CID_TOPLEVELDIR
         exec docker-compose\
              --file "$(compose_file)"\
              --project-name "$(compose_project)"\

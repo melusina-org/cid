@@ -17,6 +17,7 @@ env DEBIAN_FRONTEND=noninteractive apt-get install -y\
  git-core\
  git\
  libapache2-mod-wsgi-py3\
+ libsqlite3-dev\
  openssh-server\
  pwgen\
  python3-jinja2\

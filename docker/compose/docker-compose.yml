@@ -53,6 +53,8 @@ services:
       - "4005:4005"
     volumes:
       - "${CID_TOPLEVELDIR}/:/opt/cid/var/src/cid/"
+      - 'gitserver_data:/var/git'
+      - 'trac_data:/var/trac'
 
 volumes:
   gocdserver_home:

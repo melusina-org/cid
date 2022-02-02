@@ -14,4 +14,26 @@
 
 (in-package #:org.melusina.cid)
 
+(defun bsd-install-directory (directory &key owner group mode)
+  "Create DIRECTORY whith the given OWNER, GROUP and MODE.
+If a directory with the given owner, group and mode already
+exists, the command exits succesfully.
+
+DIRECTORY can also be a list of directories."
+  (rashell:run-utility
+   (make-instance 'rashell:command
+		  :program #p"/usr/bin/install"
+		  :argv (concatenate 'list
+				     (list "-d" "-o" owner "-g" group "-m" (write-to-string mode :base 8))
+				     (mapcar #'namestring (ensure-list directory))))))
+
+
+(defun bsd-install-empty-file (file &key owner group mode)
+  "Create empty FILE whith the given OWNER, GROUP and MODE."
+    (rashell:run-utility
+     (make-instance 'rashell:command
+		    :program #p"/usr/bin/install"
+		    :argv (list "-o" owner "-g" group "-m" (write-to-string mode :base 8)
+				"/dev/null" (namestring file)))))
+
 ;;;; End of file `utilities.lisp'

@@ -16,14 +16,8 @@
 ARG CID_LINUX_REFERENCE=latest
 FROM cid/linux:${CID_LINUX_REFERENCE}
 
-RUN env DEBIAN_FRONTEND=noninteractive apt-get install -y\
- apache2\
- git\
- git-core\
- libsqlite3-dev\
- openssh-server\
- pwgen\
- subversion
+COPY libexec/setup/trac /opt/cid/libexec/setup/
+RUN /opt/cid/libexec/setup/trac
 
 RUN cd /opt/cid/var/src && git clone https://github.com/foretspaisibles/cl-rashell.git rashell
 

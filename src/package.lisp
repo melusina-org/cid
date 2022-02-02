@@ -15,7 +15,7 @@
 (defpackage #:org.melusina.cid
   (:nicknames #:cid)
   (:use #:cl)
-  (:import-from :alexandria :define-constant)
+  (:import-from :alexandria :define-constant :ensure-list)
   (:export
    ;;; Tenant
    #:make-tenant

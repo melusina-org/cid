@@ -25,6 +25,8 @@
 		 (:file "identity")
 		 (:file "project")
 		 (:file "database")
+		 ;;; Components
+		 (:file "trac")
 		 ;;; API
 		 (:file "health")
 		 ;;; Server
