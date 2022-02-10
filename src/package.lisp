@@ -17,6 +17,11 @@
   (:use #:cl)
   (:import-from :alexandria :define-constant :ensure-list)
   (:export
+   ;;; Random Strings
+   #:*alphabet-hexadecimal*
+   #:*alphabet-base36*
+   #:*alphabet-base64*
+   #:random-string
    ;;; Tenant
    #:make-tenant
    #:find-tenant
@@ -47,6 +52,23 @@
    #:start-server
    #:stop-server
    #:toplevel
+   ;;; Trac
+   #:trac-ensure-valid-installation
+   #:trac-list-environments
+   #:trac-find-environment
+   #:trac-create-environment
+   #:trac-delete-environment
+   #:trac-list-users
+   #:trac-create-user
+   #:trac-delete-user
+   #:trac-add-ssh-authorized-key
+   #:trac-create-git-repository
+   #:trac-delete-git-repository
+   #:trac-dump
+   #:trac-restore
+   ;;; GoCD
+   #:gocd-dump
+   #:gocd-restore
    ))
 
 ;;;; End of file `package.lisp'

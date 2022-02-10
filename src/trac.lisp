@@ -321,37 +321,41 @@ END {
 	      (make-instance 'rashell:command
 			     :directory srcdir
 			     :program #p"/bin/sh"
-			     :argv (list "-c" script))))))
-      (bsd-install-directory
-       (list
-	(merge-pathnames #p"trac/" tmpdir)
-	(merge-pathnames #p"trac/environments/" tmpdir)
-	(merge-pathnames #p"trac/sites/" tmpdir)
-	(merge-pathnames #p"trac/www/" tmpdir))
-       :owner "www-data"
-       :group "www-data"
-       :mode #o750)
-      (bsd-install-directory
-       (merge-pathnames #p"git/" tmpdir)
-       :owner "git"
-       :group "git"
-       :mode #o750)
-      (dump *trac-git-directory* "git")
-      (dump *trac-data-directory* "trac" "sites")
-      (dump *trac-data-directory* "trac" "www")
-      (loop for environment in (trac-list-environments)
-	    do (trac-admin environment
-			   "hotcopy"
-			   (namestring
-			    (let ((*trac-data-directory* (merge-pathnames #p"trac/" tmpdir)))
-			      (trac-environment-directory environment)))))
+			     :argv (list "-c" script)))))
+	 (make-dump ()    
+	   (bsd-install-directory
+	    (list
+	     (merge-pathnames #p"trac/" tmpdir)
+	     (merge-pathnames #p"trac/environments/" tmpdir)
+	     (merge-pathnames #p"trac/sites/" tmpdir)
+	     (merge-pathnames #p"trac/www/" tmpdir))
+	    :owner "www-data"
+	    :group "www-data"
+	    :mode #o750)
+	   (bsd-install-directory
+	    (merge-pathnames #p"git/" tmpdir)
+	    :owner "git"
+	    :group "git"
+	    :mode #o750)
+	   (dump *trac-git-directory* "git")
+	   (dump *trac-data-directory* "trac" "sites")
+	   (dump *trac-data-directory* "trac" "www")
+	   (loop for environment in (trac-list-environments)
+		 do (trac-admin environment
+				"hotcopy"
+				(namestring
+				 (let ((*trac-data-directory* (merge-pathnames #p"trac/" tmpdir)))
+				   (trac-environment-directory environment)))))
 
-      (rashell:run-utility
-       (make-instance 'rashell:command
-		      :directory tmpdir
-		      :program #p"/bin/tar"
-		      :argv (list "cJf" tarballname ".")))
-      (rashell:rm tmpdir :recursive t :force t)
+	   (rashell:run-utility
+	    (make-instance 'rashell:command
+			   :directory tmpdir
+			   :program #p"/bin/tar"
+			   :argv (list "cJf" tarballname "."))))
+	 (remove-tmpdir ()
+	   (rashell:rm tmpdir :recursive t :force t)))
+      (unwind-protect (make-dump)
+	(remove-tmpdir))
       (values nil))))
 
 

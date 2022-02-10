@@ -15,16 +15,26 @@
 (in-package #:org.melusina.cid/testsuite)
 
 (define-testcase run-unit-tests ()
-  (database-testsuite)
-  (tenant-testsuite)
-  (identity-testsuite)
-  (project-testsuite))
+  (let ((*testsuite-name* "UNIT"))
+    (database-testsuite)
+    (tenant-testsuite)
+    (identity-testsuite)
+    (project-testsuite)))
 
 (define-testcase run-all-tests ()
   (run-unit-tests))
 
 (defun run-all-tests-batch ()
   (if (run-all-tests)
+      (uiop:quit 0)
+      (uiop:quit 1)))
+
+(define-testcase run-acceptance-tests ()
+  (let ((*testsuite-name* "ACCEPTANCE"))
+    (trac-acceptance)))
+
+(defun run-acceptance-tests-batch ()
+  (if (run-acceptance-tests)
       (uiop:quit 0)
       (uiop:quit 1)))
 

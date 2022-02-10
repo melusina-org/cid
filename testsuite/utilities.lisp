@@ -14,11 +14,19 @@
 
 (in-package #:org.melusina.cid/testsuite)
 
+(defparameter *testsuite-name* "TESTSUITE"
+  "The name for the testsuite.
+
+Usually TESTSUITE but common values are ACCEPTANCE, INTEGRATION, PREFLIGHT, etc.")
+
+(defparameter *testsuite-id* (cid:random-string 6)
+  "A random identfier for the current testsuite run batch.")
+
 (defmacro with-test-database (&body body)
   `(let ((cid:*database-type*
 	   :sqlite3)
 	 (cid:*database-connection-spec*
-	   '("DATABASETESTSUITE")))
+	   (list (concatenate 'string *testsuite-name* *testsuite-id*))))
      (unwind-protect
 	  (progn (cid:connect-database) ,@body)
        (cid:disconnect-database)

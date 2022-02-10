@@ -20,7 +20,7 @@
 : ${subrdir:=${TOPLEVELDIR}/subr}
 : ${servicedir:=${TOPLEVELDIR}/service}
 : ${package:='cid'}
-: ${dockerimage:='cid/admin'}
+: ${dockerimage:='cid/operator'}
 : ${_admin_user:='root'}
 : ${_admin_interaction:=confirm}
 : ${wlog_prefix:="admin_console: $$"}

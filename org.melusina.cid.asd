@@ -27,6 +27,7 @@
 		 (:file "database")
 		 ;;; Components
 		 (:file "trac")
+		 (:file "gocd")
 		 ;;; API
 		 (:file "health")
 		 ;;; Server

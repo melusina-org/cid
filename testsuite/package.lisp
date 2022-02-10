@@ -17,6 +17,8 @@
   (:export
    #:run-all-tests
    #:run-all-tests-batch
+   #:run-acceptance-tests
+   #:run-acceptance-tests-batch
   ))
 
 ;;;; End of file `package.lisp'

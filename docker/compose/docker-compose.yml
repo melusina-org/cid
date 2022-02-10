@@ -55,6 +55,7 @@ services:
       - "${CID_TOPLEVELDIR}/:/opt/cid/var/src/cid/"
       - 'gitserver_data:/var/git'
       - 'trac_data:/var/trac'
+      - "${CID_TENANT_DIR}/backups/:/var/backups/cid/"
 
 volumes:
   gocdserver_home:
