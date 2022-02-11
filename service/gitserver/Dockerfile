@@ -15,36 +15,16 @@
 ARG CID_LINUX_REFERENCE=latest
 FROM cid/linux:${CID_LINUX_REFERENCE}
 
-RUN env DEBIAN_FRONTEND=noninteractive apt-get install -y\
- apache2\
- git\
- git-core\
- libapache2-mod-wsgi\
- openssh-server\
- pwgen\
- python-flup\
- python-pip\
- python-psycopg2\
- subversion\
- trac-accountmanager\
- trac-authopenid\
- trac-bitten\
- trac-customfieldadmin\
- trac-diavisview\
- trac-graphviz\
- trac-mastertickets\
- trac-tags\
- trac-wysiwyg\
- trac-xmlrpc\
- trac
+COPY libexec/setup/trac /opt/cid/libexec/setup/
+RUN /opt/cid/libexec/setup/trac
 
 ADD ./ /opt/cid/var/src/cid/.
 RUN chown -R cid:cid /opt/cid/var/src/cid/.
 
-COPY service/admin/subr.sh /opt/cid/libexec/setup/
+COPY service/operator/subr.sh /opt/cid/libexec/setup/
 RUN sh /opt/cid/libexec/setup/subr.sh
 
-COPY service/admin/admin.sh /opt/cid/libexec/setup/
+COPY service/operator/admin.sh /opt/cid/libexec/setup/
 RUN sh /opt/cid/libexec/setup/admin.sh
 
 COPY libexec/setup/gitserver /opt/cid/libexec/setup/
