@@ -17,7 +17,7 @@
 
 : ${PACKAGE:='cid'}
 : ${quicklisp_package:=${PACKAGE}}
-: ${quicklisp_quickstart:='/usr/share/common-lisp/source/quicklisp/quicklisp.lisp'}
+: ${quicklisp_quickstart:='/usr/share/cl-quicklisp/quicklisp.lisp'}
 : ${quicklisp_home:="/opt/${quicklisp_package}/var/quicklisp"}
 : ${quicklisp_local:="${quicklisp_home}/local-projects"}
 : ${quicklisp_own:=root}

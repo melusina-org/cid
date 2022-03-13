@@ -19,7 +19,7 @@
 #
 #  Possible values: v19.2.0 v20.1.0
 
-ARG GO_VERSION=v19.2.0
+ARG GO_VERSION=v21.4.0
 FROM gocd/gocd-server:${GO_VERSION}
 
 RUN mkdir -p /godata/plugins/external

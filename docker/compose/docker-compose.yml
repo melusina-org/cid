@@ -36,11 +36,14 @@ services:
     privileged: true
   gocdagent:
     image: "cid/gocdagent"
+    links:
+      - reverseproxy:gocd.gocdserver
     depends_on:
-      - gocdserver
+      - reverseproxy
     environment:
       GO_AGENT_SYSTEM_PROPERTIES: '-Xms1024m -Xmx1024m'
-      GO_SERVER_URL: https://gocdserver:8154/go
+      GO_SERVER_URL: https://gocd.gocdserver/go
+      AGENT_BOOTSTRAPPER_ARGS: '-sslVerificationMode NONE'
       DOCKER_HOST: tcp://docker:2375
     volumes:
       - 'gocdagent_home:/home/go'
