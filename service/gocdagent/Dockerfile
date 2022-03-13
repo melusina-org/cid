@@ -27,7 +27,7 @@ RUN install -o go -g root -d /opt/cid/var/quicklisp
 COPY libexec/setup/apt /opt/cid/libexec/setup/
 RUN /opt/cid/libexec/setup/apt
 
-RUN apt install texlive texinfo
+RUN apt install -y clang libffi-dev libgsl-dev texlive texinfo
 
 COPY libexec/setup/sbcl /opt/cid/libexec/setup/
 RUN /opt/cid/libexec/setup/sbcl
