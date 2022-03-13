@@ -271,8 +271,10 @@ END {
 }" (namestring (trac-site-pathname environment "htpasswd")))))))
 
 
-(defun trac-create-user (environment username role password)
-  "Create USERNAME with given ROLE in ENVIRONMENT."
+(defun trac-create-user (environment username role &optional password)
+  "Create USERNAME with given ROLE in ENVIRONMENT.
+When a PASSWORD is provided, this string is used to grant access
+to USERNAME using the htpasswd(1) program."
   (unless (trac-find-environment environment)
     (error "An environment called ~a does not exist." environment))
   (unless (find role (mapcar #'car (trac-environment-permission-db environment)) :test #'string=)
@@ -280,13 +282,14 @@ END {
   (unless (ppcre:scan "[a-z][a-z0-9_]*" username)
     (error "A username must consist of safe lowercase characters and underscores."))
   (trac-admin environment "permission" "add" username role)
-  (rashell:run-command
-   (make-instance 'rashell:command
-		  :program #p"/usr/bin/htpasswd"
-		  :argv (list "-b" "-b"
-			      (namestring (trac-site-pathname environment "htpasswd"))
-			      username
-			      password)))
+  (when password
+    (rashell:run-command
+     (make-instance 'rashell:command
+		    :program #p"/usr/bin/htpasswd"
+		    :argv (list "-b" "-b"
+				(namestring (trac-site-pathname environment "htpasswd"))
+				username
+				password))))
   (values nil))
 
 
