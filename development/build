@@ -9,7 +9,7 @@
 # All rights reserved.
 
 # This software is governed by the CeCILL-B license under French law and
-# abiding by the rules of distribution of free software.  You can  use, 
+# abiding by the rules of distribution of free software.  You can  use,
 # modify and/ or redistribute the software under the terms of the CeCILL-B
 # license as circulated by CEA, CNRS and INRIA at the following URL
 # "https://cecill.info/licences/Licence_CeCILL-B_V1-en.txt"
@@ -32,7 +32,8 @@ build_docker_version='latest'
 
 build_docker_tag()
 {
-    printf "${build_docker_registry}${build_docker_registry:+/}${build_docker_package}/$1:${build_docker_version}"
+    printf "${build_docker_registry}${build_docker_registry:+/}"
+    printf "${build_docker_package}/$1:${build_docker_version}"
 }
 
 
@@ -89,7 +90,9 @@ build_lisp_bundle()
 
     lisp_unsafe_batch\
         --eval "(ql:register-local-projects)"\
-        --eval "(ql:bundle-systems '(${lisp_systems}) :include-local-projects t :to #p\"${OBJDIR}/bundle/${lisp_bundle}\")"
+        --eval "(ql:bundle-systems '(${lisp_systems}) \
+	        :include-local-projects t \
+                :to #p\"${OBJDIR}/bundle/${lisp_bundle}\")"
 )
 
 
@@ -108,7 +111,8 @@ build_lisp_image()
 
     lisp_unsafe_batch\
 	--eval "(ql:quickload \"${lisp_system}\")"\
-	--eval "(save-lisp-and-die #p\"${OBJDIR}/lisp/${lisp_os}/${lisp_system}\" :executable t :purify t :toplevel #'${lisp_system}:toplevel)"
+	--eval "(save-lisp-and-die #p\"${OBJDIR}/lisp/${lisp_os}/${lisp_system}\" \
+	          :executable t :purify t :toplevel #'${lisp_system}:toplevel)"
 }
 
 
@@ -129,7 +133,8 @@ build_artefact()
                 build_docker_image "${artefact#docker/}"
                 ;;
 	    bundle/cid)
-		build_lisp_bundle 'org.melusina.cid' 'hunchentoot' 'swank' 'parse-float' 'kaputt' 'cl-ppcre' 'unix-opts'
+		build_lisp_bundle 'org.melusina.cid' 'hunchentoot'\
+				  'swank' 'parse-float' 'cl-ppcre' 'unix-opts'
 		;;
 	    lisp/cid)
 		build_lisp_image 'org.melusina.cid'

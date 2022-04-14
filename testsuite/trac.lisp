@@ -7,7 +7,7 @@
 ;;;; All rights reserved.
 
 ;;;; This software is governed by the CeCILL-B license under French law and
-;;;; abiding by the rules of distribution of free software.  You can  use, 
+;;;; abiding by the rules of distribution of free software.  You can  use,
 ;;;; modify and/ or redistribute the software under the terms of the CeCILL-B
 ;;;; license as circulated by CEA, CNRS and INRIA at the following URL
 ;;;; "https://cecill.info/licences/Licence_CeCILL-B_V1-en.txt"
@@ -27,7 +27,8 @@
 (define-testcase trac-operator-can-create-environment ()
   "Ensure that the trac operator can create a trac environment."
   (with-test-trac-environment
-    (assert-t (find *trac-environment* (cid:trac-list-environments) :test #'string-equal))))
+      (assert-t (find *trac-environment* (cid:trac-list-environments)
+		      :test #'string-equal))))
 
 (define-testcase trac-operator-can-create-and-delete-user ()
   "Ensure that the trac operator can create a user."
@@ -39,9 +40,11 @@
 	  (cid:random-string)))
     (with-test-trac-environment
       (cid:trac-create-user *trac-environment* username role password)
-      (assert-t (find username (cid:trac-list-users *trac-environment*) :test #'string-equal)) 
+      (assert-t (find username (cid:trac-list-users *trac-environment*)
+		      :test #'string-equal)) 
       (cid:trac-delete-user *trac-environment* username)
-      (assert-nil (find username (print (cid:trac-list-users *trac-environment*)) :test #'string-equal)))))
+      (assert-nil (find username (cid:trac-list-users *trac-environment*)
+			:test #'string-equal)))))
 
 (define-testcase trac-acceptance ()
   (trac-operator-can-create-environment)
