@@ -18,7 +18,7 @@
 #   The version of GoCD to customise.
 
 ARG GOCD_VERSION=v21.4.0
-FROM gocd/gocd-agent-ubuntu-18.04:${GOCD_VERSION}
+FROM gocd/gocd-agent-ubuntu-20.04:${GOCD_VERSION}
 
 USER root
 RUN install -d /opt/cid/libexec/setup
@@ -26,6 +26,9 @@ RUN install -o go -g root -d /opt/cid/var/quicklisp
 
 COPY libexec/setup/apt /opt/cid/libexec/setup/
 RUN /opt/cid/libexec/setup/apt
+
+RUN printf 'tzdata\ttzdata/Areas\tselect\tEurope\ntzdata\ttzdata/Zones/Europe\tselect\tParis'\
+ | debconf-set-selections
 
 RUN apt install -y clang libffi-dev libgsl-dev texlive texinfo
 

@@ -65,6 +65,12 @@ apt-get install -y gnupg2
 printf 'APT::Install-Recommends "false";\n'\
        >> /etc/apt/apt.conf.d/90norecommends
 
+debconf-set-selections <<'EOF'
+tzdata	tzdata/Areas	select	Europe
+tzdata	tzdata/Zones/Europe	select	Paris
+locales	locales/default_environment_locale	select	en_US.UTF-8
+EOF
+
 apt-get remove cmdtest
 
 apt-get install -y\
@@ -77,6 +83,7 @@ apt-get install -y\
   debconf-utils\
   git\
   less\
+  locales\
   lsb-release\
   lsof\
   man\
@@ -85,6 +92,7 @@ apt-get install -y\
   procps\
   ruby-mustache\
   sudo\
+  tzdata\
   wget\
   xz-utils
 

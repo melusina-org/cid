@@ -17,7 +17,7 @@
 
 : ${PACKAGE:='cid'}
 : ${quicklisp_package:=${PACKAGE}}
-: ${quicklisp_quickstart:='/usr/share/cl-quicklisp/quicklisp.lisp'}
+: ${quicklisp_quickstart:='/usr/share/common-lisp/source/quicklisp/quicklisp.lisp'}
 : ${quicklisp_home:="/opt/${quicklisp_package}/var/quicklisp"}
 : ${quicklisp_local:="${quicklisp_home}/local-projects"}
 : ${quicklisp_own:=root}
@@ -41,7 +41,7 @@ quicklisp_install()
             "${quicklisp_home}"
 
     quicklisp_prepare_install_script
-    su - "${quicklisp_own}" -s /bin/sh -c 'sbcl --load /tmp/quicklisp-install.lisp'
+    quicklisp_sbcl_load '/tmp/quicklisp-install.lisp'
 
     chown "${quicklisp_own}:${quicklisp_group}" "${quicklisp_srcdir}"
 
@@ -72,6 +72,10 @@ quicklisp_prepare_install_script()
 EOF
 }
 
+quicklisp_sbcl_load()
+{
+    su - "${quicklisp_own}" -s /bin/sh -c "sbcl --no-userinit --load $1"
+}
 
 #
 # Load Packages
@@ -88,7 +92,7 @@ quicklisp_load()
     ' EXIT TERM KILL
 
     quicklisp_prepare_load_script "$@"
-    su - "${quicklisp_own}" -s /bin/sh -c 'sbcl --load /tmp/quicklisp-load.lisp'
+    quicklisp_sbcl_load '/tmp/quicklisp-load.lisp'
 }
 
 quicklisp_remove_load_script()
@@ -132,7 +136,7 @@ quicklisp_register_local_projects()
     chown -R "${quicklisp_own}:${quicklisp_group}"\
           "${quicklisp_home}/local-projects"
 
-    su - "${quicklisp_own}" -s /bin/sh -c 'sbcl --load /tmp/quicklisp-register.lisp'
+    quicklisp_sbcl_load '/tmp/quicklisp-register.lisp'
 }
 
 quicklisp_remove_register_script()

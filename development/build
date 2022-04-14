@@ -65,7 +65,7 @@ build_docker_image()
 	failwith 1 "build: docker: %s: Nothing is known about this service." "$1"
     fi
 
-    docker build\
+    docker build --progress=plain\
            -t "${docker_tag}"\
 	   -f "${servicedir}/$1/Dockerfile"\
            "${TOPLEVELDIR}"

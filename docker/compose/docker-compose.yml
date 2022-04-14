@@ -25,6 +25,8 @@ services:
       - "2022:22"
   gocdserver:
     image: 'cid/gocdserver'
+    environment:
+      GO_SERVER_SYSTEM_PROPERTIES: '-Xms256m -Xmx256m'
     volumes:
       - 'gocdserver_home:/home/go'
       - 'gocdserver_data:/godata'
