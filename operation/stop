@@ -1,6 +1,6 @@
 #!/bin/sh
 
-### stop -- Tool to stop a deployment
+# stop — Tool to stop a deployment
 
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
@@ -88,4 +88,4 @@ compose_main()
 
 compose_main "$@"
 
-### End of file `stop'
+# End of file `stop'

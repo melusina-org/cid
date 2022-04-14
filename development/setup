@@ -1,6 +1,6 @@
 #!/bin/sh
 
-### setup -- Perform the setup step of lifecycle
+# setup — Perform the setup step of lifecycle
 
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
@@ -47,4 +47,4 @@ EOF
 
 setup_main
 
-### End of file `setup'
+# End of file `setup'

@@ -1,6 +1,6 @@
 #!/bin/sh
 
-### run -- Perform the run step of lifecycle
+# run — Perform the run step of lifecycle
 
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
@@ -38,4 +38,4 @@ main()
 main "$@"
 
 ### End of file `run'
-
+# End of file `run'

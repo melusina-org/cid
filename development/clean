@@ -1,6 +1,6 @@
 #!/bin/sh
 
-### clean -- Perform the clean step of lifecycle
+# clean — Perform the clean step of lifecycle
 
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
@@ -88,4 +88,4 @@ main()
 
 main "$@"
 
-### End of file `clean'
+# End of file `clean'

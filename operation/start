@@ -1,6 +1,6 @@
 #!/bin/sh
 
-### start -- Tool to start a deployment
+# start — Tool to start a deployment
 
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
@@ -88,4 +88,4 @@ compose_main()
 
 compose_main "$@"
 
-### End of file `start'
+# End of file `start'

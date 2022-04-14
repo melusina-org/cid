@@ -1,6 +1,6 @@
 #!/bin/sh
 
-### build -- Build software artefacts for El Cid
+# build — Build software artefacts for El Cid
 
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
@@ -159,4 +159,4 @@ build_main()
 
 build_main "$@"
 
-### End of file `build'
+# End of file `build'

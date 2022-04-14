@@ -1,6 +1,6 @@
 #!/bin/sh
 
-### testsuite -- Run test suite
+# testsuite — Run test suite
 
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
@@ -47,4 +47,4 @@ testsuite_main()
 
 testsuite_main "$@"
 
-### End of file `testsuite'
+# End of file `testsuite'

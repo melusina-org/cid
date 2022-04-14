@@ -1,6 +1,6 @@
 #!/bin/sh
 
-### makedoc -- Make documentation
+# makedoc — Make documentation
 
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
@@ -83,4 +83,4 @@ makedoc_main()
 
 makedoc_main "$@"
 
-### End of file `makedoc'
+# End of file `makedoc'
