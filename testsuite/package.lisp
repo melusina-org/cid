@@ -13,7 +13,7 @@
 ;;;; "https://cecill.info/licences/Licence_CeCILL-B_V1-en.txt"
 
 (defpackage #:org.melusina.cid/testsuite
-  (:use #:cl #:kaputt)
+  (:use #:cl #:org.meusina.confidence)
   (:export
    #:run-all-tests
    #:run-all-tests-batch
