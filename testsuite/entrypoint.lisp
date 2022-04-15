@@ -24,18 +24,8 @@
 (define-testcase run-all-tests ()
   (run-unit-tests))
 
-(defun run-all-tests-batch ()
-  (if (run-all-tests)
-      (uiop:quit 0)
-      (uiop:quit 1)))
-
 (define-testcase run-acceptance-tests ()
   (let ((*testsuite-name* "ACCEPTANCE"))
     (trac-acceptance)))
-
-(defun run-acceptance-tests-batch ()
-  (if (run-acceptance-tests)
-      (uiop:quit 0)
-      (uiop:quit 1)))
 
 ;;;; End of file `entrypoint.lisp'

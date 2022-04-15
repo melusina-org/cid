@@ -13,12 +13,8 @@
 ;;;; "https://cecill.info/licences/Licence_CeCILL-B_V1-en.txt"
 
 (defpackage #:org.melusina.cid/testsuite
-  (:use #:cl #:org.meusina.confidence)
+  (:use #:cl #:org.melusina.confidence)
   (:export
-   #:run-all-tests
-   #:run-all-tests-batch
-   #:run-acceptance-tests
-   #:run-acceptance-tests-batch
-  ))
+   ))
 
 ;;;; End of file `package.lisp'

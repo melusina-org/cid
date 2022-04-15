@@ -22,11 +22,15 @@ Usually TESTSUITE but common values are ACCEPTANCE, INTEGRATION, PREFLIGHT, etc.
 (defparameter *testsuite-id* (cid:random-string 6)
   "A random identfier for the current testsuite run batch.")
 
+(defun testsuite-database-name ()
+  "The name of the testsuite database file."
+  (concatenate 'string *testsuite-name* *testsuite-id*))
+
 (defmacro with-test-database (&body body)
   `(let ((cid:*database-type*
 	   :sqlite3)
 	 (cid:*database-connection-spec*
-	   (list (concatenate 'string *testsuite-name* *testsuite-id*))))
+	   (list (testsuite-database-name))))
      (unwind-protect
 	  (progn (cid:connect-database) ,@body)
        (cid:disconnect-database)

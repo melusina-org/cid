@@ -16,8 +16,8 @@
 
 (define-testcase database-testsuite ()
   (with-test-database
-    (assert-t*(probe-file "DATABASETESTSUITE"))
+    (assert-t* (probe-file (testsuite-database-name)))
     (assert-t (clsql:table-exists-p "tenant")))
-  (assert-nil (probe-file "DATABASETESTSUITE")))
+  (assert-nil (probe-file (testsuite-database-name))))
 
 ;;;; End of file `database.lisp'

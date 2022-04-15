@@ -15,34 +15,48 @@
 # "https://cecill.info/licences/Licence_CeCILL-B_V1-en.txt"
 
 : ${TOPLEVELDIR:=$(git rev-parse --show-toplevel)}
+: ${testsuitesystem:="org.melusina.cid/testsuite"}
+: ${testsuiteclean:='no'}
+: ${testsuitelisp:='sbcl'}
 
-testsuite_sbcl()
+testsuite_lisp()
 {
-    sbcl --noinform --disable-debugger "$@"
+    case "${testsuitelisp}" in
+	sbcl)
+	    sbcl --noinform --disable-debugger "$@"
+	    ;;
+	ccl|ccl64)
+	    ccl64 "$@"
+	    ;;
+    esac
 }
 
-testsuite_run_all_tests()
-(
-    cd "${TOPLEVELDIR}"
-    testsuite_sbcl\
-	--eval '
-(unless (ql:where-is-system "org.melusina.cid/testsuite")
- (push #p"./" ql:*local-project-directories*)
- (ql:register-local-projects))
-'\
-	--eval '(ql:quickload "org.melusina.cid/testsuite" :silent t)'\
-	--eval '(org.melusina.cid/testsuite:run-all-tests-batch)'
-)
+testsuite_run()
+{
+    if [ $# -eq 0 ]; then
+	set -- 'run-all-tests'
+    fi
+    testsuite_lisp\
+	--eval "(ql:quickload \"${testsuitesystem}\" :silent t)"\
+	--eval "(${testsuitesystem}:$1)"
+}
 
 testsuite_main()
 {
-    testsuite_run_all_tests
-    status="$?"
+    while getopts 'CL:' OPTARG; do
+	case "${OPTION}" in
+	    C)	testsuiteclean='yes';;
+	    L)	testsuitelisp="${OPTARG}";;
+	esac
+    done
 
-    if [ "${status}" -gt 0 ]; then
-	1>&2 printf 'testsuite: Failure: There were some failed tests.\n'
+    shift $((OPTIND - 1))
+
+    if [ "${testsuiteclean}" = 'yes' ]; then
+	(cd "${TOPLEVELDIR}" && development/clean)
     fi
-    return "${status}"
+    
+    testsuite_run "$@"
 }
 
 testsuite_main "$@"

@@ -19,7 +19,8 @@ FROM cid/linux:${CID_LINUX_REFERENCE}
 COPY libexec/setup/trac /opt/cid/libexec/setup/
 RUN /opt/cid/libexec/setup/trac
 
-RUN cd /opt/cid/var/src && git clone https://github.com/foretspaisibles/cl-rashell.git rashell
+RUN install -d -m 755 -o cid -g cid /opt/cid/var/src/rashell
+ADD obj/build/consultancy/cl-rashell.tar /opt/cid/var/src/rashell
 
 ADD --chown=cid:cid ./ /opt/cid/var/src/cid/.
 

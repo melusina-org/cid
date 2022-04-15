@@ -32,7 +32,7 @@ services:
       - 'gocdserver_data:/godata'
       - "${CID_TENANT_DIR}/ssh/:/home/go/.ssh/"
   docker:
-    image: 'docker:stable-dind'
+    image: 'docker:dind'
     environment:
       DOCKER_TLS_CERTDIR: ""
     privileged: true
@@ -41,6 +41,7 @@ services:
     links:
       - reverseproxy:gocd.gocdserver
     depends_on:
+      - docker
       - reverseproxy
     environment:
       GO_AGENT_SYSTEM_PROPERTIES: '-Xms1024m -Xmx1024m'
@@ -61,7 +62,6 @@ services:
       - 'gitserver_data:/var/git'
       - 'trac_data:/var/trac'
       - "${CID_TENANT_DIR}/backups/:/var/backups/cid/"
-
 volumes:
   gocdserver_home:
     name: "${CID_TENANT_NAME}.gocdserver_home"

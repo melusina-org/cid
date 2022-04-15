@@ -1,0 +1,73 @@
+#!/bin/sh
+
+### entrypoint -- Entrypoint for the Cid Service
+
+# El Cid (https://github.com/melusina-conseil/cid)
+# This file is part of El Cid.
+#
+# Copyright © 2017–2022 Michaël Le Barbier
+# All rights reserved.
+
+# This software is governed by the CeCILL-B license under French law and
+# abiding by the rules of distribution of free software.  You can  use,
+# modify and/ or redistribute the software under the terms of the CeCILL-B
+# license as circulated by CEA, CNRS and INRIA at the following URL
+# "https://cecill.info/licences/Licence_CeCILL-B_V1-en.txt"
+
+# failwith [STATUS] PRINTF-LIKE-ARGV
+#  Fail with the given diagnostic message
+#
+# A numeric STATUS can be used to convey a custom exit status, instead
+# of the value 1.  A newline is automatically added to the output.
+
+failwith()
+{
+    local OPTIND OPTION OPTARG status
+
+    status=1
+    OPTIND=1
+
+    case "$1" in
+	[0-9][0-9][0-9]|[0-9][0-9]|[0-9])
+	    status="$1"
+	    shift
+	    ;;
+	*)
+	    :
+    esac
+
+    {
+	printf 'Error: '
+	printf "$@"
+	printf '\n'
+    } 1>&2
+
+    exit "${status}"
+}
+
+entrypoint_run_working_copy()
+(
+    local lisp_system working_copy
+    working_copy="$1"
+    lisp_system="$2"
+
+    cd "${working_copy}"
+
+    exec sbcl --noinform\
+	 --eval "(ql:quickload :${lisp_system})"\
+	 --eval "(${lisp_system}:toplevel)"
+)
+
+entrypoint_main()
+{
+    if [ $# -eq 0 ]; then
+        set -- '/opt/cid/bin/cid'
+    elif [ $# -gt 0 -a -d "$1" ]; then
+	set -- entrypoint_run_working_copy "$@"
+    fi
+    "$@"
+}
+
+entrypoint_main "$@"
+
+### End of file `entrypoint'

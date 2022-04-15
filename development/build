@@ -59,19 +59,51 @@ build_docker_db()
 
 build_docker_image()
 (
-    local docker_tag
+    local docker_tag docker_cache
     docker_tag=$(build_docker_tag "$1")
+    docker_cache=''
 
+    if [ -n "${DISABLE_DOCKER_CACHE}" ]; then
+	docker_cache='--no-cache'
+    fi
+    
     if [ ! -d "${servicedir}/$1" ]; then
 	failwith 1 "build: docker: %s: Nothing is known about this service." "$1"
     fi
 
     docker build --progress=plain\
+	   ${docker_cache}\
            -t "${docker_tag}"\
 	   -f "${servicedir}/$1/Dockerfile"\
            "${TOPLEVELDIR}"
 )
 
+# build_git_tarball REMOTE
+#  Build a tarball with GIT archive.
+#
+# The main branch of remote repositories is stored under obj/build/
+# using a name derived from the correspoding remote.
+
+build_git_tarball()
+(
+    : ${OBJDIR:?}
+
+    git_remote="$1"
+    git_ref='main'
+
+    git_repository="${git_remote##*:}"
+    git_repository="${git_repository%%*.git}"
+
+    git_tarball="${git_repository##*/}.tar"
+    git_tarballdir="${OBJDIR}/build/${git_repository%/*}"
+
+    mkdir -p "${git_tarballdir}"
+    git archive\
+	--format=tar\
+	--remote="${git_remote}"\
+	--output="${git_tarballdir}/${git_tarball}"\
+	main
+)
 
 # build_lisp_bundle SYSTEM-DESIGNATOR [ OTHER-SYSTEM-DESIGNATORS ]
 #  Build a lisp bundle
@@ -123,7 +155,11 @@ build_artefact()
 {
     local artefact
     for artefact in "$@"; do
+	printf 'build: artefact: %s\n' "${artefact}"
         case "${artefact}" in
+	    git/*)
+		build_git_tarball "${artefact#git/}"
+		;;
             service/*)
                 build_docker_image "${artefact#service/}"
                 ;;
@@ -143,6 +179,9 @@ build_artefact()
                 failwith '%s: Nothing is known about this kind of artefact.' "${artefact#/*}"
                 ;;
         esac
+	if [ $? -gt 0 ]; then
+	    failwith 'build: artefact: %s: There were some errors' "${artefact}"
+	fi
     done
 }
 
@@ -150,6 +189,7 @@ build_main()
 {
     if [ $# -eq 0 ]; then
         set --\
+	    'git/git@melusina-git:consultancy/cl-rashell'\
 	    'lisp/cid'\
 	    'service/linux'\
 	    'service/reverseproxy'\
