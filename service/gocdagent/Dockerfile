@@ -30,7 +30,7 @@ RUN /opt/cid/libexec/setup/apt
 RUN printf 'tzdata\ttzdata/Areas\tselect\tEurope\ntzdata\ttzdata/Zones/Europe\tselect\tParis'\
  | debconf-set-selections
 
-RUN apt install -y clang libffi-dev libgsl-dev texlive texinfo
+RUN apt install -y clang libffi-dev libgsl-dev texlive texinfo docker.io
 
 COPY libexec/setup/sbcl /opt/cid/libexec/setup/
 RUN /opt/cid/libexec/setup/sbcl
