@@ -448,8 +448,8 @@ to USERNAME using the htpasswd(1) program."
 	       (concatenate 'string repository "/")
 	       (concatenate 'string repository ".git/"))
 	   (trac-git-directory environment))))
-    (rashell:run-utility
-     (rashell:rm repository-pathname :force t :recursive t))
+    (trac-admin environment "repository" "remove" repository)
+    (rashell:rm repository-pathname :force t :recursive t)
     (values nil)))
 
 ;;;; End of file `trac.lisp'
