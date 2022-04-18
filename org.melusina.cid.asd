@@ -26,15 +26,22 @@
 		 (:file "identity")
 		 (:file "project")
 		 (:file "database")
+		 (:file "provider")
 		 ;;; Components
 		 (:file "trac")
 		 (:file "gocd")
+		 ;;; Providers
 		 ;;; API
 		 (:file "health")
 		 ;;; Server
 		 (:file "server")
 		 ;;; Toplevel
-		 (:file "entrypoint")))))
+		 (:file "entrypoint")))
+   (:module "provider"
+    :components
+    ((:module "src"
+      :components
+      ((:file "null")))))))
 
 (asdf:defsystem org.melusina.cid/testsuite
   :description "Count of Vivar and Prince of Continuous Integration and Delivery Systems"
@@ -49,6 +56,12 @@
 		 (:file "identity")
 		 (:file "project")
 		 (:file "database")
-		 (:file "entrypoint")))))
+		 (:file "provider")
+		 (:file "entrypoint")))
+   (:module "provider"
+    :components
+    ((:module "testsuite"
+      :components
+      ((:file "null")))))))
 
 ;;;; End of file `org.melusina.cid.asd'

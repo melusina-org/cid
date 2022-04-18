@@ -15,7 +15,7 @@
 (defpackage #:org.melusina.cid
   (:nicknames #:cid)
   (:use #:cl)
-  (:import-from :alexandria :define-constant :ensure-list)
+  (:import-from :alexandria :define-constant :ensure-list :make-keyword)
   (:export
    ;;; Random Strings
    #:*alphabet-hexadecimal*
@@ -52,6 +52,11 @@
    #:start-server
    #:stop-server
    #:toplevel
+   ;;; Provider
+   #:provider
+   #:find-provider
+   ;;; Null Provider
+   #:make-null-provider
    ;;; Trac
    #:trac-ensure-valid-installation
    #:trac-list-environments

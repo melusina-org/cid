@@ -22,7 +22,7 @@
     (loop for (pathname displayname) in tenant-table-contents
 	  do (cid:make-tenant :pathname pathname :displayname displayname))))
 
-(define-testcase tenant-testsuite ()
+(define-testcase testsuite-tenant ()
   (with-test-database
     (populate-tenant-table)
     (assert-string= "Test Suite"

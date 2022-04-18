@@ -22,7 +22,7 @@
     (loop for (pathname displayname tenant role) in user-table-contents
 	  do (cid:make-user :pathname pathname :displayname displayname :tenant tenant :role role))))
 
-(define-testcase user-testsuite ()
+(define-testcase testsuite-user ()
   (with-test-database
     (populate-tenant-table)
     (populate-user-table)
@@ -42,7 +42,7 @@
 	(cid:make-user :pathname "testuser" :displayname "Test User" :tenant "testsuite")
 	t)))
 
-(define-testcase identity-testsuite ()
-  (user-testsuite))
+(define-testcase testsuite-identity ()
+  (testsuite-user))
 
 ;;;; End of file `identity.lisp'

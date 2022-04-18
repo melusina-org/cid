@@ -1,4 +1,4 @@
-;;;; database.lisp — Database Connection for El Cid
+;;;; null.lisp — The null provider
 
 ;;;; El Cid (https://github.com/melusina-conseil/cid)
 ;;;; This file is part of El Cid.
@@ -14,10 +14,13 @@
 
 (in-package #:org.melusina.cid/testsuite)
 
-(define-testcase testsuite-database ()
-  (with-test-database
-    (assert-t* (probe-file (testsuite-database-name)))
-    (assert-t (clsql:table-exists-p "tenant")))
-  (assert-nil (probe-file (testsuite-database-name))))
+(define-testcase validate-null-provider ()
+  "Ensure the NULL-PROVIDER is a singleton."
+  (let ((cid::*providers*
+	  (make-hash-table)))
+    (assert-eq nil (cid:find-provider :null))
+    (assert-eq (cid:make-null-provider) (cid:make-null-provider))
+    (assert-t* (cid:find-provider :null))
+    (assert-eq (cid:make-null-provider) (cid:find-provider :null))))
 
-;;;; End of file `database.lisp'
+;;;; End of file `null.lisp'

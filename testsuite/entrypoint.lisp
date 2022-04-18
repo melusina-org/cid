@@ -16,16 +16,17 @@
 
 (define-testcase run-unit-tests ()
   (let ((*testsuite-name* "UNIT"))
-    (database-testsuite)
-    (tenant-testsuite)
-    (identity-testsuite)
-    (project-testsuite)))
-
-(define-testcase run-all-tests ()
-  (run-unit-tests))
+    (testsuite-database)
+    (testsuite-tenant)
+    (testsuite-identity)
+    (testsuite-project)
+    (testsuite-provider)))
 
 (define-testcase run-acceptance-tests ()
   (let ((*testsuite-name* "ACCEPTANCE"))
     (trac-acceptance)))
+
+(define-testcase run-all-tests ()
+  (run-unit-tests))
 
 ;;;; End of file `entrypoint.lisp'

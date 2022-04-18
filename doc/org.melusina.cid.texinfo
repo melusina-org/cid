@@ -70,11 +70,12 @@ license as circulated by CEA, CNRS and INRIA at the following URL
 
 @menu
 * Introduction::
+* Providers::
 @end menu
 
 @end ifnottex
 
-@node Introduction, , Top, Top
+@node Introduction, Providers, Top, Top
 @chapter Introduction
 
 The @b{El Cid} project aims at providing a complete continuous
@@ -84,4 +85,8 @@ deployed trivially either locally, on bare metal or in the cloud.
 
 It is based on Debian, Ubuntu, Haproxy, GoCD, Gitea, trac.
 
+@node Providers, , Introduction, Top
+@chapter Providers
+
+@include include/class-cid-provider.texinfo
 @bye

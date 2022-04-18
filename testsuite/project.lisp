@@ -14,14 +14,22 @@
 
 (in-package #:org.melusina.cid/testsuite)
 
+(defparameter *example-project-definitions*
+  '((:pathname "testproject"
+     :displayname "Test Project"
+     :tenant "testsuite"))
+  "Some project definitions that can be used in the testsuites.")
+
+(defun example-project ()
+  "Some project that can be used in the testsuite."
+  (apply #'cid:make-project (first *example-project-definitions*)))
+
 (defun populate-project-table ()
   "Populate the PROJECT table with some test data."
-  (let ((project-table-contents
-	  '(("testproject" "Test Project" "testsuite"))))
-    (loop for (pathname displayname tenant) in project-table-contents
-	  do (cid:make-project :pathname pathname :displayname displayname :tenant tenant))))
+  (loop :for example :in *example-project-definitions*
+	:do (apply #'cid:make-project example)))
 
-(define-testcase project-testsuite ()
+(define-testcase testsuite-project ()
   (with-test-database
     (populate-tenant-table)
     (populate-project-table)

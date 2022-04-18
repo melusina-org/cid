@@ -24,7 +24,15 @@ lint_sbcl()
 lint_main()
 {
     lint_sbcl --load "${TOPLEVELDIR}/libexec/lisp/setup.lisp"\
-	      --eval '(atelier:lint #p"src" #p"testsuite" #p"development" #p"operation")'
+	      --eval '(progn
+(setf atelier:*linter-interactive-p* nil)
+(atelier:lint
+  #p"src"
+  #p"testsuite"
+  #p"provider"
+  #p"development"
+  #p"operation")
+)'
 }
 
 lint_main "$@"

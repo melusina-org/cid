@@ -49,16 +49,39 @@
       (integer
        (caar (clsql:select 'project :where [= [slot-value 'project 'projectid] designator]))))))
 
-(defun make-project (&key pathname displayname tenant)
+(defun make-project (&rest initargs &key pathname displayname tenant)
   "Make a PROJECT with the given attributes."
-  (let* ((tenant
-	   (find-tenant tenant))
-	 (project
-	   (make-instance 'project
-			  :tenantid (slot-value tenant 'tenantid)
-			  :pathname pathname
-			  :displayname displayname)))
-    (clsql:update-records-from-instance project)
-    (values project)))
+  (declare (ignore initargs))
+  (let ((tenant
+	  (or (find-tenant tenant)
+	      (error "Cannot find tenant ~S." tenant))))
+    (labels
+	((other-attributes-match-p (project)
+	   (unless project
+	     (return-from other-attributes-match-p project))
+	   (unless (string-equal displayname (slot-value project 'displayname))
+	     (error "Project attribute mismatch.
+A project with the qualified pathname ~A exists
+but some attribute differs. The attribute DISPLAYNAME in the existing project
+is ~S instead of ~S."
+		    (slot-value project 'pathname)
+		    (slot-value project 'displayname) displayname))
+	   (unless (equal (slot-value tenant 'tenantid) (slot-value project 'tenantid))
+	     (error "Project attribute mismatch.
+A project with the qualified pathname ~A exists
+but some attribute differs. The attribute TENANTID in the existing project
+is ~S instead of ~S."
+		    (slot-value project 'pathname)
+		    (slot-value project 'tenantid) (slot-value tenant 'tenantid)))
+	   project))
+      (let ((project
+	      (or (other-attributes-match-p
+		   (find-project pathname tenant))
+		  (make-instance 'project
+				 :tenantid (slot-value tenant 'tenantid)
+				 :pathname pathname
+				 :displayname displayname))))
+	(clsql:update-records-from-instance project)
+	(values project)))))
 
 ;;;; End of file `project.lisp'

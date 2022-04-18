@@ -1,4 +1,4 @@
-;;;; lint — Linter for El Cid
+;;;; setup.lisp — Atelier Setup for El Cid
 
 ;;;; El Cid (https://github.com/melusina-conseil/cid)
 ;;;; This file is part of El Cid.
@@ -7,7 +7,7 @@
 ;;;; All rights reserved.
 
 ;;;; This software is governed by the CeCILL-B license under French law and
-;;;; abiding by the rules of distribution of free software.  You can  use, 
+;;;; abiding by the rules of distribution of free software.  You can  use,
 ;;;; modify and/ or redistribute the software under the terms of the CeCILL-B
 ;;;; license as circulated by CEA, CNRS and INRIA at the following URL
 ;;;; "https://cecill.info/licences/Licence_CeCILL-B_V1-en.txt"
@@ -32,4 +32,8 @@
         (:homepage . "https://github.com/melusina-conseil/cid")
         (:license . :cecill-b)))
 
-;;;; End of file `lint'
+(ql:quickload "org.melusina.cid" :silent t)
+
+(clsql:enable-sql-reader-syntax)
+
+;;;; End of file `setup.lisp'

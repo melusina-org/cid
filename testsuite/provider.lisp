@@ -1,4 +1,4 @@
-;;;; database.lisp — Database Connection for El Cid
+;;;; provider.lisp — Projects for El Cid
 
 ;;;; El Cid (https://github.com/melusina-conseil/cid)
 ;;;; This file is part of El Cid.
@@ -14,10 +14,7 @@
 
 (in-package #:org.melusina.cid/testsuite)
 
-(define-testcase testsuite-database ()
-  (with-test-database
-    (assert-t* (probe-file (testsuite-database-name)))
-    (assert-t (clsql:table-exists-p "tenant")))
-  (assert-nil (probe-file (testsuite-database-name))))
+(define-testcase testsuite-provider ()
+  (validate-null-provider))
 
-;;;; End of file `database.lisp'
+;;;; End of file `provider.lisp'
