@@ -14,7 +14,7 @@
 
 (in-package #:org.melusina.cid/testsuite)
 
-(define-testcase validate-null-provider ()
+(define-testcase ensure-null-provider-is-a-singleton ()
   "Ensure the NULL-PROVIDER is a singleton."
   (let ((cid::*providers*
 	  (make-hash-table)))
@@ -22,5 +22,8 @@
     (assert-eq (cid:make-null-provider) (cid:make-null-provider))
     (assert-t* (cid:find-provider :null))
     (assert-eq (cid:make-null-provider) (cid:find-provider :null))))
+
+(define-testcase testsuite-null-provider ()
+  (ensure-null-provider-is-a-singleton))
 
 ;;;; End of file `null.lisp'

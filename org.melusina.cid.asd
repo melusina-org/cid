@@ -41,7 +41,8 @@
     :components
     ((:module "src"
       :components
-      ((:file "null")))))))
+      ((:file "null")
+       (:file "docker-engine")))))))
 
 (asdf:defsystem org.melusina.cid/testsuite
   :description "Count of Vivar and Prince of Continuous Integration and Delivery Systems"
@@ -62,6 +63,7 @@
     :components
     ((:module "testsuite"
       :components
-      ((:file "null")))))))
+      ((:file "null")
+       (:file "docker-engine")))))))
 
 ;;;; End of file `org.melusina.cid.asd'

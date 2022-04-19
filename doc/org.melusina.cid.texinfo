@@ -85,8 +85,26 @@ deployed trivially either locally, on bare metal or in the cloud.
 
 It is based on Debian, Ubuntu, Haproxy, GoCD, Gitea, trac.
 
-@node Providers, , Introduction, Top
+@node Providers, Null Provider, Introduction, Top
 @chapter Providers
 
 @include include/class-cid-provider.texinfo
+
+@menu
+* Null Provider::
+* Docker Engine::
+@end menu
+
+@node Null Provider, Docker Engine, Providers, Providers
+@section Null Provider
+
+@include include/class-cid-null-provider.texinfo
+@include include/fun-cid-make-null-provider.texinfo
+
+@node Docker Engine, , Null Provider, Providers
+@section Docker Engine
+
+@include include/class-cid-docker-engine.texinfo
+@include include/fun-cid-make-docker-engine.texinfo
+
 @bye

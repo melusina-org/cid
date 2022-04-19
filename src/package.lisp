@@ -55,8 +55,13 @@
    ;;; Provider
    #:provider
    #:find-provider
+   #:configure
    ;;; Null Provider
+   #:null-provider
    #:make-null-provider
+   ;; Docker Engine Provider
+   #:docker-engine
+   #:make-docker-engine
    ;;; Trac
    #:trac-ensure-valid-installation
    #:trac-list-environments

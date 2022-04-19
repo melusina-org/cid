@@ -66,4 +66,26 @@ is a keyword, it corresponding entry in *PROVIDERS* is used."
     ((keywordp designator)
      (gethash designator *providers*))))
 
+
+;;;;
+;;;; Configure
+;;;;
+
+(defgeneric configure (designator)
+  (:documentation
+   "Configure the provider identified by DESIGNATOR.
+
+The configuration lifecycle step of a PROVIDER prepares a provider
+to operate. This verifies the connectivity to services, the ability
+to write on local file systems, etc.")
+  (:method ((designator symbol))
+    (unless (keywordp designator)
+      (error "The symbol ~S is not a valid provider designator.
+A symbol which is a valid provider designator must be a keyword."
+	     designator)
+      (configure (find-provider designator))))
+  (:method ((instance provider))
+    (declare (ignore instance))
+    nil))
+
 ;;;; End of file `provider.lisp'

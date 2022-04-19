@@ -1,4 +1,4 @@
-;;;; null.lisp — The null provider
+;;;; null.lisp — Null Provider for El Cid
 
 ;;;; El Cid (https://github.com/melusina-conseil/cid)
 ;;;; This file is part of El Cid.
