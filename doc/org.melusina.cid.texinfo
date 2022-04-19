@@ -70,12 +70,14 @@ license as circulated by CEA, CNRS and INRIA at the following URL
 
 @menu
 * Introduction::
-* Providers::
+* Infrastructure::
+* Null Provider::
+* Docker Engine::
 @end menu
 
 @end ifnottex
 
-@node Introduction, Providers, Top, Top
+@node Introduction, Infrastructure, Top, Top
 @chapter Introduction
 
 The @b{El Cid} project aims at providing a complete continuous
@@ -85,24 +87,46 @@ deployed trivially either locally, on bare metal or in the cloud.
 
 It is based on Debian, Ubuntu, Haproxy, GoCD, Gitea, trac.
 
-@node Providers, Null Provider, Introduction, Top
-@chapter Providers
+@node Infrastructure, Null Provider, Introduction, Top
+@chapter The Infrastructure Dictionary
 
 @include include/class-cid-provider.texinfo
+@include include/class-cid-resource.texinfo
+@include include/condition-cid-resource-error.texinfo
+@include include/condition-cid-resource-confirmation.texinfo
+@include include/fun-cid-resource-error.texinfo
+@include include/fun-cid-resource-confirmation.texinfo
+@include include/fun-cid-create-resource.texinfo
+@include include/fun-cid-actually-create-resource.texinfo
+@include include/fun-cid-read-resource.texinfo
+@include include/fun-cid-actually-read-resource.texinfo
+@include include/fun-cid-update-resource.texinfo
+@include include/fun-cid-actually-update-resource.texinfo
+@include include/fun-cid-delete-resource.texinfo
+@include include/fun-cid-actually-delete-resource.texinfo
+@include include/fun-cid-import-resource.texinfo
+@include include/fun-cid-actually-import-resource.texinfo
 
-@menu
-* Null Provider::
-* Docker Engine::
-@end menu
+@include include/class-cid-computing-resource.texinfo
+@include include/fun-cid-start-resource.texinfo
+@include include/fun-cid-actually-start-resource.texinfo
+@include include/fun-cid-stop-resource.texinfo
+@include include/fun-cid-actually-stop-resource.texinfo
 
-@node Null Provider, Docker Engine, Providers, Providers
-@section Null Provider
+@include include/class-cid-stateful-resource.texinfo
+@include include/fun-cid-dump-resource.texinfo
+@include include/fun-cid-actually-dump-resource.texinfo
+@include include/fun-cid-restore-resource.texinfo
+@include include/fun-cid-actually-restore-resource.texinfo
+
+@node Null Provider, Docker Engine, Infrastructure, Top
+@chapter Null Provider
 
 @include include/class-cid-null-provider.texinfo
 @include include/fun-cid-make-null-provider.texinfo
 
-@node Docker Engine, , Null Provider, Providers
-@section Docker Engine
+@node Docker Engine, , Null Provider, Top
+@chapter Docker Engine
 
 @include include/class-cid-docker-engine.texinfo
 @include include/fun-cid-make-docker-engine.texinfo

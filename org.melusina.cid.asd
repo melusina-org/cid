@@ -27,6 +27,7 @@
 		 (:file "project")
 		 (:file "database")
 		 (:file "provider")
+		 (:file "resource")
 		 ;;; Components
 		 (:file "trac")
 		 (:file "gocd")
@@ -58,6 +59,7 @@
 		 (:file "project")
 		 (:file "database")
 		 (:file "provider")
+		 (:file "resource")
 		 (:file "entrypoint")))
    (:module "provider"
     :components

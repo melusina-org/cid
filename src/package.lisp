@@ -56,6 +56,34 @@
    #:provider
    #:find-provider
    #:configure
+   ;;; Resource
+   #:resource
+   #:computing-resource
+   #:stateful-resource
+   #:description
+   #:explanation
+   #:pathname
+   #:identification
+   #:resource-error
+   #:resource-confirmation
+   #:actually-create-resource
+   #:actually-read-resource
+   #:actually-update-resource
+   #:actually-delete-resource
+   #:actually-import-resource
+   #:actually-stop-resource
+   #:actually-start-resource
+   #:actually-dump-resource
+   #:actually-restore-resource
+   #:create-resource
+   #:read-resource
+   #:update-resource
+   #:delete-resource
+   #:import-resource
+   #:stop-resource
+   #:start-resource
+   #:dump-resource   
+   #:restore-resource   
    ;;; Null Provider
    #:null-provider
    #:make-null-provider
