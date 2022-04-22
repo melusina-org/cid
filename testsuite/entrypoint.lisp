@@ -28,6 +28,9 @@
   (let ((*testsuite-name* "ACCEPTANCE"))
     (trac-acceptance)))
 
+(define-testcase run-integration-test ()
+  (integration-provider))
+
 (define-testcase run-all-tests ()
   (run-unit-tests))
 

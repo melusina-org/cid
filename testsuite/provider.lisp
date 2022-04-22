@@ -15,7 +15,9 @@
 (in-package #:org.melusina.cid/testsuite)
 
 (define-testcase testsuite-provider ()
-  (testsuite-null-provider)
+  (testsuite-null-provider))
+
+(define-testcase integration-provider ()
   (testsuite-docker-engine))
 
 ;;;; End of file `provider.lisp'
