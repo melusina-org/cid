@@ -19,7 +19,7 @@
 
 Usually TESTSUITE but common values are ACCEPTANCE, INTEGRATION, PREFLIGHT, etc.")
 
-(defparameter *testsuite-id* (cid:random-string 6)
+(defparameter *testsuite-id* (cid:random-string 7)
   "A random identfier for the current testsuite run batch.")
 
 (defun testsuite-database-name ()
