@@ -19,7 +19,9 @@
 ;;;;
 
 (defparameter *docker-engine-pathname*
-  #p"/usr/local/bin/docker"
+  #.(loop :for pathname :in '(#p"/usr/bin/docker" #p"/usr/local/bin/docker")
+	  :when (probe-file pathname)
+	  :return pathname)
   "The pathname to the docker engine client used to control resources.")
 
 (defclass docker-engine (provider)
