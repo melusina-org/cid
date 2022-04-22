@@ -91,6 +91,7 @@ It is based on Debian, Ubuntu, Haproxy, GoCD, Gitea, trac.
 @chapter The Infrastructure Dictionary
 
 @include include/class-cid-provider.texinfo
+@include include/fun-cid-configure-provider.texinfo
 @include include/class-cid-resource.texinfo
 @include include/condition-cid-resource-error.texinfo
 @include include/condition-cid-resource-confirmation.texinfo

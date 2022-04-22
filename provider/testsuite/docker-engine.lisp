@@ -32,7 +32,7 @@
     (let ((docker-engine
 	    (cid:make-docker-engine)))
       (assert-nil (slot-value docker-engine 'cid::version))
-      (cid:configure docker-engine)
+      (cid:configure-provider docker-engine)
       (assert-t* (slot-value docker-engine 'cid::version)))))
 
 (define-testcase testsuite-docker-engine ()

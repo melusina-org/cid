@@ -55,7 +55,7 @@
    ;;; Provider
    #:provider
    #:find-provider
-   #:configure
+   #:configure-provider
    ;;; Resource
    #:resource
    #:computing-resource

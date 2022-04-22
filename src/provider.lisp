@@ -71,7 +71,7 @@ is a keyword, it corresponding entry in *PROVIDERS* is used."
 ;;;; Configure
 ;;;;
 
-(defgeneric configure (designator)
+(defgeneric configure-provider (designator)
   (:documentation
    "Configure the provider identified by DESIGNATOR.
 
@@ -83,7 +83,7 @@ to write on local file systems, etc.")
       (error "The symbol ~S is not a valid provider designator.
 A symbol which is a valid provider designator must be a keyword."
 	     designator)
-      (configure (find-provider designator))))
+      (configure-provider (find-provider designator))))
   (:method ((instance provider))
     (declare (ignore instance))
     nil))
