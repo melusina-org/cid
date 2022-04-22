@@ -36,4 +36,16 @@ Usually TESTSUITE but common values are ACCEPTANCE, INTEGRATION, PREFLIGHT, etc.
        (cid:disconnect-database)
        (clsql:destroy-database cid:*database-connection-spec* :database-type cid:*database-type*))))
 
+
+;;;;
+;;;; Test 
+;;;;
+
+(define-testcase validate-plist-sort ()
+  (assert-list-equal '(:a 4 :b 3 :c 2)
+		     (cid::sort-plist '(:c 2 :a 4 :b 3))))
+
+(define-testcase testsuite-utilities ()
+  (validate-plist-sort))
+
 ;;;; End of file `utilities.lisp'

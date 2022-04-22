@@ -55,9 +55,6 @@ This is a string of characters from the portable filename character set.")
     (clsql:update-records-from-instance tenant)
     (values tenant)))
 
-(defmethod qualified-pathname ((instance tenant))
-  (concatenate 'string "cid:" (slot-value instance 'pathname)))
-
 
 ;;;;
 ;;;; Tenant Scope

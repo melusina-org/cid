@@ -21,7 +21,7 @@
 (defclass resource nil
   ((pathname
     :initarg :pathname
-    :initform (error "A RESOURCE requires a :PATHNAME slot.")
+    :initform (error "A RESOURCE requires a PATHNAME.")
     :documentation "A name for the RESOURCE.
 The fully qualified name of the RESOURCE, which should be a safe Unix path. This PATHNAME
 uniquely identifies the RESOURCE within the deployment it belongs to.")
@@ -30,11 +30,13 @@ uniquely identifies the RESOURCE within the deployment it belongs to.")
     :documentation "A short description of the RESOURCE.")
    (provider
     :initarg :provider
+    :initform (error "A RESOURCE requires a PROVIDER.")
     :documentation "The provider this RESOURCE belongs to.")
    (identification
     :initarg :identification
     :initform nil
-    :documentation "A text uniquely identifying the RESOURCE in the context of its PROVIDER.
+    :documentation
+    "A text uniquely identifying the RESOURCE in the context of its PROVIDER.
 Depending on the RESOURCE and the PROVIDER, this text cannot be determined a priori and
 requires the RESOURCE to be READ."))
   (:documentation "The class represents the state of resources required to a component deployment.
@@ -265,27 +267,29 @@ If the RESOURCE does not exist, NIL is returned."
     (actually-update-resource resource)
     resource))
 
-(defgeneric actually-get-resource-properties (resource)
+(defgeneric actually-examine-resource (resource)
   (:documentation "Dump the state of a RESOURCE.
-The result is an assocation list, mapping keywords to atoms.")
+The result is a property list, mapping keywords to atoms.")
   (:method-combination append)
   (:method append (resource)
     (with-slots (pathname identification description provider) resource
-	(list (cons :pathname pathname)
-	      (cons :identification identification)
-	      (cons :description description)
-	      (cons :provider (slot-value provider 'pathname))))))
+      (list
+       :pathname pathname
+       :identification identification
+       :description description
+       :provider (slot-value provider 'pathname)))))
 
 (defun resource-created-p (resource)
   "Predicate recognising created resources.
 The information can become out of date if the resource is altered outside the program."
-  (and (slot-value resource 'identification) t))
+  (when (slot-value resource 'identification) t))
 
-(defun resource-properties (resource)
+(defun examine-resource (resource)
   "The propeties of a RESOURCE.
-The state is a property list whose key is a KEYWORD and value an ATOM or a LIST. The keywords
-are sorted in ascending order."
-  (alexandria:alist-plist (actually-get-resource-properties resource)))
+The state is a property list whose key is a KEYWORD and value an ATOM or a LIST. These
+keywords are sorted in ascending order."
+  (sort-plist
+   (actually-examine-resource resource)))
 
 (defgeneric actually-import-resource (provider identifier)
   (:documentation "Create a RESOURCE based on existing resource IDENTIFIER within PROVIDER.

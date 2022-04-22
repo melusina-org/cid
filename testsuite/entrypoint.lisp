@@ -16,6 +16,7 @@
 
 (define-testcase run-unit-tests ()
   (let ((*testsuite-name* "UNIT"))
+    (testsuite-utilities)
     (testsuite-database)
     (testsuite-tenant)
     (testsuite-identity)

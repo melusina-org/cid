@@ -42,8 +42,17 @@ This uses a very weak method that does not try to avoid collisions.x"
                   (aref alphabet (random alphabet-length)))
         :finally (return id)))
 
-(defgeneric qualified-pathname (object)
-  (:documentation "The qualified pathname of an OBJECT."))
+
+;;;;
+;;;; Property Lists
+;;;;
+
+(defun sort-plist (plist)
+  "Sort the provided PLIST so that its keys are in ascending order."
+  (alexandria:alist-plist
+   (sort (alexandria:plist-alist plist)
+	 #'string<
+	 :key #'car)))
 
 
 ;;;;
