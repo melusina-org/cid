@@ -38,7 +38,7 @@
     (assert-string= "Test Suite"
 		    (cid:tenant-displayname (cid:project-tenant (cid:find-project "testproject" "testsuite"))))
     (assert-condition
-	(cid:make-project :pathname "testproject" :displayname "Test Project" :tenant "testsuite")
+	(cid:make-project :pathname "testproject" :displayname "Test Project 2" :tenant "testsuite")
 	t)))
 
 ;;;; End of file `project.lisp'

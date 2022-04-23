@@ -43,6 +43,7 @@
     ((:module "src"
       :components
       ((:file "null")
+       (:file "memory")
        (:file "docker-engine")))))))
 
 (asdf:defsystem org.melusina.cid/testsuite
@@ -65,7 +66,8 @@
     :components
     ((:module "testsuite"
       :components
-      ((:file "null")
+      ((:file "null") 
+       (:file "memory")
        (:file "docker-engine")))))))
 
 ;;;; End of file `org.melusina.cid.asd'

@@ -14,17 +14,9 @@
 
 (in-package #:org.melusina.cid/testsuite)
 
-(defparameter *testsuite-name* "TESTSUITE"
-  "The name for the testsuite.
-
-Usually TESTSUITE but common values are ACCEPTANCE, INTEGRATION, PREFLIGHT, etc.")
-
-(defparameter *testsuite-id* (cid:random-string 7)
-  "A random identfier for the current testsuite run batch.")
-
 (defun testsuite-database-name ()
   "The name of the testsuite database file."
-  (concatenate 'string *testsuite-name* *testsuite-id*))
+  *testsuite-id*)
 
 (defmacro with-test-database (&body body)
   `(let ((cid:*database-type*

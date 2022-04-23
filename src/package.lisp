@@ -87,6 +87,12 @@
    ;;; Null Provider
    #:null-provider
    #:make-null-provider
+   ;;; Memory Provider
+   #:memory
+   #:make-memory
+   #:memory-text
+   #:make-memory-text
+   #:text
    ;; Docker Engine Provider
    #:docker-engine
    #:make-docker-engine

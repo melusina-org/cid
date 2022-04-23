@@ -32,6 +32,9 @@ uniquely identifies the RESOURCE within the deployment it belongs to.")
     :initarg :provider
     :initform (error "A RESOURCE requires a PROVIDER.")
     :documentation "The provider this RESOURCE belongs to.")
+   (provider-class
+    :initform (error "A RESOURCE requires a PROVIDER-CLASS.")
+    :documentation "The class a provider for this resource must belong to.")
    (identification
     :initarg :identification
     :initform nil
@@ -42,6 +45,33 @@ requires the RESOURCE to be READ."))
   (:documentation "The class represents the state of resources required to a component deployment.
 These resources can be created, read, updated and deleted. Resources can depend on other
 resources. For a given PROVIDER, any resource is uniquely identified by its IDENTIFICATION slot."))
+
+(defmethod print-object ((instance resource) stream)
+  (print-unreadable-object (instance stream :type t :identity t)
+    (format stream "~S" (if (slot-boundp instance 'pathname)
+			 (slot-value instance 'pathname)
+			 "(no pathname)"))))
+
+(defmethod describe-object ((instance resource) stream)
+  (with-slots (description provider) instance
+    (format stream "~&~A is a resource of type ~A provided by a ~A."
+	    instance (type-of instance) (type-of provider))
+    (when description
+      (format stream "~&Description: ~A" description))
+    (format stream "~&Provider: ~A" provider))
+  (values))
+
+(defmethod initialize-instance :after ((instance resource)
+				       &rest initargs &key &allow-other-keys)
+  (declare (ignore initargs))
+  (with-slots (provider provider-class) instance
+    (unless (typep provider provider-class)
+      (error "Provider mismatch.
+A resource of type ~A requires a ~A provider. However, the provider used
+to initialise this resource was a ~A."
+	     (type-of instance) provider-class (type-of provider))))
+  (values))
+
 
 
 ;;;;
@@ -278,11 +308,6 @@ The result is a property list, mapping keywords to atoms.")
        :identification identification
        :description description
        :provider (slot-value provider 'pathname)))))
-
-(defun resource-created-p (resource)
-  "Predicate recognising created resources.
-The information can become out of date if the resource is altered outside the program."
-  (when (slot-value resource 'identification) t))
 
 (defun examine-resource (resource)
   "The propeties of a RESOURCE.
