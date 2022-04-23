@@ -82,8 +82,8 @@ to write on local file systems, etc.")
     (unless (keywordp designator)
       (error "The symbol ~S is not a valid provider designator.
 A symbol which is a valid provider designator must be a keyword."
-	     designator)
-      (configure-provider (find-provider designator))))
+	     designator))
+    (configure-provider (find-provider designator)))
   (:method ((instance provider))
     (declare (ignore instance))
     nil))

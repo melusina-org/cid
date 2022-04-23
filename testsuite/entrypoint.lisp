@@ -28,10 +28,11 @@
   (let ((*testsuite-name* "ACCEPTANCE"))
     (trac-acceptance)))
 
-(define-testcase run-integration-test ()
+(define-testcase run-integration-tests ()
   (integration-provider))
 
 (define-testcase run-all-tests ()
-  (run-unit-tests))
+  (run-unit-tests)
+  (run-integration-tests))
 
 ;;;; End of file `entrypoint.lisp'

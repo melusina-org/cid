@@ -84,11 +84,12 @@ It must operate in `swarm' mode."))
 ;;;; Configure
 ;;;;
 
-(defmethod configure ((instance docker-engine))
+(defmethod configure-provider ((instance docker-engine))
   (with-slots (version) instance
     (unless version
       (multiple-value-bind (stdout stderr) (docker-version instance)
 	(declare (ignore stderr))
-	(setf version stdout)))))
+	(setf version stdout)
+	(values nil)))))
 
 ;;;; End of file `docker-engine.lisp'
