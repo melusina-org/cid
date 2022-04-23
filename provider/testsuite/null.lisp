@@ -16,8 +16,7 @@
 
 (define-testcase ensure-null-provider-is-a-singleton ()
   "Ensure the NULL-PROVIDER is a singleton."
-  (let ((cid::*providers*
-	  (make-hash-table)))
+  (with-empty-providers
     (assert-eq nil (cid:find-provider :null))
     (assert-eq (cid:make-null-provider) (cid:make-null-provider))
     (assert-t* (cid:find-provider :null))

@@ -16,8 +16,7 @@
 
 (define-testcase ensure-docker-engine-is-a-singleton ()
   "Ensure the argument-free DOCKER-ENGINE is a singleton."
-  (let ((cid::*providers*
-	    (make-hash-table)))
+  (with-empty-providers
     (assert-eq nil (cid:find-provider :docker-engine))
     (assert-eq (cid:make-docker-engine :pathname "docker-engine")
 	       (cid:make-docker-engine))
@@ -26,8 +25,7 @@
 
 (define-testcase ensure-docker-engine-is-configurable ()
   "Ensure the DOCKER-ENGINE is configurable."
-  (let ((cid::*providers*
-	    (make-hash-table)))
+  (with-empty-providers
     (assert-eq nil (cid:find-provider :docker-engine))
     (let ((docker-engine
 	    (cid:make-docker-engine)))

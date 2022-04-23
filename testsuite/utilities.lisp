@@ -36,6 +36,12 @@ Usually TESTSUITE but common values are ACCEPTANCE, INTEGRATION, PREFLIGHT, etc.
        (cid:disconnect-database)
        (clsql:destroy-database cid:*database-connection-spec* :database-type cid:*database-type*))))
 
+(defmacro with-empty-providers (&body body)
+  `(let ((cid::*providers*
+	   (make-hash-table)))
+     ,@body))
+
+
 
 ;;;;
 ;;;; Test 
