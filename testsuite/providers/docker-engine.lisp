@@ -33,8 +33,8 @@
       (cid:configure-provider docker-engine)
       (assert-t* (slot-value docker-engine 'cid::version)))))
 
-(define-testcase testsuite-docker-engine ()
+(define-testcase integration-docker-engine ()
   (ensure-docker-engine-is-a-singleton)
   (ensure-docker-engine-is-configurable))
-  
+
 ;;;; End of file `docker-engine.lisp'

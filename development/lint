@@ -29,7 +29,6 @@ lint_main()
 (atelier:lint
   #p"src"
   #p"testsuite"
-  #p"provider"
   #p"development"
   #p"operation")
 )'

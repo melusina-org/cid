@@ -32,19 +32,17 @@
 		 (:file "trac")
 		 (:file "gocd")
 		 ;;; Providers
+		 (:module "providers"
+		  :components
+		  ((:file "null") 
+		   (:file "memory")
+		   (:file "docker-engine")))
 		 ;;; API
 		 (:file "health")
 		 ;;; Server
 		 (:file "server")
 		 ;;; Toplevel
-		 (:file "entrypoint")))
-   (:module "provider"
-    :components
-    ((:module "src"
-      :components
-      ((:file "null")
-       (:file "memory")
-       (:file "docker-engine")))))))
+		 (:file "entrypoint")))))
 
 (asdf:defsystem org.melusina.cid/testsuite
   :description "Count of Vivar and Prince of Continuous Integration and Delivery Systems"
@@ -59,15 +57,13 @@
 		 (:file "identity")
 		 (:file "project")
 		 (:file "database")
+		 (:module "providers"
+		  :components
+		  ((:file "null") 
+		   (:file "memory")
+		   (:file "docker-engine")))
 		 (:file "provider")
 		 (:file "resource")
-		 (:file "entrypoint")))
-   (:module "provider"
-    :components
-    ((:module "testsuite"
-      :components
-      ((:file "null") 
-       (:file "memory")
-       (:file "docker-engine")))))))
+		 (:file "entrypoint")))))
 
 ;;;; End of file `org.melusina.cid.asd'

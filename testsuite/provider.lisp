@@ -18,6 +18,7 @@
   (testsuite-null-provider))
 
 (define-testcase integration-provider ()
-  (testsuite-docker-engine))
+  (integration-memory)
+  (integration-docker-engine))
 
 ;;;; End of file `provider.lisp'
