@@ -1,6 +1,6 @@
 #!/bin/sh
 
-### bsdowl -- Setup BSD Owl
+# bsdowl — Setup BSD Owl
 
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
@@ -58,4 +58,4 @@ bsdowl_main()
 
 bsdowl_main "$@"
 
-### End of file `bsdowl'
+# End of file `bsdowl'

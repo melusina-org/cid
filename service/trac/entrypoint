@@ -1,6 +1,6 @@
 #!/bin/sh
 
-### entrypoint -- Entrypoint for trac
+# entrypoint — Entrypoint for trac
 
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
@@ -30,5 +30,4 @@ main()
 
 main "$@"
 
-### End of file `entrypoint'
-
+# End of file `entrypoint'

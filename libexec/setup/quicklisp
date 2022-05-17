@@ -1,6 +1,6 @@
 #!/bin/sh
 
-### quicklisp -- Setup quicklisp
+# quicklisp — Setup quicklisp
 
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
@@ -213,4 +213,4 @@ quicklisp_main()
 
 quicklisp_main "$@"
 
-### End of file `quicklisp'
+# End of file `quicklisp'

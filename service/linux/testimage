@@ -1,6 +1,6 @@
 #!/bin/sh
 
-### testimage – Test Docker Image for Personalised Linux system
+# testimage — Test Docker Image for Personalised Linux system
 
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
@@ -23,4 +23,4 @@ id cid
 id go
 id git
 
-### End of file `testimage'
+# End of file `testimage'

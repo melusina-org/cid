@@ -1,4 +1,4 @@
-### service.sh -- Service Definitions for gocdserver
+# service.sh — Service Definitions for gocdserver
 
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
@@ -83,4 +83,4 @@ EOF
 
 }
 
-### End of file `service.sh'
+# End of file `service.sh'

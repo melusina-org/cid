@@ -1,4 +1,4 @@
-### cleanup.sh -- Assert that the wizard and configuration are working
+# cleanup.sh — Assert that the wizard and configuration are working
 
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
@@ -15,4 +15,4 @@
 
 sh -x ./tool/admin_console -B rm
 
-### End of file `cleanup.sh'
+# End of file `cleanup.sh'

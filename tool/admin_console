@@ -1,6 +1,6 @@
 #!/bin/sh
 
-### admin_console -- Start the Admin Console
+# admin_console — Start the Admin Console
 
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
@@ -215,4 +215,4 @@ _admin_main()
 
 _admin_main "$@"
 
-### End of file `admin_console'
+# End of file `admin_console'

@@ -1,4 +1,4 @@
-### assert_that_cryptographic_artefacts_habe_been_created.sh -- Assert that the docker volumes have been created
+# assert_that_cryptographic_artefacts_habe_been_created.sh — Assert that the docker volumes have been created
 
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
@@ -36,4 +36,4 @@ test_main()
 
 test_main
 
-### End of file `assert_that_cryptographic_artefacts_habe_been_created.sh'
+# End of file `assert_that_cryptographic_artefacts_habe_been_created.sh'

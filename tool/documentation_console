@@ -1,6 +1,6 @@
 #!/bin/sh
 
-### documentation_console -- The Documentation Console
+# documentation_console — The Documentation Console
 
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
@@ -110,4 +110,4 @@ documentation_main()
 
 documentation_main "$@"
 
-### End of file `documentation_console'
+# End of file `documentation_console'

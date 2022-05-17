@@ -1,6 +1,6 @@
 #!/bin/sh
 
-### docker_compose -- Tool to run docker compose
+# docker_compose — Tool to run docker compose
 
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
@@ -87,4 +87,4 @@ compose_main()
 
 compose_main "$@"
 
-### End of file `docker_compose'
+# End of file `docker_compose'

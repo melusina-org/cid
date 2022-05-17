@@ -1,6 +1,6 @@
 #!/bin/sh
 
-### testimage -- Test Docker image
+# testimage — Test Docker image
 
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
@@ -48,4 +48,4 @@ testimage_main()
 
 testimage_main "$@"
 
-### End of file `testimage'
+# End of file `testimage'

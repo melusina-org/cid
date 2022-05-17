@@ -1,4 +1,4 @@
-### journey.sh -- Assert that the docker images have been built
+# journey.sh — Assert that the docker images have been built
 
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
@@ -15,4 +15,4 @@
 
 ./tool/docker_build
 
-### End of file `journey.sh'
+# End of file `journey.sh'

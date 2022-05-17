@@ -1,4 +1,4 @@
-### admin.sh -- Install admin programs in a docker image
+# admin.sh — Install admin programs in a docker image
 
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
@@ -27,4 +27,4 @@ su -l cid -c '
 
 cp -R /opt/cid/var/src/cid/service  /opt/cid/share/service
 
-### End of file `admin.sh'
+# End of file `admin.sh'

@@ -1,4 +1,4 @@
-### service.sh -- Functions for services
+# service.sh — Functions for services
 
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
@@ -214,4 +214,4 @@ service_wizard1()
     $1_wizard
 }
 
-### End of file `service.sh'
+# End of file `service.sh'

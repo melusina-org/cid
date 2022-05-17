@@ -1,6 +1,6 @@
 #!/bin/sh
 
-### cid_dump -- Operate on Cid repositories
+# cid_dump.sh — Operate on Cid repositories
 
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
@@ -149,4 +149,4 @@ dump_main()
 
 dump_main "$@"
 
-### End of file `cid_dump.sh'
+# End of file `cid_dump.sh'

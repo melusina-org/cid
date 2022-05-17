@@ -1,4 +1,4 @@
-### service.sh -- Service Definitions for gitserver
+# service.sh — Service Definitions for gitserver
 
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
@@ -114,4 +114,4 @@ gitserver_restore()
     tar xJfC "$1" "${gitdir}" --strip-components 2 './git/'
 }
 
-### End of file `service.sh'
+# End of file `service.sh'

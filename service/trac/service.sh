@@ -1,4 +1,4 @@
-### service.sh -- Service Definitions for trac
+# service.sh — Service Definitions for trac
 
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
@@ -310,7 +310,8 @@ trac_dump()
     install -d -o www-data -g www-data "${CID_NEXT_DUMPDIR}/trac/environment"
     trac_list_environments | while read environment; do
         wlog 'Info' 'trac: %s: Copy trac environment.' "${environment}"
-        trac-admin "${tracdir}/environment/${environment}" hotcopy "${CID_NEXT_DUMPDIR}/trac/environment/${environment}"
+        trac-admin "${tracdir}/environment/${environment}"\
+		   hotcopy "${CID_NEXT_DUMPDIR}/trac/environment/${environment}"
         chown -R www-data:www-data "${CID_NEXT_DUMPDIR}/trac"
     done
 }
@@ -324,4 +325,4 @@ trac_restore()
     tar xJfC "$1" "${tracdir}" --strip-components 2 './trac/'
 }
 
-### End of file `service.sh'
+# End of file `service.sh'

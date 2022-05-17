@@ -1,4 +1,4 @@
-### assert.sh -- A library to build test cases
+# assert.sh — A library to build test cases
 
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
@@ -44,4 +44,4 @@ assert_outcome()
     esac
 }
 
-### End of file `assert.sh'
+# End of file `assert.sh'

@@ -1,6 +1,6 @@
 #!/bin/sh
 
-### cid_console -- Service Console
+# cid_console.sh — Service Console
 
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
@@ -50,4 +50,4 @@ console_main()
 
 console_main "$@"
 
-### End of file `cid_console.sh'
+# End of file `cid_console.sh'

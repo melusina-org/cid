@@ -1,4 +1,4 @@
-### assert_docker_images.sh -- Assert that the docker images have been built
+# assert_docker_images.sh — Assert that the docker images have been built
 
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
@@ -28,4 +28,4 @@ test_main()
 
 test_main
 
-### End of file `assert_docker_images.sh'
+# End of file `assert_docker_images.sh'

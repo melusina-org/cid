@@ -1,6 +1,6 @@
 #!/bin/sh
 
-### apt -- Setup apt
+# apt — Setup apt
 
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
@@ -100,4 +100,4 @@ apt-get update -y
 apt-get upgrade -y
 apt-get clean
 
-### End of file `apt.sh'
+# End of file `apt'

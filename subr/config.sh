@@ -1,4 +1,4 @@
-### config.sh -- Read Application configuration
+# config.sh — Read Application configuration
 
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
@@ -57,4 +57,4 @@ objdir()
 
 : ${OBJDIR:=$(objdir)}
 
-### End of file `config.sh'
+# End of file `config.sh'

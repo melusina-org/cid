@@ -1,6 +1,6 @@
 #!/bin/sh
 
-### entrypoint – Entrypoint for the gitserver
+# entrypoint — Entrypoint for the gitserver
 
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
@@ -27,4 +27,4 @@ else
     run_sshd
 fi
 
-### End of file `entrypoint'
+# End of file `entrypoint'

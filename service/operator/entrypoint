@@ -1,6 +1,6 @@
 #!/bin/sh
 
-### entrypoint -- Entrypoint for the Cid Service
+# entrypoint — Entrypoint for the Cid Service
 
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
@@ -70,4 +70,4 @@ entrypoint_main()
 
 entrypoint_main "$@"
 
-### End of file `entrypoint'
+# End of file `entrypoint'

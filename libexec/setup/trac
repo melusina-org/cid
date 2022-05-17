@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# trac — Setup Trac
+
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
 #
@@ -64,4 +66,4 @@ cat >> /etc/apache2/apache2.conf <<APACHE
 </Location>
 APACHE
 
-### End of file `trac'
+# End of file `trac'

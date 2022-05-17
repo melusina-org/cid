@@ -1,6 +1,6 @@
 #!/bin/sh
 
-### trac_console -- Administration tool for trac deployments
+# trac_console — Administration tool for trac deployments
 
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
@@ -161,4 +161,4 @@ trac_main()
 
 trac_main "$@"
 
-### End of file `trac_console'
+# End of file `trac_console'

@@ -1,4 +1,4 @@
-### journey.sh -- Assert that the wizard and configuration are working
+# journey.sh — Assert that the wizard and configuration are working
 
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
@@ -15,4 +15,4 @@
 
 sh -x ./tool/admin_console configure
 
-### End of file `journey.sh'
+# End of file `journey.sh'

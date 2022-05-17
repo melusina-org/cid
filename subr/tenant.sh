@@ -1,4 +1,4 @@
-### tenant.sh -- Functions for tenants
+# tenant.sh — Functions for tenants
 
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
@@ -11,7 +11,6 @@
 # modify and/ or redistribute the software under the terms of the CeCILL-B
 # license as circulated by CEA, CNRS and INRIA at the following URL
 # "https://cecill.info/licences/Licence_CeCILL-B_V1-en.txt"
-
 
 tenant_name()
 {
@@ -37,3 +36,5 @@ tenant_dir()
 {
     printf '%s' "${CID_TENANT_DIR}"
 }
+
+# End of file `tenant.sh'

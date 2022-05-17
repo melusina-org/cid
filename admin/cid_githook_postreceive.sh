@@ -1,6 +1,6 @@
 #!/bin/sh
 
-### cid_githook_postreceive -- Post receive repository hook
+# cid_githook_postreceive.sh — Post receive repository hook
 
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
@@ -89,3 +89,5 @@ tmpfile_initializer postreceivedata
 cat > "${postreceivedata}"
 
 policy_trac_add_changeset < "${postreceivedata}"
+
+# End of file `cid_githook_postreceive.sh'

@@ -1,4 +1,4 @@
-### service.sh -- Service Definitions for admin
+# service.sh — Service Definitions for admin
 
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
@@ -23,4 +23,4 @@ admin_wizard()
     fi
 }
 
-### End of file `service.sh'
+# End of file `service.sh'

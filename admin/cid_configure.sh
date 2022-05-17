@@ -1,6 +1,6 @@
 #!/bin/sh
 
-### cid_configure -- Configure an El Cid Project
+# cid_configure.sh — Configure an El Cid Project
 
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
@@ -64,4 +64,4 @@ configure_main()
 
 configure_main "$@"
 
-### End of file `cid_configure.sh'
+# End of file `cid_configure.sh'

@@ -1,6 +1,6 @@
 #!/bin/sh
 
-### cid_restore -- Operate on Cid repositories
+# cid_restore.sh — Operate on Cid repositories
 
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
@@ -78,4 +78,4 @@ restore_main()
 
 restore_main "$@"
 
-### End of file `cid_restore.sh'
+# End of file `cid_restore.sh'

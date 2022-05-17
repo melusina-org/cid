@@ -1,4 +1,4 @@
-### service.sh -- Service Definitions for haproxy
+# service.sh — Service Definitions for haproxy
 
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
@@ -35,3 +35,5 @@ reverseproxy_wizard()
 	cat "${certfile}" "${keyfile}" > "${bundlefile}"
     fi
 }
+
+# End of file `service.sh'

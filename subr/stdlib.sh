@@ -1,4 +1,4 @@
-### stdlib.sh -- A standard library for shell programming
+# stdlib.sh — A standard library for shell programming
 
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
@@ -248,4 +248,4 @@ when()
     if "${predicate}"; then "$@"; fi
 }
 
-### End of file `stdlib.sh'
+# End of file `stdlib.sh'

@@ -1,6 +1,6 @@
 #!/bin/sh
 
-### tenant_shell.sh -- Start a tenant shell
+# tenant_shell — Start a tenant shell
 
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
@@ -70,7 +70,8 @@ EOF
 tenant_shell()
 {
     if [ -n "${CID_TENANT_DIR}" ]; then
-	failwith 2 'tenant_shell: %s: We are already running a tenant shell for this tenant.' "${CID_TENANT_DIR}"
+	failwith 2 'tenant_shell: %s: We are already running a tenant shell for this tenant.'\
+		 "${CID_TENANT_DIR}"
     fi
 
     tenant_resolve_designator_or_die "$1"
@@ -129,4 +130,4 @@ tenant_main()
 
 tenant_main "$@"
 
-### End of file `tenant_shell.sh'
+# End of file `tenant_shell'

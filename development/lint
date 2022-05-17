@@ -27,10 +27,20 @@ lint_main()
 	      --eval '(progn
 (setf atelier:*linter-interactive-p* nil)
 (atelier:lint
-  #p"src"
-  #p"testsuite"
+  #p"admin"
   #p"development"
-  #p"operation")
+  #p"environment"
+  #p"libexec/lisp/setup.lisp"
+  #p"libexec/setup"
+  #p"operation"
+  #p"script"
+  #p"service"
+  #p"src"
+  #p"subr"
+  #p"test"
+  #p"testsuite"
+  #p"tool"
+)
 )'
 }
 

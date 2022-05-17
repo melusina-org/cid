@@ -1,4 +1,4 @@
-### subr.sh -- Install subroutines in a docker image
+# subr.sh — Install subroutines in a docker image
 
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
@@ -25,4 +25,4 @@ su -l cid -c '
 
 ( cd /opt/cid/var/src/cid/subr && bmake -I/usr/local/share/bsdowl install )
 
-### End of file `subr.sh'
+# End of file `subr.sh'

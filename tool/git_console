@@ -1,6 +1,6 @@
 #!/bin/sh
 
-### git_console -- Administration tool for trac deployments
+# git_console — Administration tool for trac deployments
 
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
@@ -141,4 +141,4 @@ git_main()
 
 git_main "$@"
 
-### End of file `git_console'
+# End of file `git_console'
