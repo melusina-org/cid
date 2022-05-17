@@ -1,15 +1,15 @@
-### @autoconf_input@
+# @autoconf_input@
 
-# El Cid (https://github.com/michipili/cid)
-# This file is part of El Cid
+# El Cid (https://github.com/melusina-conseil/cid)
+# This file is part of El Cid.
 #
-# Copyright © 2017–2020 Michael Grünewald
-#
-# This file must be used under the terms of the CeCILL-B.
-# This source file is licensed as described in the file COPYING, which
+# Copyright © 2017–2022 Michaël Le Barbier
+# All rights reserved.
+
+# This file must be used under the terms of the MIT License.
+# This source file is licensed as described in the file LICENSE, which
 # you should have received as part of this distribution. The terms
-# are also available at
-# http://www.cecill.info/licences/Licence_CeCILL-B_V1-en.txt
+# are also available at https://opensource.org/licenses/MIT
 
 prefix?=		@prefix@
 exec_prefix?=		@exec_prefix@
@@ -39,4 +39,4 @@ REPLACESUBST=		${STDREPLACESUBST}
 # mode: makefile
 # End:
 
-### End of file `Makefile.config.in'
+# End of file `Makefile.config.in'

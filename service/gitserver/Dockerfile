@@ -1,4 +1,4 @@
-### Dockerfile -- gitserver
+# Dockerfile -- gitserver
 
 # El Cid (https://github.com/melusina-conseil/cid)
 # This file is part of El Cid.
@@ -6,11 +6,10 @@
 # Copyright © 2017–2022 Michaël Le Barbier
 # All rights reserved.
 
-# This software is governed by the CeCILL-B license under French law and
-# abiding by the rules of distribution of free software.  You can  use,
-# modify and/ or redistribute the software under the terms of the CeCILL-B
-# license as circulated by CEA, CNRS and INRIA at the following URL
-# "https://cecill.info/licences/Licence_CeCILL-B_V1-en.txt"
+# This file must be used under the terms of the MIT License.
+# This source file is licensed as described in the file LICENSE, which
+# you should have received as part of this distribution. The terms
+# are also available at https://opensource.org/licenses/MIT
 
 ARG CID_LINUX_REFERENCE=latest
 FROM cid/linux:${CID_LINUX_REFERENCE}
@@ -36,4 +35,4 @@ COPY service/gitserver/entrypoint /opt/cid/bin/entrypoint
 ENTRYPOINT ["/opt/cid/bin/entrypoint"]
 VOLUME ["/var/git"]
 
-### End of file `Dockerfile'
+# End of file `Dockerfile'
