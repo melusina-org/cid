@@ -15,6 +15,8 @@
   (:nicknames #:cid)
   (:use #:cl)
   (:import-from :alexandria :define-constant :ensure-list :make-keyword)
+  (:local-nicknames
+   (#:rashell #:org.melusina.rashell))  
   (:export
    ;;; Random Strings
    #:*alphabet-hexadecimal*
