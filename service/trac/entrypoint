@@ -15,7 +15,7 @@
 
 run_apache()
 {
-    /usr/sbin/apache2ctl -DFOREGROUND
+    exec /usr/sbin/apache2ctl -DFOREGROUND
 }
 
 main()
