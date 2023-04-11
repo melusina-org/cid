@@ -3,7 +3,7 @@
 ;;;; El Cid (https://github.com/melusina-conseil/cid)
 ;;;; This file is part of El Cid.
 ;;;;
-;;;; Copyright © 2017–2022 Michaël Le Barbier
+;;;; Copyright © 2017–2023 Michaël Le Barbier
 ;;;; All rights reserved.
 
 ;;;; This file must be used under the terms of the MIT License.
@@ -24,7 +24,7 @@
 
 (defparameter *parameter-bindings*
   '((:copyright-holder . "Michaël Le Barbier")
-    (:copyright-year . "2017–2022")
+    (:copyright-year . "2017–2023")
     (:project-filename . "org.melusina.cid")
     (:project-name . "El Cid")
     (:project-description .
