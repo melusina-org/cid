@@ -1,6 +1,6 @@
 ;;;; docker-engine.lisp — Docker Engine Provider for El Cid
 
-;;;; El Cid (https://github.com/melusina-conseil/cid)
+;;;; El Cid (https://github.com/melusina-org/cid)
 ;;;; This file is part of El Cid.
 ;;;;
 ;;;; Copyright © 2017–2023 Michaël Le Barbier

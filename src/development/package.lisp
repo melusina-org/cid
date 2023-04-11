@@ -1,6 +1,6 @@
 ;;;; package.lisp — Project Development for El Cid
 
-;;;; El Cid (https://github.com/melusina-conseil/cid)
+;;;; El Cid (https://github.com/melusina-org/cid)
 ;;;; This file is part of El Cid.
 ;;;;
 ;;;; Copyright © 2017–2023 Michaël Le Barbier
@@ -35,7 +35,7 @@
 	" and delivery system that is easy to incrementally improve, to share"
 	" with team mates and collaborators, and that can be operated trivially"
 	" either locally, on bare metal or in the cloud."))
-    (:homepage . "https://github.com/melusina-conseil/cid")
+    (:homepage . "https://github.com/melusina-org/cid")
     (:license . :mit)))
 
 (defun lint ()
