@@ -11,12 +11,17 @@
 ;;;; you should have received as part of this distribution. The terms
 ;;;; are also available at https://opensource.org/licenses/MIT
 
-(asdf:defsystem org.melusina.cid
+(asdf:defsystem #:org.melusina.cid
   :description "Count of Vivar and Prince of Continuous Integration and Delivery Systems"
   :author "Michaël Le Barbier"
   :license "MIT License"
-  :depends-on (:alexandria :clsql :clsql-sqlite3 :hunchentoot :swank :unix-opts
-	       :org.melusina.rashell)
+  :depends-on (#:alexandria
+	       #:clsql
+	       #:clsql-sqlite3
+	       #:hunchentoot
+	       #:swank
+	       #:unix-opts
+               #:org.melusina.rashell)
   :components
   ((:module "src"
     :components ((:file "package")
@@ -43,11 +48,33 @@
 		 ;;; Toplevel
 		 (:file "entrypoint")))))
 
-(asdf:defsystem org.melusina.cid/testsuite
+(asdf:defsystem #:org.melusina.cid/development
+  :description "Development Support for El Cid"
+  :author "Michaël Le Barbier"
+  :license "MIT License"
+  :depends-on (#:org.melusina.atelier #:org.melusina.cid)
+  :components
+  ((:module "src/development"
+    :components ((:file "package")))))
+
+(asdf:defsystem #:org.melusina.cid/operation
+  :description "Operation Support for El Cid"
+  :author "Michaël Le Barbier"
+  :license "MIT License"
+  :depends-on (#:org.melusina.cid)
+  :components
+  ((:module "src/operation"
+    :components ((:file "package")))))
+
+(asdf:defsystem #:org.melusina.cid/testsuite
   :description "Count of Vivar and Prince of Continuous Integration and Delivery Systems"
   :author "Michaël Le Barbier"
   :license "MIT License"
-  :depends-on (:alexandria :org.melusina.confidence :org.melusina.cid)
+  :depends-on (#:alexandria
+	       #:org.melusina.confidence
+	       #:org.melusina.cid
+	       #:org.melusina.cid/development
+	       #:org.melusina.cid/operation)
   :components
   ((:module "testsuite"
     :components ((:file "package")
