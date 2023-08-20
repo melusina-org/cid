@@ -1,15 +1,15 @@
-### @autoconf_input@
+# configure.ac — Source for Configure
 
 # El Cid (https://github.com/melusina-org/cid)
-# This file is part of El Cid
+# This file is part of El Cid.
 #
-# Copyright © 2017 Michaël Le Barbier
-#
-# This file must be used under the terms of the CeCILL-B.
-# This source file is licensed as described in the file COPYING, which
+# Copyright © 2015–2023 Michaël Le Barbier
+# All rights reserved.
+
+# This file must be used under the terms of the MIT License.
+# This source file is licensed as described in the file LICENSE, which
 # you should have received as part of this distribution. The terms
-# are also available at
-# http://www.cecill.info/licences/Licence_CeCILL-B_V1-en.txt
+# are also available at https://opensource.org/licenses/MIT
 
 AC_INIT([cid_repository.sh])
 AC_CONFIG_FILES([Makefile.config])
@@ -30,4 +30,4 @@ AC_PATH_PROG_REQUIRE([prog_docker], [docker])
 AC_SUBST([runstatedir], [${prefix}/var/run])
 AC_OUTPUT
 
-### End of file `configure.ac'
+# End of file `configure.ac'

@@ -1,15 +1,15 @@
 ### Dockerfile -- git server
 
 # El Cid (https://github.com/melusina-org/cid)
-# This file is part of El Cid
+# This file is part of El Cid.
 #
-# Copyright © 2018 Michaël Le Barbier
-#
-# This file must be used under the terms of the MIT license.
+# Copyright © 2015–2023 Michaël Le Barbier
+# All rights reserved.
+
+# This file must be used under the terms of the MIT License.
 # This source file is licensed as described in the file LICENSE, which
 # you should have received as part of this distribution. The terms
-# are also available at
-# https://opensource.org/licenses/MIT
+# are also available at https://opensource.org/licenses/MIT
 
 ARG CID_LINUX_REFERENCE=latest
 FROM cid/linux:${CID_LINUX_REFERENCE}
@@ -43,3 +43,5 @@ COPY ./docker/image/gitserver/sudoers-gitserver /etc/sudoers.d/gitserver
 COPY ./docker/image/gitserver/entrypoint /usr/local/bin/entrypoint
 ENTRYPOINT ["/usr/local/bin/entrypoint"]
 VOLUME ["/var/git"]
+
+# End of file `Dockerfile'

@@ -1,15 +1,15 @@
-### users.sh -- Setup users
+# users.sh — Setup users
 
 # El Cid (https://github.com/melusina-org/cid)
-# This file is part of El Cid
+# This file is part of El Cid.
 #
-# Copyright © 2018 Michaël Le Barbier
-#
-# This file must be used under the terms of the MIT license.
+# Copyright © 2015–2023 Michaël Le Barbier
+# All rights reserved.
+
+# This file must be used under the terms of the MIT License.
 # This source file is licensed as described in the file LICENSE, which
 # you should have received as part of this distribution. The terms
-# are also available at
-# https://opensource.org/licenses/MIT
+# are also available at https://opensource.org/licenses/MIT
 
 : ${users_package:=${PACKAGE}}
 : ${users_configfile:=/root/setup/users.conf}
@@ -168,4 +168,4 @@ users_main()
 
 users_main "$@"
 
-### End of file `users.sh'
+# End of file `users.sh'

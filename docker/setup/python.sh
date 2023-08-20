@@ -1,13 +1,15 @@
+# python.sh — Setup python
+
 # El Cid (https://github.com/melusina-org/cid)
-# This file is part of El Cid
+# This file is part of El Cid.
 #
-# Copyright © 2018 Michaël Le Barbier
-#
-# This file must be used under the terms of the MIT license.
+# Copyright © 2015–2023 Michaël Le Barbier
+# All rights reserved.
+
+# This file must be used under the terms of the MIT License.
 # This source file is licensed as described in the file LICENSE, which
 # you should have received as part of this distribution. The terms
-# are also available at
-# https://opensource.org/licenses/MIT
+# are also available at https://opensource.org/licenses/MIT
 
 env DEBIAN_FRONTEND=noninteractive apt-get install -y\
  python3\
@@ -18,3 +20,5 @@ env DEBIAN_FRONTEND=noninteractive apt-get install -y\
 
 env DEBIAN_FRONTEND=noninteractive apt-get install -y\
  nginx-extras
+
+# End of file `python.sh'
