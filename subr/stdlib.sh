@@ -1,4 +1,4 @@
-# stdlib.sh — A standard library for shell programming
+# stdlib.sh — A standard library for -*- shell-script -*- programming
 
 # El Cid (https://github.com/melusina-org/cid)
 # This file is part of El Cid.
@@ -10,7 +10,6 @@
 # This source file is licensed as described in the file LICENSE, which
 # you should have received as part of this distribution. The terms
 # are also available at https://opensource.org/licenses/MIT
-
 
 #
 # Logging and Interaction
@@ -59,10 +58,10 @@ eprintf()
 }
 
 
-# failwith [-x STATUS] PRINTF-LIKE-ARGV
+# failwith [STATUS] PRINTF-LIKE-ARGV
 #  Fail with the given diagnostic message
 #
-# The -x flag can be used to convey a custom exit status, instead of
+# A numeric STATUS can be used to convey a custom exit status, instead of
 # the value 1.  A newline is automatically added to the output.
 
 failwith()
@@ -70,21 +69,16 @@ failwith()
     local OPTIND OPTION OPTARG status
 
     status=1
-    OPTIND=1
+    case "$1" in
+	[0-9][0-9][0-9]|[0-9][0-9]|[0-9])
+	    status="$1"
+	    shift
+	    ;;
+	*)
+	    :
+    esac
 
-    while getopts 'x:' OPTION; do
-        case ${OPTION} in
-            x)	status="${OPTARG}";;
-            *)	1>&2 printf 'failwith: %s: Unsupported option.\n' "${OPTION}";;
-        esac
-    done
-
-    shift $(expr ${OPTIND} - 1)
-    {
-        printf 'Failure: '
-        printf "$@"
-        printf '\n'
-    } 1>&2
+    wlog 'Failure' "$@"
     exit "${status}"
 }
 
@@ -123,7 +117,7 @@ confirm()
 #
 # A newline is automatically added to the output.
 
-wlog_level='Info'
+: ${wlog_level:='Info'}
 
 wlog__numeric_level()
 {
@@ -197,7 +191,7 @@ logfile()
 tmpfile_initializer()
 {
     local _tmpfile _script
-    _tmpfile=$(mktemp -t "${PACKAGE}-XXXXXX")
+    _tmpfile=$(mktemp -t "org.melusina.cid-XXXXXX")
     _script=$(printf 'rm -f "%s"' "${_tmpfile}")
     trap "${_script}" INT TERM EXIT
     eval $1="${_tmpfile}"
@@ -212,13 +206,13 @@ tmpfile_initializer()
 
 tmpdir_initializer()
 {
-    tmpdir=$(mktemp -d -t "${package}-XXXXXX")
+    tmpdir=$(mktemp -d -t "org.melusina.cid-XXXXXX")
     wlog 'Debug' 'tmpdir_initializer: %s' "${tmpdir}"
     trap 'tmpdir_reclaim' INT TERM EXIT
     export tmpdir
 }
 
-# tmpdir_initializer
+# tmpdir_reclaim
 #  Reclaim the created temporary directory
 
 tmpdir_reclaim()
@@ -238,6 +232,20 @@ when()
     shift
 
     if "${predicate}"; then "$@"; fi
+}
+
+#
+# Operation on lines
+#
+
+fold_lines()
+{
+    tr '\n' ',' | sed 's/,$//'
+}
+
+first_line()
+{
+    sed -n '1{p;q;}'
 }
 
 # End of file `stdlib.sh'

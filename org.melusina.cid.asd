@@ -11,6 +11,28 @@
 ;;;; you should have received as part of this distribution. The terms
 ;;;; are also available at https://opensource.org/licenses/MIT
 
+(asdf:defsystem #:org.melusina.cid
+  :description "Continuous Integration and Delivery"
+  :author "Michaël Le Barbier"
+  :license "MIT License"
+  :depends-on (#:org.melusina.atelier)
+  :components
+  ((:module "src"
+    :components ((:file "package")
+		 (:file "utilities")
+		 (:file "entrypoint")))))
+
+(asdf:defsystem #:org.melusina.cid/testsuite
+  :description "Testsuite for El Cid"
+  :author "Michaël Le Barbier"
+  :license "MIT License"
+  :depends-on (#:org.melusina.confidence)
+  :components
+  ((:module "testsuite"
+    :components ((:file "package")
+		 (:file "utilities")
+		 (:file "entrypoint")))))
+
 (asdf:defsystem #:org.melusina.cid/development
   :description "Development tools for El Cid"
   :author "Michaël Le Barbier"

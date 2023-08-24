@@ -1,5 +1,8 @@
-subr/autoconf.sh
+4te.cache/
 autom4te.cache/
+obj/
+subr/autoconf.sh
+system-index.txt
 config.log
 config.status
 configure
