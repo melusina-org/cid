@@ -130,8 +130,12 @@ This uses `DRAKMA:HTTP-REQUEST' to perform the request."
 		:unless (member key filter-out)
 		:append (list key value))))
     (with-slots (body status-code headers uri stream close) http-reply
-      (setf (values body status-code headers uri stream close)
-            (apply 'drakma:http-request actual-url actual-args)))
+      (flet ((perform-request-and-store-response ()
+	       (setf (values body status-code headers uri stream close)
+		     (apply 'drakma:http-request actual-url actual-args))))
+	(restart-case (perform-request-and-store-response)
+	  (retry-http-request ()
+	    (perform-request-and-store-response)))))
     (values http-reply)))
 
 (defparameter *http-reply* nil
