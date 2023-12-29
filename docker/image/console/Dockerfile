@@ -1,4 +1,4 @@
-# Dockerfile — Definition for the admin image
+# Dockerfile — Definition for the Administration Console image
 
 # El Cid (https://github.com/melusina-org/cid)
 # This file is part of El Cid.
@@ -14,28 +14,8 @@
 ARG CID_LINUX_REFERENCE=latest
 FROM cid/linux:${CID_LINUX_REFERENCE}
 
-RUN env DEBIAN_FRONTEND=noninteractive apt-get install -y\
- apache2\
- git\
- git-core\
- libapache2-mod-wsgi\
- openssh-server\
- pwgen\
- python-flup\
- python-pip\
- python-psycopg2\
- subversion\
- trac-accountmanager\
- trac-authopenid\
- trac-bitten\
- trac-customfieldadmin\
- trac-diavisview\
- trac-graphviz\
- trac-mastertickets\
- trac-tags\
- trac-wysiwyg\
- trac-xmlrpc\
- trac
+COPY ./docker/setup/trac.sh /root/setup/
+RUN sh /root/setup/trac.sh
 
 RUN env DEBIAN_FRONTEND=noninteractive apt-get install -y\
  cpio
@@ -46,22 +26,28 @@ COPY ./docker/setup/sbcl.sh /root/setup/
 RUN sh /root/setup/sbcl.sh
 
 COPY ./docker/setup/quicklisp.sh /root/setup/
-RUN sh /root/setup/quicklisp.sh -o cid -g cid
+RUN PACKAGE=cid sh /root/setup/quicklisp.sh -o cid -g cid
 
 COPY ./docker/setup/bsdowl.sh /root/setup/
 RUN sh /root/setup/bsdowl.sh
 
-COPY ./docker/setup/docker.sh /root/setup/
-RUN sh /root/setup/docker.sh
-
-COPY ./docker/image/admin/subr.sh /root/setup/
+COPY ./docker/image/console/subr.sh /root/setup/
 ADD ./subr /opt/cid/var/src/cid/subr
 RUN chown -R cid:cid /opt/cid/var/src/cid/subr
 RUN sh /root/setup/subr.sh
 
-COPY ./docker/image/admin/support.sh /root/setup/
+COPY ./docker/image/console/support.sh /root/setup/
 ADD ./support /opt/cid/var/src/cid/support
 RUN chown -R cid:cid /opt/cid/var/src/cid/support
 RUN sh /root/setup/support.sh
+
+ADD ./ /opt/cid/var/quicklisp/local-projects/cid/
+RUN sbcl\
+ --load /opt/cid/var/quicklisp/setup.lisp\
+ --load /opt/cid/var/quicklisp/local-projects/cid/docker/image/console/build-console.lisp\
+ --batch
+RUN install -m 755 -o root -g root\
+ /opt/cid/var/quicklisp/local-projects/cid/console\
+ /opt/cid/bin/console
 
 # End of file `Dockerfile'

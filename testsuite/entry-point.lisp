@@ -1,4 +1,4 @@
-;;;; utilities.lisp — Utilities for El Cid tests
+;;;; entrypoint.lisp — Entrypoint for El Cid
 
 ;;;; El Cid (https://github.com/melusina-org/cid)
 ;;;; This file is part of El Cid.
@@ -13,12 +13,21 @@
 
 (in-package #:org.melusina.cid/testsuite)
 
-(defun system-relative-pathname (&optional pathname)
-  (flet ((system-source-directory ()
-	   (asdf:system-source-directory
-	    #.(string-downcase (package-name *package*)))))
-    (if pathname
-	(merge-pathnames pathname (system-source-directory))
-	(system-source-directory))))
+(define-testcase unit-tests ()
+  (assert-t t))
 
-;;;; End of file `utilities.lisp'
+(define-testcase component-tests ()
+  (validate-docker-volume-lifecycle)
+  (validate-docker-image-lifecycle)
+  (ensure-that-every-image-can-be-built)
+  (validate-project-lifecycle))
+
+(define-testcase integration-tests ()
+  (assert-t t))
+
+(define-testcase run-all-tests ()
+  (unit-tests)
+  (component-tests)
+  (integration-tests))
+
+;;;; End of file `entrypoint.lisp'

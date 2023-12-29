@@ -45,23 +45,11 @@ services:
   networks:
    - service
 
- jenkins:
-  image: cid/jenkins
-  volumes:
-   - /var/run/docker.sock:/var/run/docker.sock
-   - cid-jenkins:/var/lib/jenkins
-   - cid-git:/var/git
-  networks:
-   - service
-
 networks:
  frontend:
  service:
 
 volumes:
-  cid-jenkins:
-    external:
-      name: cid-${cid_project}-jenkins
   cid-trac:
     external:
       name: cid-${cid_project}-trac

@@ -14,7 +14,7 @@
 env DEBIAN_FRONTEND=noninteractive apt-get install -y\
  autoconf\
  bmake\
- bsdtar\
+ libarchive-tools\
  curl
 
 install -d -o cid -g cid -m 700 /usr/local/src

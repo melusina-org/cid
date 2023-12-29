@@ -14,11 +14,14 @@
 (defpackage #:org.melusina.cid/development
   (:use #:cl)
   (:local-nicknames
-   (#:atelier #:org.melusina.atelier))
+   (#:atelier #:org.melusina.atelier)
+   (#:build #:org.melusina.cid/build)
+   (#:colima #:org.melusina.cid/colima))
   (:export
    #:lint
    #+quicklisp
-   #:reload))
+   #:reload
+   #:build))
 
 (in-package #:org.melusina.cid/development)
 
@@ -68,12 +71,16 @@
 		  "org.melusina.confidence"
 		  "org.melusina.cid/development")))
 
+(defun build ()
+  (dolist (image-name '("linux" "console" "reverseproxy" "gitserver" "trac"))
+    (build:build-image (uiop:strcat "cid/" image-name))))
+
 
 ;;;;
 ;;;; Command Stock
 ;;;;
 
 #+nil
-(org.melusina.cid/development:reload)
+(org.melusina.development:reload)
 
 ;;;; End of file `development.lisp'

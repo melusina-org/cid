@@ -26,15 +26,12 @@ RUN sh /root/setup/gitserver.sh
 COPY ./docker/setup/bsdowl.sh /root/setup/
 RUN sh /root/setup/bsdowl.sh
 
-COPY ./docker/setup/docker.sh /root/setup/
-RUN sh /root/setup/docker.sh
-
-COPY ./docker/image/admin/subr.sh /root/setup/
+COPY ./docker/image/console/subr.sh /root/setup/
 ADD ./subr /opt/cid/var/src/cid/subr
 RUN chown -R cid:cid /opt/cid/var/src/cid/subr
 RUN sh /root/setup/subr.sh
 
-COPY ./docker/image/admin/support.sh /root/setup/
+COPY ./docker/image/console/support.sh /root/setup/
 ADD ./support /opt/cid/var/src/cid/support
 RUN chown -R cid:cid /opt/cid/var/src/cid/support
 RUN sh /root/setup/support.sh

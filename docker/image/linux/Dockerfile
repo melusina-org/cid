@@ -22,7 +22,7 @@
 #
 #  See Also: https://www.debian.org/mirror/list
 
-FROM debian:stretch
+FROM debian:bookworm
 ARG DEBIAN_MIRROR=none
 
 RUN install -d -o root -g root -m 700 /root/setup

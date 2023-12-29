@@ -1,4 +1,4 @@
-;;;; utilities.lisp — Utilities for El Cid tests
+;;;; package.lisp — Package for El Cid Administration Console
 
 ;;;; El Cid (https://github.com/melusina-org/cid)
 ;;;; This file is part of El Cid.
@@ -11,14 +11,12 @@
 ;;;; you should have received as part of this distribution. The terms
 ;;;; are also available at https://opensource.org/licenses/MIT
 
-(in-package #:org.melusina.cid/testsuite)
+(defpackage #:org.melusina.cid/console
+  (:use #:common-lisp)
+  (:export
+   #:entry-point
+  ))
 
-(defun system-relative-pathname (&optional pathname)
-  (flet ((system-source-directory ()
-	   (asdf:system-source-directory
-	    #.(string-downcase (package-name *package*)))))
-    (if pathname
-	(merge-pathnames pathname (system-source-directory))
-	(system-source-directory))))
+(in-package #:org.melusina.cid/console)
 
-;;;; End of file `utilities.lisp'
+;;;; End of file `package.lisp'

@@ -12,12 +12,11 @@
 # are also available at https://opensource.org/licenses/MIT
 
 : ${quicklisp_package:=${PACKAGE}}
-: ${quicklisp_install:='/usr/share/cl-quicklisp/quicklisp.lisp'}
+: ${quicklisp_install:='/usr/share/common-lisp/source/quicklisp/quicklisp.lisp'}
 : ${quicklisp_home:="/opt/${quicklisp_package}/var/quicklisp"}
 : ${quicklisp_local:="${quicklisp_home}/local-projects"}
 : ${quicklisp_own:=root}
 : ${quicklisp_group:=root}
-
 
 quicklisp_remove_install_script()
 {
@@ -90,6 +89,11 @@ EOF
 
 quicklisp_load()
 {
+    if [ $# -eq 0 ]; then
+      return 0
+    fi
+      
+
     trap '
      quicklisp_remove_load_script
     ' EXIT TERM KILL

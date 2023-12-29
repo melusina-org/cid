@@ -13,10 +13,21 @@
 
 (defpackage #:org.melusina.cid/testsuite
   (:use #:common-lisp)
-  (:import-from #:org.melusina.confidence
+  (:local-nicknames
+   (#:confidence #:org.melusina.confidence)
+   (#:cid #:org.melusina.cid)
+   (#:console #:org.melusina.cid/console)
+   (#:docker #:org.melusina.cid/docker)
+   (#:build #:org.melusina.cid/build)
+   (#:development #:org.melusina.cid/development)
+   (#:operation #:org.melusina.cid/operation))
+  (:import-from
+   #:org.melusina.confidence
    #:define-testcase
    #:define-assertion
    #:assert-t
+   #:assert-t*
+   #:assert-nil
    #:assert-eq
    #:assert-set-equal
    #:assert-string=

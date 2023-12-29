@@ -14,7 +14,7 @@
 # are also available at https://opensource.org/licenses/MIT
 
 : ${TOPLEVELDIR:=$(git rev-parse --show-toplevel)}
-: ${buildsystem:="org.melusina.cid/testsuite"}
+: ${developmentsystem:="org.melusina.cid/development"}
 
 build_sbcl()
 {
@@ -24,10 +24,11 @@ build_sbcl()
 build_main()
 {
     build_sbcl --eval "
-(unless (ql:where-is-system \"${buildsystem}\")
+(unless (ql:where-is-system \"${developmentsystem}\")
  (push #p\"./\" ql:*local-project-directories*)
  (ql:register-local-projects))"\
-		 --eval "(ql:quickload \"${buildsystem}\")"\
+		 --eval "(ql:quickload \"${developmentsystem}\" :silent t)"\
+		 --eval "(${developmentsystem}:build)"\
 		 --eval '(uiop:quit 0)'
 }
 

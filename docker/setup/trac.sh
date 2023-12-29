@@ -15,24 +15,10 @@ env DEBIAN_FRONTEND=noninteractive apt-get install -y\
  apache2\
  git\
  git-core\
- libapache2-mod-wsgi\
+ libapache2-mod-wsgi-py3\
  openssh-server\
  pwgen\
- python-flup\
- python-pip\
- python-psycopg2\
- python-pygments\
  subversion\
- trac-accountmanager\
- trac-authopenid\
- trac-bitten\
- trac-customfieldadmin\
- trac-diavisview\
- trac-graphviz\
- trac-mastertickets\
- trac-tags\
- trac-wysiwyg\
- trac-xmlrpc\
  trac
 
 a2enmod wsgi

@@ -1,0 +1,351 @@
+;;;; docker.lisp — Docker Support for El Cid
+
+;;;; El Cid (https://github.com/melusina-org/cid)
+;;;; This file is part of El Cid.
+;;;;
+;;;; Copyright © 2015–2023 Michaël Le Barbier
+;;;; All rights reserved.
+
+;;;; This file must be used under the terms of the MIT License.
+;;;; This source file is licensed as described in the file LICENSE, which
+;;;; you should have received as part of this distribution. The terms
+;;;; are also available at https://opensource.org/licenses/MIT
+
+(defpackage #:org.melusina.cid/docker
+  (:use #:common-lisp)
+  (:export
+   
+   ;; Docker Volume
+   #:volume
+   #:volume-name
+   #:volume-driver
+   #:volume-exists-p
+   #:make-volume
+   #:list-volumes
+   #:find-volume
+   #:update-volume
+   #:create-volume
+   #:delete-volume
+   #:reclaim-volumes
+   ;; Docker Image
+   #:image
+   #:image-name
+   #:image-short-id
+   #:image-id
+   #:image-repository
+   #:image-tag
+   #:image-size
+   #:image-created-at
+   #:make-image
+   #:list-images
+   #:find-image
+   #:update-image
+   #:create-image
+   #:delete-image
+   #:reclaim-images
+   ))
+
+(in-package #:org.melusina.cid/docker)
+
+
+;;;;
+;;;; Docker Volume
+;;;;
+
+(defclass volume ()
+  ((name
+    :initarg :name
+    :initform (error "A NAME is required.")
+    :reader volume-name)
+   (driver
+    :initarg :driver
+    :initform "local"
+    :reader volume-driver)
+   (exists-p
+    :initarg :exists-p
+    :initform nil
+    :reader volume-exists-p)))
+
+(defun make-volume (&rest initargs &key name driver exists-p)
+  (declare (ignore name driver exists-p))
+  (apply #'make-instance 'volume initargs))
+
+(defmethod print-object ((instance volume) stream)
+  (print-unreadable-object (instance stream :type t :identity t)
+    (with-slots (name driver exists-p) instance
+      (format stream ":NAME ~S :DRIVER ~S :EXISTS-P ~A" name driver exists-p))))
+
+(defun volume-of-json (string)
+  (let ((object
+	  (yason:parse string)))
+    (flet ((get-field (field kind)
+	     (multiple-value-bind (value present-p) (gethash field object)
+	       (unless present-p
+		 (error "Cannot read field ~A from JSON description of volume instance." field))
+	       (ecase kind
+		 (:string
+		  (string value))))))
+      (make-instance
+       'volume
+       :name (get-field "Name" :string)
+       :driver (get-field "Driver" :string)
+       :exists-p t))))
+
+(defun list-volumes ()
+  (with-input-from-string
+      (volume-list
+       (uiop:run-program
+	'("docker" "volume" "list" "--format" "json")
+	:output :string))
+    (loop :for line = (read-line volume-list nil nil)
+	  :while line
+	  :unless (string= "" line)
+	  :collect (volume-of-json line))))
+
+(defun find-volume (designator)
+  "Find volume designated by DESIGNATOR."
+  (typecase designator
+    (volume     
+     designator)
+    (string
+     (find designator (list-volumes)
+	   :key #'volume-name
+	   :test #'string=))))
+
+(defun update-volume (volume)
+  "Update VOLUME slots from its actual state."
+  (let ((actual-state
+	  (find-volume (volume-name volume))))
+    (unless actual-state
+      (setf (slot-value volume 'exists-p) nil)
+      (return-from update-volume volume))
+    (loop :for slot-name :in '(driver exists-p)
+	  :do (setf (slot-value volume slot-name)
+		    (slot-value actual-state slot-name)))
+    (values volume)))
+
+(defun ensure-volume-exists (volume)
+  "Signal an error when VOLUME does not exist."
+  (unless (volume-exists-p volume)
+    (restart-case
+	(error "The volume ~S as it has not been created."
+	       (volume-name volume))
+      (continue ()
+	nil)
+      (create ()
+	(create-volume
+	 :name (volume-name volume)
+	 :driver (volume-driver volume))))))
+
+(defun create-volume (&key name driver)
+  (unless name
+    (error "A NAME is required."))
+  (unless driver
+    (setf driver "local"))
+  (let ((existing-volume
+	  (find-volume name)))
+    (when existing-volume
+      (return-from create-volume existing-volume)))
+  (let ((created-volume
+	  (uiop:run-program
+	   (list "docker" "volume" "create" "--driver" driver name)
+	   :output :string)))
+    (setf created-volume
+	  (string-trim '(#\Newline) created-volume))
+    (unless (string= created-volume name)
+      (error "Cannot create volume ~A" name))
+    (make-volume :name name :driver driver :exists-p t)))
+
+(defun delete-volume (volume)
+  (with-slots (driver name exists-p) volume
+    (unless exists-p
+      (return-from delete-volume volume))
+    (let ((deleted-volume
+	    (uiop:run-program
+	     (list "docker" "volume" "rm" name)
+	     :output :string)))
+      (setf deleted-volume
+	    (string-trim '(#\Newline) deleted-volume))
+      (unless (string= deleted-volume name)
+	(error "Cannot delete volume ~A" name))
+      (setf exists-p nil)
+      (values volume))))
+
+(defun reclaim-volumes ()
+  "Reclaim volumes which are no longer in use."
+  (flet ((testsuite-p (volume)
+	   (uiop:string-prefix-p "cid-testsuite" (volume-name volume))))
+    (mapcar #'delete-volume
+	    (loop :for volume :in (list-volumes)
+		  :when  (testsuite-p volume)
+		  :collect volume))))
+
+
+;;;;
+;;;; Docker Image
+;;;;
+
+(defclass image ()
+  ((id
+    :initarg :id
+    :initform (error "An ID is required.")
+    :reader image-id)
+   (repository
+    :initarg :repository
+    :initform nil
+    :reader image-repository)
+   (tag
+    :initarg :tag
+    :initform nil
+    :reader image-tag)
+   (size
+    :initarg :size
+    :initform nil
+    :reader image-size)
+   (created-at
+    :initarg :created-at
+    :initform nil
+    :reader image-created-at)))
+
+(defun image-name (image)
+  (with-slots (repository tag) image
+    (when (and repository tag)
+      (concatenate 'string repository '(#\:) tag))))
+
+(defun image-short-id (image)
+  (with-slots (id) image
+    (when id
+      (let ((start
+	      (1+ (position #\: id)))
+	    (length
+	      12))
+      (subseq id start (+ start length))))))
+
+(defun make-image (&rest initargs &key id repository tag size created-at)
+  (declare (ignore id repository tag size created-at))
+  (apply #'make-instance 'image initargs))
+
+(defmethod print-object ((instance image) stream)
+  (print-unreadable-object (instance stream :type t :identity t)
+    (with-slots (id repository tag size created-at) instance
+      (format stream "~@[:REPOSITORY ~S ~]~@[:TAG ~S ~]:ID ~S :SIZE ~S :CREATED-AT ~S" repository tag id size created-at))))
+
+(defun image-of-json (string)
+  (let ((object
+	  (yason:parse string)))
+    (flet ((get-field (field kind)
+	     (multiple-value-bind (value present-p) (gethash field object)
+	       (unless present-p
+		 (error "Cannot read field ~A from JSON description of image instance." field))
+	       (ecase kind
+		 (:string
+		  (string value))
+		 (:nullable-string
+		  (unless (string= "<none>" value)
+		    (string value)))))))
+      (make-instance
+       'image
+       :id (get-field "ID" :string)
+       :repository (get-field "Repository" :nullable-string)
+       :tag (get-field "Tag" :nullable-string)
+       :size (get-field "Size" :string)
+       :created-at (get-field "CreatedAt" :string)))))
+
+(defun list-images ()
+  (with-input-from-string
+      (image-list
+       (uiop:run-program
+	'("docker" "image" "list" "--no-trunc" "--format" "json")
+	:output :string))
+    (loop :for line = (read-line image-list nil nil)
+	  :while line
+	  :unless (string= "" line)
+	  :collect (image-of-json line))))
+
+(defun find-image (designator)
+  "Find image designated by DESIGNATOR."
+  (typecase designator
+    (image     
+     designator)
+    (string
+     (or
+      (find designator (list-images)
+	    :key #'image-name
+	    :test #'string=)
+      (when (= 12 (length designator))
+	(find designator (list-images)
+	      :key #'image-short-id
+	      :test #'string=))
+      (when (position #\: designator)
+	(find designator (list-images)
+	      :key #'image-id
+	      :test #'string=))
+      (find (concatenate 'string "sha256:" designator) (list-images)
+	    :key #'image-id
+	    :test #'string=)))))
+
+(defun update-image (image)
+  "Update IMAGE slots from its actual state."
+  (let ((actual-state
+	  (find-image (image-name image))))
+    (unless actual-state
+      (setf (slot-value image 'id) nil)
+      (return-from update-image image))
+    (loop :for slot-name :in '(id repository tag size created-at)
+	  :do (setf (slot-value image slot-name)
+		    (slot-value actual-state slot-name)))
+    (values image)))
+
+(defun create-image (&key dockerfile context repository tag (cache t))
+  (unless tag
+    (setf tag "latest"))
+  (unless context
+    (setf context #p"."))
+  (unless dockerfile
+    (setf dockerfile (merge-pathnames #p"Dockerfile" context)))
+  (let ((image-tag
+	  (concatenate 'string repository '(#\:) tag)))
+    (uiop:run-program
+     (remove
+      nil
+      (list "docker" "image" "build"
+	    (unless cache
+	      "--no-cache")
+	    "--file" (namestring dockerfile)
+	    "--tag" image-tag
+	    (namestring context)))
+     :output t
+     :error-output t)
+    (find-image image-tag)))
+
+(defun delete-image (image)
+  (let ((deleted-image
+	  (uiop:run-program
+	   (list "docker" "image" "rm"
+		 (or (image-name image)
+		     (image-id image)))
+	   :output :string)))
+    (flet ((compare-event (slot-reader regex)
+	     (declare (optimize debug))
+	     (ppcre:register-groups-bind (value) (regex deleted-image)
+	       (unless (string= value (funcall slot-reader image))
+		 (error "Cannot delete image ~A" (image-name image))))))
+      (compare-event #'image-name "Untagged: (.*)")
+      (compare-event #'image-id "Deleted: (.*)"))
+    (setf (slot-value image 'id) nil)
+    (values image)))
+
+(defun reclaim-images ()
+  "Reclaim docker images which are no longer in use."
+  (flet ((has-no-name-p (image)
+	   (not (image-name image)))
+	 (testsuite-p (image)
+	   (uiop:string-prefix-p "testsuite" (image-tag image))))
+    (mapcar #'delete-image
+	    (loop :for image :in (list-images)
+		  :when (or
+			 (testsuite-p image)
+			 (has-no-name-p image))
+		  :collect image))))
+
+;;;; End of file `docker.lisp'

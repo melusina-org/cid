@@ -138,8 +138,8 @@ Supported operating systems are modern Linux versions and Mac OS X.
 This software might also work on BSD Systems featuring a docker
 stack. The prerequisites and dependences are:
 
-  - A UNIX system featuring a shell and basic utilities, as described
-    by the last version of POSIX.
+  - A UNIX system featuring a Lisp implementation, a shell, and basic
+    utilities, as described by the last version of POSIX.
 
   - A docker client configured to interact with an up and running
     docker daemon and the `docker-compose` program. On Linux systens
@@ -158,6 +158,13 @@ stack. The prerequisites and dependences are:
 % git clone https://github.com/melusina-org/cid
 ~~~
 
+### Build
+
+~~~ console
+CL-USER> (ql:quickload '#:org.melusina.cid/development)
+CL-USER> (org.melusina.cid/development:build)
+CL-USER> (org.melusina.cid/development:run)
+~~~
 
 ### From checkout to up and running
 

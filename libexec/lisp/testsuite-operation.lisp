@@ -1,4 +1,4 @@
-;;;; utilities.lisp — Utilities for El Cid tests
+;;;; testsuite-operation.lisp — Test Operation Support for El Cid
 
 ;;;; El Cid (https://github.com/melusina-org/cid)
 ;;;; This file is part of El Cid.
@@ -13,12 +13,14 @@
 
 (in-package #:org.melusina.cid/testsuite)
 
-(defun system-relative-pathname (&optional pathname)
-  (flet ((system-source-directory ()
-	   (asdf:system-source-directory
-	    #.(string-downcase (package-name *package*)))))
-    (if pathname
-	(merge-pathnames pathname (system-source-directory))
-	(system-source-directory))))
+(define-testcase validate-project-lifecycle ()
+  (let ((project-name
+	  (string-downcase confidence:*testsuite-id*)))
+    (operation:create-project :name project-name)
+    (let ((project
+	    (operation:find-project project-name)))
+      (assert-t* project)
+      (operation:start-project project)
+      (operation:stop-project project))))
 
-;;;; End of file `utilities.lisp'
+;;;; End of file `testsuite-operation.lisp'
