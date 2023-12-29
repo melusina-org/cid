@@ -23,24 +23,23 @@
   (assert-condition (operation:create-project) error))
 
 (define-testcase validate-project-lifecycle ()
-  (let ((name
-	  (string-downcase confidence:*testsuite-id*))
-	(tag
-	  (string-downcase confidence:*testsuite-id*)))
+  (let* ((name
+	   (string-downcase confidence:*testsuite-id*))
+	 (tag
+	   (string-downcase confidence:*testsuite-id*))
+	 (project
+	   (operation:create-project :name name :tag tag)))
     (development:build :tag tag)
     (loop :for image :in (enumerate-images :tag tag)
 	  :do (progn
 		(ensure-that-image-exists image)
 		(ensure-that-image-is-valid image)))
-    (operation:create-project :name name)
     (loop :for volume :in (enumerate-volumes :project name)
 	  :do (ensure-that-volume-exists volume))
-    (let ((project
-	    (operation:find-project name)))
-      (assert-t* project)
-      (operation:start-project project)
-      (operation:stop-project project)
-      (operation:delete-project project))
+    (assert-t* (operation:find-project name))
+    (operation:start-project project)
+    (operation:stop-project project)
+    (operation:delete-project project)
     (loop :for volume :in (enumerate-volumes :project name)
 	  :do (ensure-that-volume-does-not-exist volume))
     (loop :for image :in (enumerate-images :tag tag)

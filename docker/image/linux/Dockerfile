@@ -37,4 +37,4 @@ COPY ./docker/setup/users.sh /root/setup
 COPY ./docker/image/linux/users.conf /root/setup/
 RUN env PACKAGE=cid sh -x /root/setup/users.sh
 
-# End of file
+# End of file `Dockerfile'

@@ -57,6 +57,10 @@
    (docker-compose
     :initform *docker-compose*
     :reader project-docker-compose)
+   (tag
+    :initarg :tag
+    :initform "latest"
+    :reader project-tag)
    (status
     :initarg :status
     :initform nil
@@ -75,8 +79,8 @@
 		:collect (docker:make-volume
 			  :name (concatenate 'string "cid-" name "-" system))))))
 
-(defun make-project (&rest initargs &key name status docker-compose)
-  (declare (ignore name status docker-compose))
+(defun make-project (&rest initargs &key name status docker-compose tag)
+  (declare (ignore name status docker-compose tag))
   (apply #'make-instance 'project initargs))
 
 (defmethod print-object ((instance project) stream)
@@ -85,7 +89,7 @@
       (format stream ":NAME ~S :STATUS ~A" name status))))
 
 (defparameter *project*
-  (make-project :name "local"))
+  (make-project :name "local" :tag "latest"))
 
 (defun list-projects ()
   (flet ((project-name (volume-name)
@@ -123,17 +127,19 @@
 	  :do (docker:update-volume volume))
     (values project)))
 
-(defun create-project (&key name (docker-compose *docker-compose*) project)
+(defun create-project (&key name (docker-compose *docker-compose*) project tag)
   (if project
       (setf name (project-name project)
-	    docker-compose (project-docker-compose project))
+	    docker-compose (project-docker-compose project)
+	    tag (project-tag tag))
       (progn
 	(unless name
 	  (error "A project requires a NAME."))
 	(setf project
 	      (make-project
 	       :name name
-	       :docker-compose docker-compose))))
+	       :docker-compose docker-compose
+	       :tag tag))))
   (with-slots (volumes status) project
     (when status
       (return-from create-project project))
@@ -144,65 +150,54 @@
     (setf status t)
     (values project)))
 
+(defmacro with-environment (bindings &body body)
+  (alexandria:with-gensyms (saved-environment)
+    `(let ((,saved-environment
+	     (loop :for (name . value) :in ,bindings
+		   :collect (cons name (uiop:getenv name))
+		   :do (setf (uiop:getenv name) value))))
+       (unwind-protect (progn ,@body)
+	 (loop :for (name . value) :in ,saved-environment
+	       :when value
+	       :do (setf (uiop:getenv name) value))))))
+
 (defun start-project (&optional (project *project*))
-  (let ((saved-project
-	  (uiop:getenv "cid_project")))
-    (setf (uiop:getenv "cid_project")
-	  (project-name project))
-    (unwind-protect
-	 (uiop:run-program
-	  (list "docker-compose"
-		"--project-name" (project-name project)
-		"--file" (namestring
-			  (project-docker-compose project))
-		"up" "--detach")
-	  :output t
-	  :error-output t)
-      (when saved-project
-	(setf
-	 (uiop:getenv "cid_project")
-	 saved-project)))))
+  (with-environment (list (cons "cid_project" (project-name project))
+			  (cons "cid_image_tag" (project-tag project)))
+    (uiop:run-program
+     (list "docker-compose"
+	   "--project-name" (project-name project)
+	   "--file" (namestring
+		     (project-docker-compose project))
+	   "up" "--detach")
+     :output t
+     :error-output t)))
 
 (defun stop-project (&optional (project *project*))
-  (let ((saved-project
-	  (uiop:getenv "cid_project")))
-    (setf (uiop:getenv "cid_project")
-	  (project-name project))
-    (unwind-protect
-	 (uiop:run-program
-	  (list "docker-compose"
-		"--project-name" (project-name project)
-		"--file" (namestring
-			  (project-docker-compose project))
-		"down")
-	  :output t
-	  :error-output t)
-      (when saved-project
-	(setf
-	 (uiop:getenv "cid_project")
-	 saved-project)))))
+  (with-environment (list (cons "cid_project" (project-name project))
+			  (cons "cid_image_tag" (project-tag project)))
+    (uiop:run-program
+     (list "docker-compose"
+	   "--project-name" (project-name project)
+	   "--file" (namestring
+		     (project-docker-compose project))
+	   "down")
+     :output t
+     :error-output t)))
 
 (defun delete-project (&optional (project *project*))
-  (let ((saved-project
-	  (uiop:getenv "cid_project")))
-    (setf (uiop:getenv "cid_project")
-	  (project-name project))
-    (unwind-protect
-	 (progn
-	   (uiop:run-program
-	    (list "docker-compose"
-		  "--project-name" (project-name project)
-		  "--file" (namestring
-			    (project-docker-compose project))
-		  "rm")
-	    :output t
-	    :error-output t)
-	   (with-slots (volumes status) project
-	     (loop :for volume :in volumes
-		   :do (docker:delete-volume volume))))
-      (when saved-project
-	(setf
-	 (uiop:getenv "cid_project")
-	 saved-project)))))
+  (with-environment (list (cons "cid_project" (project-name project))
+			  (cons "cid_image_tag" (project-tag project)))
+    (uiop:run-program
+     (list "docker-compose"
+	   "--project-name" (project-name project)
+	   "--file" (namestring
+		     (project-docker-compose project))
+	   "rm")
+     :output t
+     :error-output t)
+    (with-slots (volumes status) project
+      (loop :for volume :in volumes
+	    :do (docker:delete-volume volume)))))
 
 ;;;; End of file `operation.lisp'

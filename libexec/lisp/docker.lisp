@@ -273,7 +273,7 @@
 		    (slot-value actual-state slot-name)))
     (values image)))
 
-(defun create-image (&key dockerfile context repository tag (cache t))
+(defun create-image (&key dockerfile context repository tag (cache t) (build-time-variables))
   (unless tag
     (setf tag "latest"))
   (unless context
@@ -283,14 +283,16 @@
   (let ((image-tag
 	  (concatenate 'string repository '(#\:) tag)))
     (uiop:run-program
-     (remove
-      nil
-      (list "docker" "image" "build"
-	    (unless cache
-	      "--no-cache")
-	    "--file" (namestring dockerfile)
-	    "--tag" image-tag
-	    (namestring context)))
+     (append
+      (list "docker" "image" "build")
+      (unless cache
+	(list "--no-cache"))
+      (when build-time-variables
+	(loop :for (name . value) :in build-time-variables
+	      :append (list "--build-arg" (concatenate 'string name "=" value))))
+      (list "--file" (namestring dockerfile))
+      (list "--tag" image-tag)
+      (list (namestring context)))
      :output t
      :error-output t)
     (find-image image-tag)))

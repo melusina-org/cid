@@ -120,6 +120,7 @@
      :context context
      :repository repository
      :tag tag
+     :build-time-variables (list (cons "CID_LINUX_REFERENCE" tag))
      :cache cache)))
 
 (defun validate-image (image)

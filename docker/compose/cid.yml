@@ -12,12 +12,20 @@
 # are also available at
 # https://opensource.org/licenses/MIT
 
+# Variables:
+#
+# cid_image_tag (latest):
+#  The image tag to use when creating the project services.
+#
+# cid_project (local):
+#  The project name to use when forming volume names.
+
 version: '3'
 
 services:
  reverseproxy:
   restart: unless-stopped
-  image: cid/reverseproxy
+  image: cid/reverseproxy:${cid_image_tag:-latest}
   networks:
    - service
    - frontend
@@ -26,7 +34,7 @@ services:
    - "443:443"
 
  gitserver:
-  image: cid/gitserver
+  image: cid/gitserver:${cid_image_tag:-latest}
   #command: /usr/sbin/sshd -D -d
   volumes:
    - cid-git:/var/git
@@ -37,7 +45,7 @@ services:
    - "2022:22"
 
  trac:
-  image: cid/trac
+  image: cid/trac:${cid_image_tag:-latest}
   volumes:
    - cid-trac:/var/trac
    - cid-git:/var/git
@@ -52,12 +60,12 @@ networks:
 volumes:
   cid-trac:
     external:
-      name: cid-${cid_project}-trac
+      name: cid-${cid_project:-local}-trac
   cid-git:
     external:
-      name: cid-${cid_project}-git
+      name: cid-${cid_project:-local}-git
   cid-www:
     external:
-      name: cid-${cid_project}-www
+      name: cid-${cid_project:-local}-www
 
 # End of file `cid.yml'
