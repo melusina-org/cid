@@ -23,6 +23,7 @@
    #:build
    
    ;; Project
+   #:*project*
    #:project
    #:project-name
    #:project-status
@@ -84,7 +85,7 @@
       (format stream ":NAME ~S :STATUS ~A" name status))))
 
 (defparameter *project*
-  (make-project :name "cid"))
+  (make-project :name "local"))
 
 (defun list-projects ()
   (flet ((project-name (volume-name)
@@ -122,22 +123,26 @@
 	  :do (docker:update-volume volume))
     (values project)))
 
-(defun create-project (&key name (docker-compose *docker-compose*))
-  (unless name
-    (error "A project requires a NAME."))
-  (let ((project
-	  (make-project
-	   :name name
-	   :docker-compose docker-compose)))
-    (with-slots (volumes status) project
-      (when status
-	(return-from create-project project))
-      (loop :for volume :in volumes
-	    :do (docker:create-volume
-		 :name (docker:volume-name volume)
-		 :driver (docker:volume-driver volume)))
-      (setf status t)
-      (values project))))
+(defun create-project (&key name (docker-compose *docker-compose*) project)
+  (if project
+      (setf name (project-name project)
+	    docker-compose (project-docker-compose project))
+      (progn
+	(unless name
+	  (error "A project requires a NAME."))
+	(setf project
+	      (make-project
+	       :name name
+	       :docker-compose docker-compose))))
+  (with-slots (volumes status) project
+    (when status
+      (return-from create-project project))
+    (loop :for volume :in volumes
+	  :do (docker:create-volume
+	       :name (docker:volume-name volume)
+	       :driver (docker:volume-driver volume)))
+    (setf status t)
+    (values project)))
 
 (defun start-project (&optional (project *project*))
   (let ((saved-project
