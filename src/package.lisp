@@ -29,8 +29,6 @@
    #:list-tenants
    #:make-tenant
    #:find-tenant
-   #:tenant-scope
-   #:ensure-tenant-scope
    ;; Project
    #:project
    #:project-pathname

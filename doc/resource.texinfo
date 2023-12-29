@@ -1,0 +1,20 @@
+@chapter Resources
+
+@section Resource Concepts
+
+@subsection Introduction to Resources
+
+Resources are responsible for resources examined and consumed by the
+deployment of software components.
+
+Some examples of resources and resources they are responsible for are
+the localhost and users, files, and software packages; a configured
+docker engine and docker volumes, images and deployments; a remote
+host accessible over SSH and users, files, and software packages; a
+kubernetes cluster hosted in a public cloud and the rich landscape of
+resources it can manage.
+
+Resources are persistent objects that are attached to a tenant and a
+project.
+
+@section The Resources Dictionary

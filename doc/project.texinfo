@@ -1,0 +1,13 @@
+@chapter Projects
+
+@section Project Concepts
+
+@subsection Introduction to Projects
+
+Projects are persistent objects that are attached to a tenant.
+
+@section The Projects Dictionary
+
+@include include/fun-org.melusina.cid-make-project.texinfo
+@include include/fun-org.melusina.cid-find-project.texinfo
+@include include/fun-org.melusina.cid-list-projects.texinfo

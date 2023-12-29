@@ -18,6 +18,24 @@
   (apply #'uiop:xdg-data-home
 	 #.(string-downcase (package-name *package*)) more))
 
+
+;;;;
+;;;; Property Lists
+;;;;
+
+(defun sort-plist (plist)
+  "Sort the provided PLIST so that its keys are in ascending order."
+  (alexandria:alist-plist
+   (sort (alexandria:plist-alist plist)
+	 #'string<
+	 :key #'car)))
+
+
+
+;;;;
+;;;; Check instance slots
+;;;;
+
 (defun check-that-instance-slot-matches-value (instance slot-name value)
   (flet ((matches-p (value-1 value-2)
 	   (typecase value-1

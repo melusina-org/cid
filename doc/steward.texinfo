@@ -1,0 +1,44 @@
+@chapter Stewards
+
+@section Steward Concepts
+
+@subsection Introduction to Stewards
+
+Stewards are responsible for resources examined and consumed by the
+deployment of software components.
+
+Some examples of stewards and resources they are responsible for are
+the localhost and users, files, and software packages; a configured
+docker engine and docker volumes, images and deployments; a remote
+host accessible over SSH and users, files, and software packages; a
+kubernetes cluster hosted in a public cloud and the rich landscape of
+resources it can manage.
+
+Stewards are persistent objects that are attached to a tenant and a
+project.
+
+@section The Stewards Dictionary
+
+@include include/class-org.melusina.cid-steward.texinfo
+@include include/fun-org.melusina.cid-configure-steward.texinfo
+@include include/fun-org.melusina.cid-find-steward.texinfo
+
+@section Empty Steward
+@include include/class-org.melusina.cid-empty.texinfo
+@include include/fun-org.melusina.cid-make-empty.texinfo
+
+@section Docker Engine
+@include include/class-org.melusina.cid-docker-engine.texinfo
+@include include/fun-org.melusina.cid-make-docker-engine.texinfo
+
+@section Filesystem Subtree
+@include include/class-org.melusina.cid-filesystem-subtree.texinfo
+@include include/fun-org.melusina.cid-make-filesystem-subtree.texinfo
+
+@section Property List
+@include include/class-org.melusina.cid-property-list.texinfo
+@include include/fun-org.melusina.cid-make-property-list.texinfo
+
+@section MacOS Security
+@include include/class-org.melusina.cid-macos-security.texinfo
+@include include/fun-org.melusina.cid-make-macos-security.texinfo

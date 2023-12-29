@@ -65,11 +65,26 @@ are also available at https://opensource.org/licenses/MIT
 
 @menu
 * Introduction::
+* Tenant::
+* Project::
+* Steward::
+* Resource::
 @end menu
 
 @end ifnottex
 
-@node Introduction, , Top, Top
+@node Introduction, Tenant, Top, Top
 @include introduction.texinfo
 
+@node Tenant, Project, Introduction, Top
+@include tenant.texinfo
+
+@node Project, Steward, Tenant, Top
+@include project.texinfo
+
+@node Steward, Resource, Project, Top
+@include steward.texinfo
+
+@node Resource, , Steward, Top
+@include resource.texinfo
 @bye
