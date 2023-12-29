@@ -56,4 +56,186 @@ The database is reclaimed and destroyed after BODY completes."
        (clsql:destroy-database cid:*database-connection-spec*
 			       :database-type cid:*database-type*))))
 
+
+
+;;;
+;;; Analyse HTTP Requests and Replies
+;;;
+
+(defclass http-reply ()
+  ((body :initarg :body)
+   (status-code :initarg :status-code)
+   (headers :initarg :headers)
+   (uri :initarg :uri)
+   (stream :initarg :stream)
+   (close :initarg :close)
+   (reason-phrase :initarg :reason-phrase))
+  (:documentation
+   "Model HTTP-REPLIES as used by Drakma."))
+
+(defun http-request (uri-path
+                     &rest args
+                     &key (protocol :http/1.1)
+                          (method :get)
+			  (hostname "localhost")
+			  (port 80)
+                          content
+                          content-type
+                          content-length
+                          range
+                          cookie-jar
+                          basic-authorization
+                          parameters
+                          external-format-out
+                          additional-headers
+                          real-host)
+  "Send a HTTP request to an ACCEPTOR and returns its reply.
+This uses `DRAKMA:HTTP-REQUEST' to perform the request."
+  (declare (ignore protocol method content content-type content-length
+		   range cookie-jar basic-authorization parameters
+		   external-format-out additional-headers real-host))
+  (let ((drakma:*text-content-types*
+          '(("text" . nil)
+            ("application" . "json")))
+	(http-reply
+	  (make-instance 'http-reply))
+	(actual-url
+	  (format nil "http://~A:~A~A" hostname port uri-path))
+	(actual-args
+	  (loop :with filter-out = '(:hostname :port)
+		:for args-part = args :then (cddr args-part)
+		:while args-part
+		:for key = (first args-part)
+		:for value = (second args-part)
+		:unless (member key filter-out)
+		:append (list key value))))
+    (with-slots (body status-code headers uri stream close) http-reply
+      (setf (values body status-code headers uri stream close)
+            (apply 'drakma:http-request actual-url actual-args)))
+    (values http-reply)))
+
+(defparameter *http-reply* nil
+  "The HTTP-REPLY under scrutiny.")
+
+(defmacro with-http-reply ((uri-path
+			    &rest args
+			    &key (protocol :http/1.1)
+				 (method :get)
+				 (hostname "localhost")
+				 (port 80)
+				 content
+				 content-type
+				 content-length
+				 range
+				 cookie-jar
+				 basic-authorization
+				 parameters
+				 external-format-out
+				 accept
+				 additional-headers
+				 real-host)
+			   &body body-forms)
+  (declare (ignore protocol method hostname port
+		   content content-type content-length
+		   range cookie-jar basic-authorization parameters
+		   external-format-out accept additional-headers real-host))
+  `(let ((*http-reply*
+	   (http-request ,uri-path ,@args)))
+     ,@body-forms))
+
+(defun header-value (header-name reply)
+  (cdr (assoc header-name (slot-value reply 'headers) :test #'string-equal)))
+
+(defun header-match (value regexp)
+  (when value
+    (cl-ppcre:scan regexp value)))
+
+(defun write-header-value (stream header-name reply)
+  (let ((header-value (header-value header-name reply)))
+    (if header-value
+        (format stream "~%The header ~A is set to~%~%  ~S" header-name header-value)
+        (format stream "~%The header ~A is not set." header-name))))
+
+(define-assertion assert-http-header-undefined (header-name &optional (reply *http-reply*))
+  "The assertion (ASSERT-HTTP-HEADER-UNDEFINED HEADER-NAME) is true iff
+the header with the name HEADER-NAME is undefined in the last *HTTP-REPLY*."
+  :report (lambda (stream)
+            (format stream
+"The optional argument REPLY can be used to test the header of another reply than
+the last *HTTP-REPLY*.~%")
+            (write-header-value stream header-name reply))
+  (not (header-value header-name reply)))
+
+
+(define-assertion assert-http-header-match (header-name regexp &optional (reply *http-reply*))
+  "The assertion (ASSERT-HTTP-HEADER-MATCH HEADER-NAME REGEXP) is true iff
+the header with the name HEADER-NAME is defined in the last *HTTP-REPLY* and
+matches the given REGEXP.
+
+The optional argument REPLY can be used to test the header of another reply than
+the last *HTTP-REPLY*."
+  :report (lambda (stream)
+            (format stream "The regular expression used is
+
+  ~S~%" regexp)
+            (write-header-value stream header-name reply))
+  (header-match (header-value header-name reply) regexp))
+
+(define-assertion assert-http-header-charset (charset &optional (reply *http-reply*))
+  "The assertion (ASSERT-HTTP-HEADER-CHARSET CHARSET) is true iff the
+header with the name Content-Type is defined in the last *HTTP-REPLY*
+and features a charset declaration validating CHARSET.
+
+Currently, only the :utf-8 charset is supported.
+
+The optional argument REPLY can be used to test the header of another
+reply than the last *HTTP-REPLY*."
+  :report (lambda (stream)
+            (format stream "The expected CHARSET is
+
+  ~S
+
+and the CHARSET received in the last response is~%~%  " charset)
+	    (write-header-value stream :content-type reply))
+  (let ((regexp (ecase charset
+                  (:utf-8 ";\\s*charset=(?i)utf-8"))))
+    (header-match (header-value :content-type reply) regexp)))
+
+
+(define-assertion assert-http-body (regexp &optional (reply *http-reply*))
+"The assertion (ASSERT-HTTP-BODY REGEXP) is true iff the body response
+in the last *HTTP-REPLY* matches the given REGEXP.
+
+The optional argument REPLY can be used to test the header of another
+reply than the last *HTTP-REPLY*."
+  :report (lambda (stream)
+            (format stream
+"~&~%  The regular expression used is
+
+  ~S
+
+  and the last response body is
+
+  ~S~%~%" regexp (slot-value reply 'body)))
+  (cl-ppcre:scan regexp (slot-value reply 'body)))
+
+(define-assertion assert-http-status (status &optional (reply *http-reply*))
+"The assertion (ASSERT-HTTP-STATUS STATUS) is true iff the status response
+in the last *HTTP-REPLY* equals the given STATUS or is in the list STATUS.
+
+The optional argument REPLY can be used to test the header of another
+reply than the last *HTTP-REPLY*."
+  :report (lambda (stream)
+            (format stream
+"~&~%  The status used is
+
+  ~S
+
+  and the last response status is
+
+  ~S~%~%" status  (slot-value reply 'status-code)))
+  (if (listp status)
+      (position (slot-value reply 'status-code) status)
+      (= (slot-value reply 'status-code) status)))
+
 ;;;; End of file `utilities.lisp'

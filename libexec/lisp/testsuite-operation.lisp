@@ -19,6 +19,51 @@
 (define-testcase ensure-that-volume-does-not-exist (volume)
   (assert-nil (docker:find-volume (docker:volume-name volume))))
 
+(define-testcase ensure-that-trac-instance-is-available (instance)
+  (let ((hostname
+	  "localhost")
+	(port
+	  80))
+    (flet ((trac-location (&rest location)
+	     (apply
+	      #'concatenate
+	      'string
+	      "/trac/"
+	      instance
+	      (loop :for location-part :in location
+		    :collect "/"
+		    :collect location-part))))
+      (with-http-reply
+	  ((trac-location "wiki")
+	   :hostname hostname
+	   :port port)
+	(assert-http-status 200)
+	(assert-http-body "Welcome to Trac"))
+      (with-http-reply
+	  ((trac-location "timeline")
+	   :hostname hostname
+	   :port port)
+	(assert-http-status 200)
+	(assert-http-body "Timeline"))
+      (with-http-reply
+	  ((trac-location "roadmap")
+	   :hostname hostname
+	   :port port)
+	(assert-http-status 200)
+	(assert-http-body "Roadmap"))
+      (with-http-reply
+	  ((trac-location "report")
+	   :hostname hostname
+	   :port port)
+	(assert-http-status 200)
+	(assert-http-body "Available Reports"))
+      (with-http-reply
+	  ((trac-location "search")
+	   :hostname hostname
+	   :port port)
+	(assert-http-status 200)
+	(assert-http-body "Search")))))
+
 (define-testcase validate-project-lifecycle ()
   (let* ((name
 	   (string-downcase confidence:*testsuite-id*))
@@ -34,7 +79,10 @@
     (loop :for volume :in (enumerate-volumes :project name)
 	  :do (ensure-that-volume-exists volume))
     (assert-t* (operation:find-project name))
+    (operation:configure-project project)
     (operation:start-project project)
+    (ensure-that-trac-instance-is-available "example1")
+    (ensure-that-trac-instance-is-available "example-2-fancy-name")
     (operation:stop-project project)
     (operation:delete-project project)
     (loop :for volume :in (enumerate-volumes :project name)

@@ -94,7 +94,8 @@
   :description "Testsuite for El Cid"
   :author "Michaël Le Barbier"
   :license "MIT License"
-  :depends-on (#:org.melusina.confidence
+  :depends-on (#:drakma
+	       #:org.melusina.confidence
 	       #:org.melusina.cid
 	       #:org.melusina.cid/development
 	       #:org.melusina.cid/operation

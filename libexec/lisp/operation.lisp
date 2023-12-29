@@ -38,6 +38,7 @@
    #:find-project
    #:delete-project
    #:configure-project
+   #:project-configuration
    ))
 
 (in-package #:org.melusina.cid/operation)
@@ -76,6 +77,108 @@
 
 (defun project-backup-directory (project)
   (merge-pathnames #p"backups/" (project-pathname project)))
+
+(defun project-configuration-file (project)
+  (merge-pathnames #p"cid.conf" (project-pathname project)))
+
+(defun project-configuration-key (designator)
+  (flet ((key-component (object)
+	   (etypecase object
+	     (string
+	      object)
+	     (symbol
+	      (string-downcase object)))))
+    (apply
+     #'concatenate
+     'string
+     (loop :for designator-part
+	   :on (alexandria:ensure-list designator)
+	   :collect (key-component (first designator-part))
+	   :unless (null (rest designator-part))
+	   :collect "."))))
+
+(defun project-configuration (designator &optional (project *project*))
+  (multiple-value-bind (output error status)
+      (uiop:run-program
+       (list "git" "config"
+	     "--file" (namestring (project-configuration-file project))
+	     (project-configuration-key designator))
+       :output :string
+       :error-output t
+       :ignore-error-status t)
+    (declare (ignore error))
+    (when (eq status 0)
+      (string-right-trim '(#\Newline) output))))
+
+(defun (setf project-configuration) (value designator &optional (project *project*))
+  (check-type value (or null string))
+  (if value
+      (uiop:run-program
+       (list "git" "config"
+	     "--file" (namestring (project-configuration-file project))
+	     (project-configuration-key designator)
+	     value)
+       :output t
+       :error-output t)
+      (uiop:run-program
+       (list "git" "config"
+	     "--file" (namestring (project-configuration-file project))
+	     "--unset"
+	     (project-configuration-key designator))
+       :output t
+       :error-output t))
+  (values value))
+
+(defun is-yes-p (text)
+  (when text
+    (string= text "yes")))
+
+(defun is-no-p (text)
+  (when text
+    (string= text "no")))
+
+(defun service-enabled-p (service &optional (project *project*))
+  (is-yes-p
+   (project-configuration (list service :service :enable) project)))
+
+(defun service-disabled-p (service &optional (project *project*))
+  (is-no-p
+   (project-configuration (list service :service :enable) project)))
+
+(defun enable-service (service &optional (project *project*))
+  (setf
+   (project-configuration (list service :service :enable) project)
+   "yes")
+  t)
+
+(defun disable-service (service &optional (project *project*))
+  (setf
+   (project-configuration (list service :service :enable) project)
+   "no")
+  nil)
+
+(defun make-volume (name project)
+  (docker:make-volume
+   :name (concatenate 'string "cid-" (project-name project) "-" name)))
+
+(defun volume-database (project)
+  (flet ((volume-name (binding)
+	   (docker:volume-name (car binding))))
+    (remove-duplicates
+     (append
+      (when (service-enabled-p :trac project)
+	(list
+	 (cons (make-volume "trac" project) #p"/var/trac")
+	 (cons (make-volume "www" project) #p"/var/www")
+	 (cons (make-volume "git" project) #p"/var/git")))
+      (when (service-enabled-p :gitserver project)
+	(list
+	 (cons (make-volume "git" project) #p"/var/git")))
+      (when (service-enabled-p :jenkins project)
+	(list
+	 (cons (make-volume "jenkins" project) #p"/var/lib/jenkins"))))
+     :test #'string=
+     :key #'volume-name)))
 
 (defun project-created-p (project)
   (slot-value project 'status))
@@ -153,37 +256,55 @@
 	       :name name
 	       :docker-compose docker-compose
 	       :tag tag))))
-  (with-slots (pathname volumes status) project
+  (with-slots (volumes status) project
     (when status
       (return-from create-project project))
     (loop :for volume :in volumes
 	  :do (docker:create-volume
 	       :name (docker:volume-name volume)
 	       :driver (docker:volume-driver volume)))
-    (ensure-directories-exist pathname)
+    (dolist (pathname (list (project-pathname project)
+			    (project-backup-directory project)))
+      (ensure-directories-exist pathname))
+    (let ((project-configuration-file
+	    (project-configuration-file project)))
+      (unless (probe-file project-configuration-file)
+	(uiop:copy-file
+	 (system-relative-pathname "example/cid.conf")
+	 project-configuration-file)))
     (setf status t)
     (values project)))
 
-(defun docker-volume-bind (source destination)
-  (format nil "type=bind,src=~A,dst=~A"
-	  (namestring source)
-	  (namestring destination)))
-
-(defun configure-project (&optional (project *project*) (tag "latest"))
-  (flet ((volume-backup-directory ()
-	   (docker-volume-bind
-	    (project-backup-directory project)
-	    "/opt/cid/var/backups"))
-	 (volume-configuration-directory ()
-	   (docker-volume-bind
-	    (project-pathname project)
-	    "/opt/cid/var/config")))
+(defun configure-project (&optional (project *project*) (tag "latest") debug)
+  (flet ((docker-bind (source destination)
+	   (list
+	    "--mount"
+	    (format nil "type=bind,src=~A,dst=~A"
+		    (namestring source)
+		    (namestring destination))))
+	 (docker-volume (binding)
+	   (list
+	    "--mount"
+	    (format nil "type=volume,src=~A,dst=~A"
+		    (docker:volume-name (car binding))
+		    (namestring (cdr binding))))))
     (uiop:run-program
-     (list "docker" "run" "-i" "--rm"
-	   "--mount" (volume-backup-directory)
-           "--mount" (volume-configuration-directory)
-           (concatenate 'string "cid/console:" tag)
-           "/bin/sh" "-x" "/opt/cid/bin/cid_configure")
+     (append
+      (list "docker" "run" "-i" "--rm")
+      (loop :for binding :in (volume-database project)
+	    :append (docker-volume binding))
+      (docker-bind
+       (project-backup-directory project)
+       "/opt/cid/var/backups")
+      (docker-bind
+       (project-pathname project)
+       "/opt/cid/var/config")
+      (list (concatenate 'string "cid/console:" tag))
+      (remove
+       nil
+       (list
+	"/bin/sh" (when debug "-x")
+	"/opt/cid/bin/cid_configure")))
      :output t :error-output t)))
 
 (defmacro with-environment (bindings &body body)
@@ -232,6 +353,8 @@
 	   "rm")
      :output t
      :error-output t)
+    (with-slots (pathname) project
+      (uiop:delete-file-if-exists pathname))
     (with-slots (volumes status) project
       (loop :for volume :in volumes
 	    :do (docker:delete-volume volume)))))
