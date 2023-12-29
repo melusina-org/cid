@@ -15,6 +15,7 @@
   (:use #:cl)
   (:local-nicknames
    (#:atelier #:org.melusina.atelier)
+   (#:cid #:org.melusina.cid)
    (#:colima #:org.melusina.cid/colima)
    (#:docker #:org.melusina.cid/docker)
    (#:build #:org.melusina.cid/build)

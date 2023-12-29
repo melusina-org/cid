@@ -33,4 +33,27 @@
 	:collect (docker:make-volume
 		  :name (concatenate 'string "cid-" project "-" system))))
 
+(defun testsuite-database-name (&optional(testsuite-id *testsuite-id*))
+  "The name of the testsuite database file."
+  (cid:user-data-relative-pathname
+   "org.melusina.cid"
+   "testsuite"
+   (make-pathname :name testsuite-id :type "sqlite")))
+
+(defmacro with-test-database (&body body)
+  "Run BODY with a connected testsuite database.
+The database is reclaimed and destroyed after BODY completes."
+  `(let ((cid:*database-type*
+	   :sqlite3)
+	 (cid:*database-connection-spec*
+	   (list (namestring (testsuite-database-name)))))
+     (unwind-protect
+	  (progn
+	    (ensure-directories-exist (testsuite-database-name))
+	    (cid:connect-database)
+	    ,@body)
+       (cid:disconnect-database)
+       (clsql:destroy-database cid:*database-connection-spec*
+			       :database-type cid:*database-type*))))
+
 ;;;; End of file `utilities.lisp'

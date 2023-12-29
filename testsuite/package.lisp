@@ -32,7 +32,8 @@
    #:assert-set-equal
    #:assert-string=
    #:assert-type
-   #:assert-condition))
+   #:assert-condition
+   #:*testsuite-id*))
 
 (in-package #:org.melusina.cid/testsuite)
 

@@ -15,11 +15,15 @@
   :description "Continuous Integration and Delivery"
   :author "Michaël Le Barbier"
   :license "MIT License"
-  :depends-on (#:org.melusina.atelier)
+  :depends-on (#:clsql
+	       #:clsql-sqlite3)
   :components
   ((:module "src"
     :components ((:file "package")
 		 (:file "utilities")
+		 (:file "database")
+		 (:file "tenant")
+		 (:file "project")
 		 (:file "entry-point")))))
 
 (asdf:defsystem #:org.melusina.cid/console
@@ -97,7 +101,10 @@
   :components
   ((:module "testsuite"
     :components ((:file "package")
-		 (:file "utilities")))
+		 (:file "utilities")
+		 (:file "database")
+		 (:file "tenant")
+		 (:file "project")))
    (:module "libexec"
     :components
     ((:module "lisp"

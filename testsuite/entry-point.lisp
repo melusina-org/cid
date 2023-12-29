@@ -1,4 +1,4 @@
-;;;; entrypoint.lisp — Entrypoint for El Cid
+;;;; entry-point.lisp — Entrypoint for El Cid
 
 ;;;; El Cid (https://github.com/melusina-org/cid)
 ;;;; This file is part of El Cid.
@@ -14,7 +14,9 @@
 (in-package #:org.melusina.cid/testsuite)
 
 (define-testcase unit-tests ()
-  (assert-t t))
+  (testsuite-database)
+  (testsuite-tenant)
+  (testsuite-project))
 
 (define-testcase component-tests ()
   (validate-docker-volume-lifecycle)
@@ -31,4 +33,4 @@
   (component-tests)
   (integration-tests))
 
-;;;; End of file `entrypoint.lisp'
+;;;; End of file `entry-point.lisp'

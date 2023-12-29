@@ -14,6 +14,31 @@
 (defpackage #:org.melusina.cid
   (:use #:common-lisp)
   (:export
+   
+   ;; Database
+   #:*database-type*
+   #:*database-connection-spec*
+   #:user-data-relative-pathname
+   #:connect-database
+   #:disconnect-database
+   #:with-database
+   ;; Tenant
+   #:tenant
+   #:tenant-pathname
+   #:tenant-displayname
+   #:list-tenants
+   #:make-tenant
+   #:find-tenant
+   #:tenant-scope
+   #:ensure-tenant-scope
+   ;; Project
+   #:project
+   #:project-pathname
+   #:project-displayname
+   #:project-tenant
+   #:list-projects
+   #:make-project
+   #:find-project
   ))
 
 (in-package #:org.melusina.cid)

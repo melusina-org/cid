@@ -1,4 +1,4 @@
-;;;; utilities.lisp — Utilities for El Cid
+;;;; database.lisp — Database Connection for El Cid
 
 ;;;; El Cid (https://github.com/melusina-org/cid)
 ;;;; This file is part of El Cid.
@@ -11,11 +11,12 @@
 ;;;; you should have received as part of this distribution. The terms
 ;;;; are also available at https://opensource.org/licenses/MIT
 
-(in-package #:org.melusina.cid)
+(in-package #:org.melusina.cid/testsuite)
 
-(defun user-data-relative-pathname (&rest more)
-  "Prepare a PATHNAME relative to the user data of the application."
-  (apply #'uiop:xdg-data-home
-	 #.(string-downcase (package-name *package*)) more))
+(define-testcase testsuite-database ()
+  (with-test-database
+    (assert-t* (probe-file (testsuite-database-name)))
+    (assert-t (clsql:table-exists-p "tenant")))
+  (assert-nil (probe-file (testsuite-database-name))))
 
-;;;; End of file `utilities.lisp'
+;;;; End of file `database.lisp'
