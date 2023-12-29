@@ -84,6 +84,7 @@
   :license "MIT License"
   :depends-on (#:cl-ppcre
 	       #:org.melusina.atelier
+	       #:org.melusina.cid
 	       #:org.melusina.cid/docker)
   :components
   ((:module "libexec/lisp"

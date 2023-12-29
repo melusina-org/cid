@@ -15,7 +15,8 @@
   (:use #:cl)
   (:local-nicknames
    (#:atelier #:org.melusina.atelier)
-   (#:docker #:org.melusina.cid/docker))
+   (#:docker #:org.melusina.cid/docker)
+   (#:cid #:org.melusina.cid))
   (:export
    #:lint
    #+quicklisp
@@ -36,6 +37,7 @@
    #:stop-project
    #:find-project
    #:delete-project
+   #:configure-project
    ))
 
 (in-package #:org.melusina.cid/operation)
@@ -57,6 +59,10 @@
    (docker-compose
     :initform *docker-compose*
     :reader project-docker-compose)
+   (pathname
+    :initform nil
+    :reader project-pathname
+    :documentation "The PATHNAME to the configuration files for project.")
    (tag
     :initarg :tag
     :initform "latest"
@@ -68,16 +74,21 @@
    (volumes
     :initform nil)))
 
+(defun project-backup-directory (project)
+  (merge-pathnames #p"backups/" (project-pathname project)))
+
 (defun project-created-p (project)
   (slot-value project 'status))
 
 (defmethod initialize-instance :after ((instance project) &rest initargs &key &allow-other-keys)
   (declare (ignore initargs))
-  (with-slots (volumes name) instance
+  (with-slots (name pathname volumes ) instance
     (setf volumes
  	  (loop :for system :in '("trac" "git" "www")
 		:collect (docker:make-volume
-			  :name (concatenate 'string "cid-" name "-" system))))))
+			  :name (concatenate 'string "cid-" name "-" system))))
+    (setf pathname
+	  (cid:user-data-relative-pathname (concatenate 'string name "/")))))
 
 (defun make-project (&rest initargs &key name status docker-compose tag)
   (declare (ignore name status docker-compose tag))
@@ -142,15 +153,38 @@
 	       :name name
 	       :docker-compose docker-compose
 	       :tag tag))))
-  (with-slots (volumes status) project
+  (with-slots (pathname volumes status) project
     (when status
       (return-from create-project project))
     (loop :for volume :in volumes
 	  :do (docker:create-volume
 	       :name (docker:volume-name volume)
 	       :driver (docker:volume-driver volume)))
+    (ensure-directories-exist pathname)
     (setf status t)
     (values project)))
+
+(defun docker-volume-bind (source destination)
+  (format nil "type=bind,src=~A,dst=~A"
+	  (namestring source)
+	  (namestring destination)))
+
+(defun configure-project (&optional (project *project*) (tag "latest"))
+  (flet ((volume-backup-directory ()
+	   (docker-volume-bind
+	    (project-backup-directory project)
+	    "/opt/cid/var/backups"))
+	 (volume-configuration-directory ()
+	   (docker-volume-bind
+	    (project-pathname project)
+	    "/opt/cid/var/config")))
+    (uiop:run-program
+     (list "docker" "run" "-i" "--rm"
+	   "--mount" (volume-backup-directory)
+           "--mount" (volume-configuration-directory)
+           (concatenate 'string "cid/console:" tag)
+           "/bin/sh" "-x" "/opt/cid/bin/cid_configure")
+     :output t :error-output t)))
 
 (defmacro with-environment (bindings &body body)
   (alexandria:with-gensyms (saved-environment)
