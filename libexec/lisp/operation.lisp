@@ -123,6 +123,8 @@
     (values project)))
 
 (defun create-project (&key name (docker-compose *docker-compose*))
+  (unless name
+    (error "A project requires a NAME."))
   (let ((project
 	  (make-project
 	   :name name
