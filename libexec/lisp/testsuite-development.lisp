@@ -1,4 +1,4 @@
-;;;; testsuite-operation.lisp — Test Operation Support for El Cid
+;;;; testsuite-development.lisp — Test Operation Support for El Cid
 
 ;;;; El Cid (https://github.com/melusina-org/cid)
 ;;;; This file is part of El Cid.
@@ -13,4 +13,4 @@
 
 (in-package #:org.melusina.cid/testsuite)
 
-;;;; End of file `testsuite-operation.lisp'
+;;;; End of file `testsuite-development.lisp'

@@ -63,7 +63,7 @@
       #p"subr"
       #p"support"
       #p"tool"
-      #p"libexec/lisp/development.lisp"))))
+      #p"libexec/lisp"))))
 
 #+quicklisp
 (defun reload ()

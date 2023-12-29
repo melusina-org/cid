@@ -1,4 +1,4 @@
-;;;; entrypoint.lisp — Entrypoint for El Cid
+;;;; entry-point.lisp — Entrypoint for El Cid
 
 ;;;; El Cid (https://github.com/melusina-org/cid)
 ;;;; This file is part of El Cid.
@@ -13,4 +13,4 @@
 
 (in-package #:org.melusina.cid)
 
-;;;; End of file `entrypoint.lisp'
+;;;; End of file `entry-point.lisp'

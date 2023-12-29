@@ -1,4 +1,4 @@
-;;;; entrypoint.lisp — Entrypoint for El Cid Administration Console
+;;;; entry-point.lisp — Entrypoint for El Cid Administration Console
 
 ;;;; El Cid (https://github.com/melusina-org/cid)
 ;;;; This file is part of El Cid.
@@ -17,4 +17,4 @@
   (format t "Administration Console for El Cid.~%")
   (uiop:quit 0))
 
-;;;; End of file `entrypoint.lisp'
+;;;; End of file `entry-point.lisp'
