@@ -107,7 +107,7 @@ jenkins_job_export()
         case ${OPTION} in
             i)	include_pattern="${OPTARG}";;
             x)	exclude_pattern="${OPTARG}";;
-            *)	failwith -x 70 'cid_job_export: %s: Unsupported option.' "${OPTION}";;
+            *)	failwith 70 'cid_job_export: %s: Unsupported option.' "${OPTION}";;
         esac
     done
     shift $(expr ${OPTIND} - 1)

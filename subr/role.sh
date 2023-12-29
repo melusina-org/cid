@@ -29,7 +29,7 @@ role_user_db()
     local userdir userconf username displayname role
 
     if ! [ $# -eq 1 ]; then
-        failwith -x 70 'role_user_db: Invalid call.'
+        failwith 70 'role_user_db: Invalid call.'
     fi
 
     {

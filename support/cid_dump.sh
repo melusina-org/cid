@@ -14,7 +14,7 @@
 # are also available at https://opensource.org/licenses/MIT
 
 : ${package:=@PACKAGE@}
-: ${packagedir:=/@PACKAGEDIR@}
+: ${packagedir:=/@PACKAGE@}
 : ${version:=@VERSION@}
 : ${prefix:=@prefix@}
 : ${libexecdir:=@libexecdir@}
@@ -119,7 +119,7 @@ dump_main()
         case ${OPTION} in
             h)	dump_usage; exit 0;;
             p)	dump_project="${OPTARG}";;
-            *)	failwith -x 70 'cid_dump: %s: Unsupported option.' "${OPTION}";;
+            *)	failwith 70 'cid_dump: %s: Unsupported option.' "${OPTION}";;
         esac
     done
     shift $(expr ${OPTIND} - 1)

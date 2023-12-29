@@ -14,7 +14,7 @@
 # are also available at https://opensource.org/licenses/MIT
 
 : ${package:=@PACKAGE@}
-: ${packagedir:=/@PACKAGEDIR@}
+: ${packagedir:=/@PACKAGE@}
 : ${version:=@VERSION@}
 : ${prefix:=@prefix@}
 : ${libexecdir:=@libexecdir@}
@@ -59,7 +59,7 @@ tool_main()
     while getopts 'h:' OPTION; do
         case ${OPTION} in
             h)	tool_usage; exit 0;;
-            *)	failwith -x 70 'cid_jenkins_tool: %s: Unsupported option.' "${OPTION}";;
+            *)	failwith 70 'cid_jenkins_tool: %s: Unsupported option.' "${OPTION}";;
         esac
     done
     shift $(expr ${OPTIND} - 1)

@@ -14,7 +14,7 @@
 # are also available at https://opensource.org/licenses/MIT
 
 : ${package:=@PACKAGE@}
-: ${packagedir:=/@PACKAGEDIR@}
+: ${packagedir:=/@PACKAGE@}
 : ${version:=@VERSION@}
 : ${prefix:=@prefix@}
 : ${libexecdir:=@libexecdir@}
@@ -44,14 +44,14 @@ restore_main()
     while getopts 'n' OPTION; do
         case ${OPTION} in
             h)	restore_usage; exit 0;;
-            *)	failwith -x 70 'cid_restore: %s: Unsupported option.' "${OPTION}";;
+            *)	failwith 70 'cid_restore: %s: Unsupported option.' "${OPTION}";;
         esac
     done
     shift $(expr ${OPTIND} - 1)
     config_setup
 
     if [ $# -ne 1 ]; then
-        failwith -x 64 "cid_restore: Can only restore exactly one dump file."
+        failwith 64 "cid_restore: Can only restore exactly one dump file."
     fi
     dumpfile="$1"
     shift

@@ -14,7 +14,7 @@
 # are also available at https://opensource.org/licenses/MIT
 
 : ${package:=@PACKAGE@}
-: ${packagedir:=/@PACKAGEDIR@}
+: ${packagedir:=/@PACKAGE@}
 : ${version:=@VERSION@}
 : ${prefix:=@prefix@}
 : ${subrdir:=@datadir@/subr}
@@ -43,7 +43,7 @@ configure_config()
 configure_assert()
 {
     if ! [ -f "${config_dir}/cid.conf" ]; then
-        failwith -x 70 '%s: File not found.' "${config_dir}/cid.conf"
+        failwith 70 '%s: File not found.' "${config_dir}/cid.conf"
     fi
 }
 

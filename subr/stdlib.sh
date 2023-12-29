@@ -78,7 +78,7 @@ failwith()
 	    :
     esac
 
-    wlog 'Failure' "$@"
+    wlog 'Error' "$@"
     exit "${status}"
 }
 

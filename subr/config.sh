@@ -95,17 +95,17 @@ config_backupdir()
 config_setup()
 {
     if [ -z "${config_dir}" ]; then
-        failwith -x 70 'config.sh: config_dir: This variable is not set.'
+        failwith 70 'config.sh: config_dir: This variable is not set.'
     fi
 
     if ! [ -d "${config_dir}" ]; then
-        failwith -x 64 '%s: Cannot read configuration directory.' "${config_dir}"
+        failwith 64 '%s: Cannot read configuration directory.' "${config_dir}"
     fi
 
     config_file="${config_dir}/cid.conf"
 
     if ! [ -f "${config_file}" ]; then
-        failwith -x 64 '%s: Cannot read configuration file.' "${config_file}"
+        failwith 64 '%s: Cannot read configuration file.' "${config_file}"
     fi
 
     config_project="$(config_project)"

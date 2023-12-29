@@ -14,7 +14,7 @@
 # are also available at https://opensource.org/licenses/MIT
 
 : ${package:=@PACKAGE@}
-: ${packagedir:=/@PACKAGEDIR@}
+: ${packagedir:=/@PACKAGE@}
 : ${version:=@VERSION@}
 : ${prefix:=@prefix@}
 : ${libexecdir:=@libexecdir@}
@@ -171,7 +171,7 @@ repository_main()
         case ${OPTION} in
             h)	repository_usage; exit 0;;
             t)	repository_environment="${OPTARG}";;
-            *)	failwith -x 70 'cid_repository: %s: Unsupported option.' "${OPTION}";;
+            *)	failwith 70 'cid_repository: %s: Unsupported option.' "${OPTION}";;
         esac
     done
     shift $(expr ${OPTIND} - 1)
@@ -196,7 +196,7 @@ repository_main()
             : 'NOP'
             ;;
         *)
-            failwith -x 64 'cid_repository: %s: Unknown subcommand.' "${subcommand}"
+            failwith 64 'cid_repository: %s: Unknown subcommand.' "${subcommand}"
             ;;
     esac
 
