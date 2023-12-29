@@ -312,7 +312,7 @@
     (setf status t)
     (values project)))
 
-(defun configure-project (&optional (project *project*) (tag "latest") debug)
+(defun configure-project (&optional (project *project*) debug)
   (flet ((docker-bind (source destination)
 	   (list
 	    "--mount"
@@ -336,7 +336,7 @@
       (docker-bind
        (project-pathname project)
        "/opt/cid/var/config")
-      (list (concatenate 'string "cid/console:" tag))
+      (list (concatenate 'string "cid/console:" (project-tag project)))
       (remove
        nil
        (list
