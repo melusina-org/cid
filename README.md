@@ -138,9 +138,9 @@ Supported operating systems are modern Linux versions and Mac OS X.
 This software might also work on BSD Systems featuring a docker
 stack. The prerequisites and dependences are:
 
-  - A UNIX system featuring a Lisp implementation, a shell, and basic
-    utilities, as described by the last version of POSIX.
-
+  - A UNIX system featuring a Lisp implementation, QuickLisp, a shell,
+    and basic utilities, as described by the last version of POSIX.
+	
   - A docker client configured to interact with an up and running
     docker daemon and the `docker-compose` program. On Linux systens
     the Docker client and daemons are provided by
@@ -150,17 +150,16 @@ stack. The prerequisites and dependences are:
     [the Docker for Mac][external-docker-mac] package.
 
   - A working copy of the master branch of this repository. This can
-    be created by exploding
-    [the zip archive created by GitHub][cid-zip] or cloning the
-    repository with the following command:
+    be created by exploding [the zip archive created by GitHub][cid-zip]
+    or cloning the repository. Ensure that the working copy is in an
+    adequate place where QuickLisp can find the Lisp systems defined
+    in the working copy.
 
-~~~ console
-% git clone https://github.com/melusina-org/cid
-~~~
+### Discover the project lifecycle
 
-### From checkout to up and running
-
-With a Common Lisp listener, issue the following commands:
+With a Common Lisp listener, issue the following commands to build
+docker image, create, configure, start, dump, restore, stop and delete
+a project.
 
 ~~~ lisp
 CL-USER> (ql:quickload '#:org.melusina.cid/user)
@@ -169,147 +168,70 @@ CID/USER> (development:build)
 CID/USER> (operation:create-project)
 CID/USER> (operation:configure-project)
 CID/USER> (operation:start-project)
+CID/USER> (operation:dump-project)
+CID/USER> (operation:restore-project #p"~/.local/share/org.melusina.cid/local/backups/local.2023-10-31.a.txz")
+CID/USER> (operation:stop-project)
+CID/USER> (operation:delete-project)
 ~~~
 
-### From checkout to up and running
+The commands in the `org.melusina.cid/operation` system operate on the
+`org.melusina.cid/operation:*project*` which is setup with defaults
+allowing small experiments.
 
-With the shell, visit a working copy of the **El Cid** and issue the
-following command:
+### Run the testsuite
+
+From the command line, use the following command:
 
 ~~~ console
-% ./tool/wizard_initial_setup my-first-project
+development/testsuite
 ~~~
 
-This will start a wizard guiding us through the setup and
-initialisation of a project `my-first-project`.  Any name that can be
-a UNIX path is allowed.  The wizard starts with a greeting and display
-an overview of the initialisation process, then asks for a directory
-to hold the configuration of our first project.
+Alernatively, with a Common Lisp listener, issue the following
+commands:
 
-~~~ console
-Welcome to the initial setup wizard for El Cid!
-
-This program will setup a complete continous integration and
-deployment pipeline for your first project.  It will go through the
-following steps:
-
-  1. Create initial project configuration.
-  2. Build docker images for El Cid.
-  3. Create docker volumes for the initial project.
-  4. Start El Cid with docker.
-  5. Configure Jenkins.
-  6. Use the continuous integration and deployment pipeline!
-
-
-Step 1. Create initial project configuration.
-
-Please choose a directory to hold the configuration of your project [./project/my-first-project]:
+~~~ lisp
+CL-USER> (ql:quickload '#:org.melusina.cid/testsuite)
+CL-USER> (org.melusina.cid/testsuite:run-all-tests)
 ~~~
-
-After that the wizard goes on through the next initialisation steps.
-Building docker image is subject to a lot of temporary error
-conditions and will commonly fail when the host network has failures
-or if the online repositories providing 3rd party software are
-temporarily unavailable or in an inconsistant state. If such an error
-occurs, the wizard will give the chance to restart the failing step or
-to abort the initialisation procedure --- in that case, the wizard can
-be restarted again at a later time.
-
-~~~ console
-Step 2. Build docker images for El Cid.
-~~~
-
-Once the docker images for **El Cid** has been built the wizard
-creates a few docker volumes, which are persistant data stores for our
-containers.  These docker volumes are where Jenkins jobs, software
-artefacts and monitoring data are stored.  The wizard then starts the
-docker stack for **El Cid**.
-
-~~~ console
-Step 3. Create docker volumes for the initial project.
-Step 4. Start El Cid with docker.
-~~~
-
-~~~
-Step 5. Configure Jenkins.
-Step 6. Use the continuous integration and deployment pipeline!
-~~~
-
-
-# !!!! The rest of this file is outdated !!!!
-
-
-## Build docker images
-
-~~~ console
-% ./tool/docker_build linux admin gitserver jenkins postgresql reverseproxy trac
-~~~
-
-## Administrative operations
-
-### Example configuration directory
-
-Here is a listing for a configuration directory to use:
-
-~~~ console
-% find ./local -type f
-./local/gpg/01234567
-./local/cid.conf
-./local/ssh/config
-./local/ssh/id_rsa_github
-./local/Dockerfile
-~~~
-
-The `cid.conf` enumerates the trac environments to configure.  Each
-environment configured has the form
-
-~~~ conf
-[local]
-location = /trac/local
-admin = alice
-~~~
-
-where location stands for the location served by the Apache
-server. All other parts are optional.
-
-The SSH configuration is just a regular SSH configuration file which
-is made available to the cid user, which allows it to access remote
-directories.
-
-The GPG key is added to the keyring of the cid user and can be used to
-sign software.
-
-The Dockerfile describe a custom Jenkins installation, with
-dependencies tailored to the project.  It can start from `cid/jenkins`.
 
 
 ## Common Operations
 
-### Create data volumes
+### Create a project
 
-This creates specific docker data volumes for the `local` project.
+This creates the `*local*` project:
 
-~~~ console
-% ./tool/admin_console -c $(pwd)/project/local create
+~~~ lisp
+CID/USER> (defparameter *local* (operation:make-project :name "local"))
 ~~~
 
+See the `org.melusina.cid/operation:make-project` documentation for
+additional parameters that can be set when creating the project.
+
+### Create data volumes
+
+This creates specific docker data volumes for the `*local*` project.
+
+~~~ lisp
+CID/USER> (operation:create-project *local*)
+~~~
 
 ### Configure data volumes
 
-This populates docker data volumes for the `local` project according
-to the specification found in the configuration of the `local`
+This populates docker data volumes for the `*local*` project according
+to the specification found in the configuration of the `*local*`
 project.
 
-~~~ console
-% ./tool/admin_console -c $(pwd)/project/local configure
+~~~ lisp
+CID/USER> (operation:configure-project *local*)
 ~~~
 
 ### Dump data volumes
 
-This dumps docker data volumes for the `local` project.
+This dumps docker data volumes for the `*local*` project.
 
-~~~ console
-% ./tool/admin_console -c $(pwd)/project/local dump
+~~~ lisp
+CID/USER> (operation:dump-project *local*)
 ~~~
 
 The result of the dump is a tarball in the backup directory of the
@@ -317,41 +239,31 @@ project.  This tarball can be used to restore the environment.
 
 ### Restore data volumes
 
-This restores docker data volumes for the `local` project.  Note that
+This restores docker data volumes for the `*local*` project.  Note that
 the volumes are dropped and recreated before.
 
-~~~ console
-% ./tool/admin_console -c $(pwd)/project/alternate restore ./backup/local.2018-05-16.a.txz
+~~~ lisp
+CID/USER> (operation:restore-project #p"./backup/local.2018-05-16.a.txz" *local*)
 ~~~
 
 ### Reclaim data volumes
 
-This destroys data volumes for the `local` project.
+This destroys data volumes for the `*local*` project.
 
-~~~ console
-% ./tool/admin_console -c $(pwd)/project/local rm
+~~~ lisp
+CID/USER> (operation:delete-project *local*)
 ~~~
 
+### Start project with docker compose
 
-### Build special Jenkins image
-
-~~~ console
-% ./tool/admin_console -c $(pwd)/project/local jenkins
+~~~ lisp
+CID/USER> (operation:start-project *local*)
 ~~~
 
+### Stop project with docker compose
 
-## Deploy with compose
-
-### Up or update
-
-~~~ console
-% ./tool/docker_compose -c $(pwd)/project/local up -d
-~~~
-
-### Down
-
-~~~ console
-% ./tool/docker_compose -c $(pwd)/project/local down
+~~~ lisp
+CID/USER> (operation:stop-project *local*)
 ~~~
 
 ## Free software

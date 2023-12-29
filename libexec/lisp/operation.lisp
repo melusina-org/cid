@@ -41,8 +41,10 @@
    #:stop-project
    #:find-project
    #:delete-project
-   #:configure-project
    #:project-configuration
+   #:configure-project
+   #:dump-project
+   #:restore-project
    ))
 
 (in-package #:org.melusina.cid/operation)
@@ -312,38 +314,6 @@
     (setf status t)
     (values project)))
 
-(defun configure-project (&optional (project *project*) debug)
-  (flet ((docker-bind (source destination)
-	   (list
-	    "--mount"
-	    (format nil "type=bind,src=~A,dst=~A"
-		    (namestring source)
-		    (namestring destination))))
-	 (docker-volume (binding)
-	   (list
-	    "--mount"
-	    (format nil "type=volume,src=~A,dst=~A"
-		    (docker:volume-name (car binding))
-		    (namestring (cdr binding))))))
-    (uiop:run-program
-     (append
-      (list "docker" "run" "-i" "--rm")
-      (loop :for binding :in (volume-database project)
-	    :append (docker-volume binding))
-      (docker-bind
-       (project-backup-directory project)
-       "/opt/cid/var/backups")
-      (docker-bind
-       (project-pathname project)
-       "/opt/cid/var/config")
-      (list (concatenate 'string "cid/console:" (project-tag project)))
-      (remove
-       nil
-       (list
-	"/bin/sh" (when debug "-x")
-	"/opt/cid/bin/cid_configure")))
-     :output t :error-output t)))
-
 (defmacro with-environment (bindings &body body)
   (alexandria:with-gensyms (saved-environment)
     `(let ((,saved-environment
@@ -406,5 +376,86 @@
     (with-slots (volumes status) project
       (loop :for volume :in volumes
 	    :do (docker:delete-volume volume)))))
+
+
+;;;;
+;;;; Run Program
+;;;;
+
+(defun run-console-program (command &key (project *project*) volumes)
+  (flet ((docker-bind (source destination)
+	   (list
+	    "--mount"
+	    (format nil "type=bind,src=~A,dst=~A"
+		    (namestring source)
+		    (namestring destination))))
+	 (docker-volume (binding)
+	   (list
+	    "--mount"
+	    (format nil "type=volume,src=~A,dst=~A"
+		    (docker:volume-name (car binding))
+		    (namestring (cdr binding)))))
+	 (docker-image ()
+	   (list (concatenate 'string
+			      "cid/console:"
+			      (project-tag project)))))
+    (uiop:run-program
+     (append
+      (list "docker" "run" "-i" "--rm")
+      (loop :for binding :in (volume-database project)
+	    :append (docker-volume binding))
+      (docker-bind
+       (project-backup-directory project)
+       "/opt/cid/var/backups")
+      (docker-bind
+       (project-pathname project)
+       "/opt/cid/var/config")
+      volumes
+      (docker-image)
+      command)
+     :output t :error-output t)))
+
+
+;;;;
+;;;; Configure a PROJECT
+;;;;
+
+(defun configure-project (&optional (project *project*))
+  "Configure a PROJECT.
+The configuration of a PROJECT interacts with the software
+run by the project and creates logical resources as described
+by the PROJECT."
+  (run-console-program
+   (list "/bin/sh" "/opt/cid/bin/cid_configure")
+   :project project))
+
+;;;;
+;;;; Dump a PROJECT
+;;;;
+
+(defun dump-project (&optional (project *project*))
+  "Dump a PROJECT."
+  (run-console-program
+   (list "/bin/sh" "/opt/cid/bin/cid_dump" "-p" (project-name project))
+   :project project))
+
+(defun restore-project (pathname &optional (project *project*))
+  "Restore a PROJECT."
+  (flet ((docker-bind (source destination)
+	   (list
+	    "--mount"
+	    (format nil "type=bind,src=~A,dst=~A"
+		    (namestring source)
+		    (namestring destination))))
+	 (dockername (pathname)
+	   (make-pathname :name (pathname-name pathname)
+			  :type (pathname-type pathname)
+			  :directory (list :absolute "var" "backups"))))
+  (run-console-program
+   (list "/bin/sh" "/opt/cid/bin/cid_restore" (namestring (dockername pathname)))
+   :project project
+   :volumes (docker-bind
+	     (namestring (truename pathname))
+	     (namestring (dockername pathname))))))
 
 ;;;; End of file `operation.lisp'
