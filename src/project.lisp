@@ -56,8 +56,10 @@
     (t
      (clsql:select 'project :flatp t))))
 
-(defun find-project (designator tenant)
+(defun find-project (designator &key tenant)
   "Find the project associated to DESIGNATOR."
+  (unless tenant
+    (error "Cannot search for a project without filtering with a TENANT."))
   (ensure-tenant-scope (tenant)
     (typecase designator
       (project
@@ -95,7 +97,7 @@ is ~S instead of ~S."
 	   project))
       (let ((project
 	      (or (other-attributes-match-p
-		   (find-project pathname tenant))
+		   (find-project pathname :tenant tenant))
 		  (make-instance 'project
 				 :tenantid (slot-value tenant 'tenantid)
 				 :pathname pathname

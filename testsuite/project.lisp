@@ -33,9 +33,9 @@
     (populate-tenant-table)
     (populate-project-table)
     (assert-string= "Test Project"
-		    (cid:project-displayname (cid:find-project "testproject" "testsuite")))
+		    (cid:project-displayname (cid:find-project "testproject" :tenant "testsuite")))
     (assert-string= "Test Suite"
-		    (cid:tenant-displayname (cid:project-tenant (cid:find-project "testproject" "testsuite"))))
+		    (cid:tenant-displayname (cid:project-tenant (cid:find-project "testproject" :tenant "testsuite"))))
     (assert-condition
 	(cid:make-project :pathname "testproject" :displayname "Test Project 2" :tenant "testsuite")
 	t)))
