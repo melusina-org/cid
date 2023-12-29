@@ -29,6 +29,10 @@
    #:project-name
    #:project-status
    #:project-created-p
+   #:project-hostname
+   #:project-http-port
+   #:project-https-port
+   #:project-ssh-port
    #:make-project
    #:list-projects
    #:create-project
@@ -72,6 +76,26 @@
     :initarg :status
     :initform nil
     :reader project-status)
+   (hostname
+    :initarg :hostname
+    :initform "localhost"
+    :reader project-hostname
+    :documentation "The HOSTNAME to the deployment of the project.")
+   (http-port
+    :initarg :http-port
+    :initform 80
+    :reader project-http-port
+    :documentation "The HTTP PORT to the deployment of the project.")
+   (https-port
+    :initarg :https-port
+    :initform 443
+    :reader project-https-port
+    :documentation "The HTTPS PORT to the deployment of the project.")
+   (ssh-port
+    :initarg :ssh-port
+    :initform 22
+    :reader project-ssh-port
+    :documentation "The SSH PORT to the deployment of the project.")
    (volumes
     :initform nil)))
 
@@ -185,25 +209,30 @@
 
 (defmethod initialize-instance :after ((instance project) &rest initargs &key &allow-other-keys)
   (declare (ignore initargs))
-  (with-slots (name pathname volumes ) instance
+  (with-slots (name pathname volumes) instance
     (setf volumes
- 	  (loop :for system :in '("trac" "git" "www")
+ 	  (loop :for system :in '("trac" "git" "www" "jenkins")
 		:collect (docker:make-volume
 			  :name (concatenate 'string "cid-" name "-" system))))
     (setf pathname
 	  (cid:user-data-relative-pathname (concatenate 'string name "/")))))
 
-(defun make-project (&rest initargs &key name status docker-compose tag)
-  (declare (ignore name status docker-compose tag))
+(defun make-project (&rest initargs &key name status hostname http-port https-port ssh-port docker-compose tag)
+  (declare (ignore name hostname http-port https-port ssh-port  status docker-compose tag))
   (apply #'make-instance 'project initargs))
+
+(defun project-url (object)
+  (with-slots (hostname http-port) object
+    (format nil "http://~A~@[:~A~]"
+	    hostname (unless (= http-port 80) http-port))))
 
 (defmethod print-object ((instance project) stream)
   (print-unreadable-object (instance stream :type t :identity t)
     (with-slots (name tag) instance
-      (format stream ":NAME ~S :TAG ~S" name tag))))
+      (format stream ":NAME ~S :TAG ~S :URL ~S" name tag (project-url instance)))))
 
 (defparameter *project*
-  (make-project :name "local" :tag "latest"))
+  (make-project :name "local" :tag "latest" :ssh-port 2022))
 
 (defun list-projects ()
   (flet ((project-name (volume-name)
@@ -241,13 +270,17 @@
 	  :do (docker:update-volume volume))
     (values project)))
 
-(defun create-project (&key name tag (docker-compose *docker-compose*) project)
+(defun create-project (&key name tag hostname http-port https-port ssh-port (docker-compose *docker-compose*) project)
   (unless (or name tag project)
     (setf project *project*))
   (if project
       (setf name (project-name project)
 	    docker-compose (project-docker-compose project)
-	    tag (project-tag project))
+	    tag (project-tag project)
+	    hostname (project-hostname project)
+	    http-port (project-http-port project)
+	    https-port (project-https-port project)
+	    ssh-port (project-ssh-port project))
       (progn
 	(unless name
 	  (error "A project requires a NAME."))
@@ -255,7 +288,11 @@
 	      (make-project
 	       :name name
 	       :docker-compose docker-compose
-	       :tag tag))))
+	       :tag tag
+	       :hostname hostname
+	       :http-port http-port
+	       :https-port https-port
+	       :ssh-port ssh-port))))
   (with-slots (volumes status) project
     (when status
       (return-from create-project project))
@@ -318,9 +355,22 @@
 	       :when value
 	       :do (setf (uiop:getenv name) value))))))
 
+(defmacro with-project-environment (project &body body)
+  (alexandria:once-only (project)
+    `(with-environment
+	 (list (cons "cid_hostname" (project-hostname ,project))
+	       (cons "cid_http_port" (write-to-string
+				      (project-http-port ,project)))
+	       (cons "cid_https_port" (write-to-string
+				      (project-https-port ,project)))
+	       (cons "cid_ssh_port" (write-to-string
+				     (project-ssh-port ,project)))
+	       (cons "cid_image_tag" (project-tag ,project))
+	       (cons "cid_project" (project-name ,project)))
+       ,@body)))
+
 (defun start-project (&optional (project *project*))
-  (with-environment (list (cons "cid_project" (project-name project))
-			  (cons "cid_image_tag" (project-tag project)))
+  (with-project-environment project
     (uiop:run-program
      (list "docker-compose"
 	   "--project-name" (project-name project)
@@ -331,8 +381,7 @@
      :error-output t)))
 
 (defun stop-project (&optional (project *project*))
-  (with-environment (list (cons "cid_project" (project-name project))
-			  (cons "cid_image_tag" (project-tag project)))
+  (with-project-environment project
     (uiop:run-program
      (list "docker-compose"
 	   "--project-name" (project-name project)
@@ -343,8 +392,7 @@
      :error-output t)))
 
 (defun delete-project (&optional (project *project*))
-  (with-environment (list (cons "cid_project" (project-name project))
-			  (cons "cid_image_tag" (project-tag project)))
+  (with-project-environment project
     (uiop:run-program
      (list "docker-compose"
 	   "--project-name" (project-name project)

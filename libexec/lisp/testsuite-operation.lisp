@@ -19,11 +19,11 @@
 (define-testcase ensure-that-volume-does-not-exist (volume)
   (assert-nil (docker:find-volume (docker:volume-name volume))))
 
-(define-testcase ensure-that-trac-instance-is-available (instance)
+(define-testcase ensure-that-trac-instance-is-available (project instance)
   (let ((hostname
-	  "localhost")
+	  (operation:project-hostname project))
 	(port
-	  80))
+	  (operation:project-http-port project)))
     (flet ((trac-location (&rest location)
 	     (apply
 	      #'concatenate
@@ -69,8 +69,19 @@
 	   (string-downcase confidence:*testsuite-id*))
 	 (tag
 	   (string-downcase confidence:*testsuite-id*))
+	 (random-unprivileged-port
+	   (let ((first-unprivilieged-port 1024)
+		 (first-invalid-port 65536))
+	     (+ first-unprivilieged-port
+		(random (- first-invalid-port first-unprivilieged-port)))))
 	 (project
-	   (operation:create-project :name name :tag tag)))
+	   (operation:create-project
+	    :name name
+	    :tag tag
+	    :hostname "localhost"
+	    :http-port random-unprivileged-port
+	    :https-port (+ 1 random-unprivileged-port)
+	    :ssh-port (+ 2 random-unprivileged-port))))
     (development:build :tag tag)
     (loop :for image :in (enumerate-images :tag tag)
 	  :do (progn
@@ -81,8 +92,8 @@
     (assert-t* (operation:find-project name))
     (operation:configure-project project)
     (operation:start-project project)
-    (ensure-that-trac-instance-is-available "example1")
-    (ensure-that-trac-instance-is-available "example-2-fancy-name")
+    (ensure-that-trac-instance-is-available project "example1")
+    (ensure-that-trac-instance-is-available project "example-2-fancy-name")
     (operation:stop-project project)
     (operation:delete-project project)
     (loop :for volume :in (enumerate-volumes :project name)

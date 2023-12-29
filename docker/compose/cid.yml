@@ -30,8 +30,8 @@ services:
    - service
    - frontend
   ports:
-   - "80:80"
-   - "443:443"
+   - "${cid_http_port:-80}:80"
+   - "${cid_https_port:-443}:443"
 
  gitserver:
   image: cid/gitserver:${cid_image_tag:-latest}
@@ -42,7 +42,7 @@ services:
   networks:
    - frontend
   ports:
-   - "2022:22"
+   - "${cid_ssh_port:-2022}:22"
 
  trac:
   image: cid/trac:${cid_image_tag:-latest}
