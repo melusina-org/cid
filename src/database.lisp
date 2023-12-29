@@ -45,8 +45,10 @@ If the database does not exist, it is created and populated."
 
 (defmacro with-database (&body body)
   "Run BODY with a connected database."
-  `(unwind-protect
-	(progn (connect-database) ,@body)
-     (disconnect-database)))
+  `(if (clsql:*default-database*)
+       (progn ,@body)
+       (unwind-protect
+	    (progn (connect-database) ,@body)
+	 (disconnect-database))))
 
 ;;;; End of file `database.lisp'
