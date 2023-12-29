@@ -107,4 +107,24 @@
        (:file "testsuite-operation")))))
    (:file "testsuite/entry-point")))
 
+(asdf:defsystem #:org.melusina.cid/user
+  :description "System for El Cid Users"
+  :author "Michaël Le Barbier"
+  :license "MIT License"
+  :depends-on (#:org.melusina.confidence
+	       #:org.melusina.cid
+	       #:org.melusina.cid/colima
+	       #:org.melusina.cid/docker
+	       #:org.melusina.cid/console
+	       #:org.melusina.cid/build
+	       #:org.melusina.cid/development
+	       #:org.melusina.cid/operation
+	       #:org.melusina.cid/testsuite)
+  :components
+  ((:module "libexec"
+    :components
+    ((:module "lisp"
+      :components
+      ((:file "user")))))))
+
 ;;;; End of file `org.melusina.cid.asd'

@@ -13,20 +13,28 @@
 
 (in-package #:org.melusina.cid/testsuite)
 
-(define-testcase ensure-that-image-can-be-built (designator)
-  (let ((image
-	  (build:find-image designator)))
-    (setf (build:image-tag image)
-	  (string-downcase confidence:*testsuite-id*))
-    (let ((docker-image
-	    (build:build-image image)))
-      (assert-t* (docker:find-image (build:image-name image)))
-      (assert-string= (build:image-name image)
-		      (docker:image-name docker-image))
-      (assert-t (build:validate-image image)))))
+(define-testcase ensure-that-image-exists (image)
+  (let ((docker-image
+	  (docker:find-image (build:image-name image))))
+    (assert-t* docker-image)
+    (assert-string= (build:image-name image)
+		    (docker:image-name docker-image))))
+
+(define-testcase ensure-that-image-does-not-exist (image)
+  (let ((docker-image
+	  (docker:find-image (build:image-name image))))
+    (assert-nil docker-image)))
+
+(define-testcase ensure-that-image-is-valid (image)
+  (assert-t (build:validate-image image)))
+
+(define-testcase ensure-that-image-can-be-built (image)
+  (build:build-image image)
+  (ensure-that-image-exists image)
+  (ensure-that-image-is-valid image))
 
 (define-testcase ensure-that-every-image-can-be-built ()
-  (loop :for image :in '("cid/linux" "cid/console" "cid/trac" "cid/reverseproxy")
+  (loop :for image :in (enumerate-images :tag (string-downcase confidence:*testsuite-id*))
 	:do (ensure-that-image-can-be-built image)))
 
 ;;;; End of file `testsuite-build.lisp'

@@ -20,10 +20,8 @@
 	  (string-downcase confidence:*testsuite-id*)))
     (assert-nil (docker:find-volume name))
     (setf volume (docker:create-volume :name name))
-    (assert-t (docker:volume-exists-p volume))
     (assert-t* (docker:find-volume name))
     (docker:delete-volume volume)
-    (assert-nil (docker:volume-exists-p volume))
     (assert-nil (docker:find-volume name))))
 
 (define-testcase validate-docker-image-lifecycle ()

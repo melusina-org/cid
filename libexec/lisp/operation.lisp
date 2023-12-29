@@ -175,4 +175,27 @@
 	 (uiop:getenv "cid_project")
 	 saved-project)))))
 
+(defun delete-project (&optional (project *project*))
+  (let ((saved-project
+	  (uiop:getenv "cid_project")))
+    (setf (uiop:getenv "cid_project")
+	  (project-name project))
+    (unwind-protect
+	 (progn
+	   (uiop:run-program
+	    (list "docker-compose"
+		  "--project-name" (project-name project)
+		  "--file" (namestring
+			    (project-docker-compose project))
+		  "rm")
+	    :output t
+	    :error-output t)
+	   (with-slots (volumes status) project
+	     (loop :for volume :in volumes
+		   :do (docker:delete-volume volume))))
+      (when saved-project
+	(setf
+	 (uiop:getenv "cid_project")
+	 saved-project)))))
+
 ;;;; End of file `operation.lisp'

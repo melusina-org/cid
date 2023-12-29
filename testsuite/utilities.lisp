@@ -21,4 +21,16 @@
 	(merge-pathnames pathname (system-source-directory))
 	(system-source-directory))))
 
+(defun enumerate-images (&key tag)
+  (loop :for name :in '("cid/linux" "cid/console" "cid/trac" "cid/reverseproxy")
+	:for image = (build:find-image name)
+	:when tag
+	:do (setf (build:image-tag image) tag)
+	:collect image))
+
+(defun enumerate-volumes (&key project)
+  (loop :for system :in '("trac" "git" "www")
+	:collect (docker:make-volume
+		  :name (concatenate 'string "cid-" project "-" system))))
+
 ;;;; End of file `utilities.lisp'

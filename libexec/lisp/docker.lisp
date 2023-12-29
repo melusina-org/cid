@@ -19,7 +19,6 @@
    #:volume
    #:volume-name
    #:volume-driver
-   #:volume-exists-p
    #:make-volume
    #:list-volumes
    #:find-volume
@@ -60,20 +59,16 @@
    (driver
     :initarg :driver
     :initform "local"
-    :reader volume-driver)
-   (exists-p
-    :initarg :exists-p
-    :initform nil
-    :reader volume-exists-p)))
+    :reader volume-driver)))
 
-(defun make-volume (&rest initargs &key name driver exists-p)
-  (declare (ignore name driver exists-p))
+(defun make-volume (&rest initargs &key name driver)
+  (declare (ignore name driver))
   (apply #'make-instance 'volume initargs))
 
 (defmethod print-object ((instance volume) stream)
   (print-unreadable-object (instance stream :type t :identity t)
-    (with-slots (name driver exists-p) instance
-      (format stream ":NAME ~S :DRIVER ~S :EXISTS-P ~A" name driver exists-p))))
+    (with-slots (name driver) instance
+      (format stream ":NAME ~S :DRIVER ~S" name driver))))
 
 (defun volume-of-json (string)
   (let ((object
@@ -88,8 +83,7 @@
       (make-instance
        'volume
        :name (get-field "Name" :string)
-       :driver (get-field "Driver" :string)
-       :exists-p t))))
+       :driver (get-field "Driver" :string)))))
 
 (defun list-volumes ()
   (with-input-from-string
@@ -117,25 +111,11 @@
   (let ((actual-state
 	  (find-volume (volume-name volume))))
     (unless actual-state
-      (setf (slot-value volume 'exists-p) nil)
       (return-from update-volume volume))
-    (loop :for slot-name :in '(driver exists-p)
+    (loop :for slot-name :in '(driver)
 	  :do (setf (slot-value volume slot-name)
 		    (slot-value actual-state slot-name)))
     (values volume)))
-
-(defun ensure-volume-exists (volume)
-  "Signal an error when VOLUME does not exist."
-  (unless (volume-exists-p volume)
-    (restart-case
-	(error "The volume ~S as it has not been created."
-	       (volume-name volume))
-      (continue ()
-	nil)
-      (create ()
-	(create-volume
-	 :name (volume-name volume)
-	 :driver (volume-driver volume))))))
 
 (defun create-volume (&key name driver)
   (unless name
@@ -154,12 +134,10 @@
 	  (string-trim '(#\Newline) created-volume))
     (unless (string= created-volume name)
       (error "Cannot create volume ~A" name))
-    (make-volume :name name :driver driver :exists-p t)))
+    (make-volume :name name :driver driver)))
 
 (defun delete-volume (volume)
-  (with-slots (driver name exists-p) volume
-    (unless exists-p
-      (return-from delete-volume volume))
+  (with-slots (driver name) volume
     (let ((deleted-volume
 	    (uiop:run-program
 	     (list "docker" "volume" "rm" name)
@@ -168,7 +146,6 @@
 	    (string-trim '(#\Newline) deleted-volume))
       (unless (string= deleted-volume name)
 	(error "Cannot delete volume ~A" name))
-      (setf exists-p nil)
       (values volume))))
 
 (defun reclaim-volumes ()
