@@ -52,7 +52,8 @@
   :description "Docker Support for El Cid"
   :author "Michaël Le Barbier"
   :license "MIT License"
-  :depends-on (#:yason)
+  :depends-on (#:yason
+	       #:cl-ppcre)
   :components
   ((:module "libexec/lisp"
     :components ((:file "docker")))))
@@ -81,7 +82,8 @@
   :description "Operation tools for El Cid"
   :author "Michaël Le Barbier"
   :license "MIT License"
-  :depends-on (#:org.melusina.atelier
+  :depends-on (#:cl-ppcre
+	       #:org.melusina.atelier
 	       #:org.melusina.cid/docker)
   :components
   ((:module "libexec/lisp"
