@@ -21,6 +21,9 @@
    (#:build #:org.melusina.cid/build)
    (#:development #:org.melusina.cid/development)
    (#:operation #:org.melusina.cid/operation))
+  (:export
+   #:connect-database
+   #:disconnect-database)
   (:import-from
    #:org.melusina.confidence
    #:define-testcase
@@ -31,6 +34,7 @@
    #:assert-eq
    #:assert-set-equal
    #:assert-string=
+   #:assert-string-match
    #:assert-type
    #:assert-condition
    #:*testsuite-id*))

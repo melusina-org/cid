@@ -15,32 +15,37 @@
 
 (clsql:file-enable-sql-reader-syntax)
 
-(clsql:def-view-class project (tenant-scope)
-  ((projectid
-    :db-kind :key
-    :db-constraints :not-null
-    :type integer
-    :initarg :projectid)
-   (pathname
-    :accessor project-pathname
-    :db-constraints :unique
+(clsql:def-view-class project ()
+  ((tenant-pathname
     :type string
-    :initarg :pathname)
+    :db-kind :key
+    :initarg :tenant-pathname
+    :reader tenant-pathname)
+   (pathname
+    :db-kind :key
+    :type string
+    :initarg :pathname
+    :reader project-pathname)
    (displayname
     :accessor project-displayname
     :type string
-    :initarg :displayname))
+    :initarg :displayname)
+   (tenant
+    :reader project-tenant
+    :db-kind :join
+    :db-info (:join-class tenant
+	      :home-key tenant-pathname
+	      :foreign-key pathname
+	      :set nil)))
   (:base-table project))
-
-(defun project-tenant (project)
-  "The tenant of PROJECT."
-  (slot-value project 'tenant))
 
 (defmethod print-object ((instance project) stream)
   (print-unreadable-object (instance stream :type t :identity t)
-    (with-slots (pathname displayname tenant) instance
-      (format stream "~S :PATHNAME ~S :TENANT ~S"
-	      displayname pathname (tenant-displayname tenant)))))
+    (when (and (slot-boundp instance 'pathname)
+	       (slot-boundp instance 'tenant-pathname))
+      (with-slots (pathname displayname tenant) instance
+	(format stream "~A ~A ~S"
+		(tenant-pathname tenant) pathname displayname)))))
 
 (defun list-projects (&key tenant)
   "List existing tenants."
@@ -50,25 +55,33 @@
      (unless tenant
        (return-from list-projects nil))
      (clsql:select 'project
-		   :where [= [slot-value 'project 'tenantid]
-		             (slot-value tenant 'tenantid)]
+		   :where [= [slot-value 'project 'tenant-pathname]
+		             (slot-value tenant 'pathname)]
 		   :flatp t))
     (t
      (clsql:select 'project :flatp t))))
 
 (defun find-project (designator &key tenant)
   "Find the project associated to DESIGNATOR."
-  (unless tenant
-    (error "Cannot search for a project without filtering with a TENANT."))
-  (ensure-tenant-scope (tenant)
-    (typecase designator
+  (flet ((return-early-if-tenant-does-not-exist ()
+	   (when tenant
+	     (setf tenant (find-tenant tenant)))
+	   (unless tenant
+	     (return-from find-project nil)))
+	 (find-by-pathname (pathname tenant-pathname)
+	   (caar
+	    (clsql:select
+	     'project
+	     :where [and [= [slot-value 'project 'pathname] pathname]
+                         [= [slot-value 'project 'tenant-pathname] tenant-pathname]]))))
+    (etypecase designator
       (project
        designator)
       (string
-       (caar (clsql:select 'project :where [and [= [slot-value 'project 'pathname] designator]
-			                        [= [slot-value 'project 'tenantid] tenantid]])))
-      (integer
-       (caar (clsql:select 'project :where [= [slot-value 'project 'projectid] designator]))))))
+       (return-early-if-tenant-does-not-exist)
+       (find-by-pathname designator (tenant-pathname tenant)))
+      (null
+       nil))))
 
 (defun make-project (&rest initargs &key pathname displayname tenant)
   "Make a PROJECT with the given attributes."
@@ -76,33 +89,9 @@
   (let ((tenant
 	  (or (find-tenant tenant)
 	      (error "Cannot find tenant ~S." tenant))))
-    (labels
-	((other-attributes-match-p (project)
-	   (unless project
-	     (return-from other-attributes-match-p project))
-	   (unless (string-equal displayname (slot-value project 'displayname))
-	     (error "Project attribute mismatch.
-A project with the qualified pathname ~A exists
-but some attribute differs. The attribute DISPLAYNAME in the existing project
-is ~S instead of ~S."
-		    (slot-value project 'pathname)
-		    (slot-value project 'displayname) displayname))
-	   (unless (equal (slot-value tenant 'tenantid) (slot-value project 'tenantid))
-	     (error "Project attribute mismatch.
-A project with the qualified pathname ~A exists
-but some attribute differs. The attribute TENANTID in the existing project
-is ~S instead of ~S."
-		    (slot-value project 'pathname)
-		    (slot-value project 'tenantid) (slot-value tenant 'tenantid)))
-	   project))
-      (let ((project
-	      (or (other-attributes-match-p
-		   (find-project pathname :tenant tenant))
-		  (make-instance 'project
-				 :tenantid (slot-value tenant 'tenantid)
-				 :pathname pathname
-				 :displayname displayname))))
-	(clsql:update-records-from-instance project)
-	(values project)))))
+    (make-instance 'project
+		   :tenant-pathname (tenant-pathname tenant)
+		   :pathname pathname
+		   :displayname displayname)))
 
 ;;;; End of file `project.lisp'

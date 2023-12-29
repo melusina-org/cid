@@ -34,19 +34,19 @@
   (mapcar #'system-relative-pathname pathnames))
 
 (defparameter *parameter-bindings*
-      '((:copyright-holder . "Michaël Le Barbier")
-        (:copyright-year . "2015–2023")
-	(:project-filename . "org.melusina.cid")
-        (:project-name . "El Cid")
-	(:project-description . "Count of Vivar and Prince of Continuous Integration and Deployment Systems")
-        (:project-long-description .
-	 #.(concatenate 'string
-	    "The **El Cid** project aims at providing a complete continuous"
-	    " integration and deployment system that is easy to incrementally"
-	    " improve, to share with team mates and collaborators, and that can be"
-	    " deployed easily either locally, on bare metal or in the cloud."))
-        (:homepage . "https://github.com/melusina-org/cid")
-        (:license . :MIT)))
+  '((:copyright-holder . "Michaël Le Barbier")
+    (:copyright-year . "2015–2023")
+    (:project-filename . "org.melusina.cid")
+    (:project-name . "El Cid")
+    (:project-description . "Count of Vivar and Prince of Continuous Integration and Deployment Systems")
+    (:project-long-description .
+     #.(concatenate 'string
+	"The **El Cid** project aims at providing a complete continuous"
+	" integration and deployment system that is easy to incrementally"
+	" improve, to share with team mates and collaborators, and that can be"
+	" deployed easily either locally, on bare metal or in the cloud."))
+    (:homepage . "https://github.com/melusina-org/cid")
+    (:license . :MIT)))
 
 (defun lint ()
   (let ((atelier:*parameter-bindings* *parameter-bindings*))

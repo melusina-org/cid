@@ -39,7 +39,46 @@
    #:list-projects
    #:make-project
    #:find-project
-  ))
+   ;; Steward
+   #:steward
+   #:steward-pathname
+   #:steward-project
+   #:steward-tenant
+   #:find-steward
+   #:configure-steward
+   ;; Resource
+   #:resource
+   #:resource-pathname
+   #:resource-steward
+   #:resource-project
+   #:resource-tenant
+   #:resource-properties
+   #:list-resources
+   #:find-resource
+   #:compute-instance-resource-differences
+   #:update-instance-from-resource
+   #:update-resource-from-instance
+   ;; Empty Steward
+   #:empty
+   #:make-empty
+   ;; Properties
+   #:property
+   #:property-name
+   #:property-value
+   #:property-list
+   #:make-property-list
+   ;; Filesystem Subtree
+   #:filesystem-subtree
+   #:make-filesystem-subtree
+   ;; Docker Engine
+   #:docker-engine
+   #:make-docker-engine
+   #:docker-image
+   #:docker-container
+   #:docker-volume
+   ;; MacOS X Security
+   #:macos-security
+   #:make-macos-security))
 
 (in-package #:org.melusina.cid)
 

@@ -21,23 +21,44 @@
 
 (defun example-project ()
   "Some project that can be used in the testsuite."
-  (apply #'cid:make-project (first *example-project-definitions*)))
+  (flet ((example-getf (indicator)
+	   (getf (first *example-project-definitions*) indicator)))	   
+    (cid:find-project
+     (example-getf :pathname) :tenant (example-getf :tenant))))
 
 (defun populate-project-table ()
   "Populate the PROJECT table with some test data."
   (loop :for example :in *example-project-definitions*
-	:do (apply #'cid:make-project example)))
+	:for project = (apply #'cid:make-project example)
+	:do (clsql:update-records-from-instance project)))
 
 (define-testcase testsuite-project ()
   (with-test-database
     (populate-tenant-table)
     (populate-project-table)
     (assert-string= "Test Project"
-		    (cid:project-displayname (cid:find-project "testproject" :tenant "testsuite")))
-    (assert-string= "Test Suite"
-		    (cid:tenant-displayname (cid:project-tenant (cid:find-project "testproject" :tenant "testsuite"))))
+		    (cid:project-displayname
+		     (cid:find-project "testproject"
+				       :tenant "testsuite")))
+    (assert-string= "Test Tenant"
+		    (cid:tenant-displayname
+		     (cid:project-tenant
+		      (cid:find-project "testproject"
+					:tenant "testsuite"))))
+    (assert-t*
+     (with-output-to-string (*standard-output*)
+       (describe
+	(cid:find-project "testproject"
+			  :tenant "testsuite"))))
+    (assert-eq (example-project)
+	       (cid:find-project (example-project)
+				 :tenant nil))
     (assert-condition
-	(cid:make-project :pathname "testproject" :displayname "Test Project 2" :tenant "testsuite")
-	t)))
+	(clsql:update-records-from-instance
+	 (cid:make-project
+	  :pathname "testproject"
+	  :displayname "Test Project 2"
+	  :tenant "testsuite"))
+	error)))
 
 ;;;; End of file `project.lisp'

@@ -16,15 +16,10 @@
 (clsql:file-enable-sql-reader-syntax)
 
 (clsql:def-view-class tenant ()
-  ((tenantid
-    :db-kind :key
-    :db-constraints :not-null
-    :type integer
-    :initarg :tenantid)
-   (pathname
+  ((pathname
     :accessor tenant-pathname
     :type string
-    :db-constraints :unique
+    :db-kind :key
     :initarg :pathname
     :description "The PATHNAME element designates the tenant.
 This is a string of characters from the portable filename character set.")
@@ -37,8 +32,10 @@ This is a string of characters from the portable filename character set.")
 
 (defmethod print-object ((instance tenant) stream)
   (print-unreadable-object (instance stream :type t :identity t)
-    (with-slots (pathname displayname) instance
-      (format stream "~S :PATHNAME ~S" displayname pathname))))
+    (when (and (slot-boundp instance 'pathname)
+	       (slot-boundp instance 'displayname))
+      (with-slots (pathname displayname) instance
+	(format stream "~A ~S" pathname displayname)))))
 
 (defun list-tenants ()
   "List existing tenants."
@@ -46,52 +43,17 @@ This is a string of characters from the portable filename character set.")
 
 (defun find-tenant (designator)
   "Find the tenant associated to DESIGNATOR."
-  (etypecase designator
+  (typecase designator
     (tenant
      designator)
     (string
      (caar (clsql:select 'tenant :where [= [slot-value 'tenant 'pathname] designator])))
-    (integer
-     (caar (clsql:select 'tenant :where [= [slot-value 'tenant 'tenantid] designator])))
-    (nil
+    (null
      nil)))
 
-(defun make-tenant (&key pathname displayname)
+(defun make-tenant (&rest initargs &key pathname displayname)
   "Make a TENANT with the given attributes."
-  (let ((tenant
-	  (make-instance 'tenant :pathname pathname :displayname displayname)))
-    (clsql:update-records-from-instance tenant)
-    (values tenant)))
-
-
-;;;;
-;;;; Tenant Scope
-;;;;
-
-(clsql:def-view-class tenant-scope ()
-  ((tenantid
-    :type integer
-    :initarg :tenantid)
-   (tenant
-    :db-kind :join
-    :db-info (:join-class tenant
-	      :home-key tenantid
-	      :foreign-key tenantid
-	      :set nil)))
-  (:documentation "The TENANT-SCOPE contains traits for views specific to a tenant."))
-
-(defmacro ensure-tenant-scope ((designator) &body body)
-  "Run BODY and ensures the result is a value of type TENANT-SCOPE that belongs to DESIGNATOR.
-There is an implicit `WITH-SLOTS (TENANTID)' around BODY."
-  (let ((tenant (gensym))
-	(some-tenant-scope (gensym)))
-    `(let ((,tenant
-	     (find-tenant ,designator)))
-       (when ,tenant
-	 (with-slots (tenantid) ,tenant
-	   (let ((,some-tenant-scope (progn ,@body)))
-	     (and ,some-tenant-scope
-		  (eq tenantid (slot-value ,some-tenant-scope 'tenantid))
-		  ,some-tenant-scope)))))))
+  (declare (ignore pathname displayname))
+  (apply #'make-instance 'tenant initargs))
 
 ;;;; End of file `tenant.lisp'

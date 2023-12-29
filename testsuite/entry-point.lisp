@@ -16,9 +16,11 @@
 (define-testcase unit-tests ()
   (testsuite-database)
   (testsuite-tenant)
-  (testsuite-project))
+  (testsuite-project)
+  (testsuite-steward))
 
 (define-testcase component-tests ()
+  (component-test-steward)
   (validate-docker-volume-lifecycle)
   (validate-docker-image-lifecycle)
   (ensure-that-every-image-can-be-built)
