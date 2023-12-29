@@ -1,8 +1,6 @@
 \input texinfo   @c -*-texinfo-*-
-@c %**start of header
 @setfilename org.melusina.cid.info
 @settitle El Cid Manual
-@c %**end of header
 
 @c for install-info
 @dircategory Software development
@@ -59,8 +57,6 @@ are also available at https://opensource.org/licenses/MIT
 
 @ifnottex
 
-@include include/ifnottex.texinfo
-
 @node Top, , ,
 @comment  node-name,  next,  previous,  up
 @top El Cid
@@ -74,8 +70,6 @@ are also available at https://opensource.org/licenses/MIT
 @end ifnottex
 
 @node Introduction, , Top, Top
-@chapter Introduction
-
-The **El Cid** project aims at providing a complete continuous integration and deployment system that is easy to incrementally improve, to share with team mates and collaborators, and that can be deployed easily either locally, on bare metal or in the cloud.
+@include introduction.texinfo
 
 @bye

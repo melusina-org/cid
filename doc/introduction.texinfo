@@ -1,0 +1,106 @@
+@chapter Introduction
+
+The @b{El Cid} project aims at providing a complete continuous
+integration and delivery system that is easy to incrementally
+improve, to share with team mates and collaborators, and that can be
+deployed easily either locally, on bare metal or in the cloud.
+
+
+@section Benefits and Features
+
+We review the benefits of using @b{El Cid} and the features of the
+system. Since the project is at an early stage, some features are not
+yet implemented and are marked with a @i{[FUTURE]} tag.
+
+@itemize
+@item
+Escape the hold of the Monolithic Continuous Integration and
+Delivery Server.
+@item
+Instantly recreate the continuous integration and delivery pipepline
+after a disaster.
+@item
+[FUTURE] Share your continuous integration and delivery scripts with
+your contributors.
+@item
+[FUTURE] Use integrated artefact repositories.
+@item
+[FUTURE] Use integrated monitoring system.
+@end itemize
+
+@subsection Escape the hold of the Monolithic Continuous Integration and Delivery Server
+
+Since setting-up and integrating a continuous integration and delivery
+server can be quite a lengthy process, it is common for organization
+to start with one server and pack every job related to any project
+into this very server. In a wimplash, this results in a monolithic
+system whose availability is criticial to the organization with a lot
+of subtle dependencies and conditions that make it hard or impossible
+to upgrade.  With @b{El Cid} a new continuous integration and delivery
+environment can be set up in minutes. It makes it very easy to escape
+the monolithic continuous integration and delivery server anti-pattern
+by allocating a continuous integration and delivery pipeline per
+project.
+
+
+@subsection Instantly recreate the continuous integration and delivery pipepline after a disaster
+
+Continuous integration and delivery scripts are valuable assets of
+your organization and are the results of several improvement
+iterations.  They therefore deserve to be kept under version control
+and to be dumped in restorable backups.  This is why @b{El Cid}
+implements a dump and restore routine that can rapidly recreate the
+corresponding continous integration and delivery pipelines.
+
+
+@subsection [FUTURE] Share your continuous integration and deployment scripts with your contributors
+
+Projects are accomplished by various contributors, regular employees
+of a company, volunteers in a free-software project, externals or
+free-lancers hired by a company. These contributors should have
+access to continuous integration and delivery pipeline.
+@b{El Cid} makes it easy to share a continuous integration and
+delivery environment with contributors without granting them access to
+restricted ressoures or secrets simply by allowing us to share our
+continuous integration and deployment pipeline as a source code
+repository which can instantly be turned into a working continuous
+integration and delivery environment.
+
+
+@subsection [FUTURE] Build Debian packages for your software and simplify operations
+
+Packaging software for the Debian and Ubuntu distributions is a
+notoriously complex activity, and there is neither a standard set of
+tools to do so, nor an easy case which is is well covered by a
+tutorial.  However the creation of software packages has a lot of
+benefits, like reproducible tests, reproducible deployments and
+dependency management. Therefore @b{El Cid} provides a Debian package
+building tool which is easy to use on software which is easy to build,
+support software branches, but does not try to conform to the Debian
+packaging guidelines. Therefore the resulting packages are not
+suitable for upload on Debian servers but can still be valuable for
+internal use in your organisation.
+
+
+@subsection [FUTURE] Integrated artefact repositories
+
+After software artefacts have been built and tested in our continuous
+integration and delivery pipeline, they must be saved somewhere where
+systems target of a deployment or an update can find them.  While the
+“save produced artefacts” after-build step can provide a quick
+expedient to solve this problem, it is not always well suited for all
+artefacts, is a source of a security issues as in this setup the
+Jenkins server is connected to production machines, and last this
+solution lacks all sort of dependency management features. Therefore
+@b{El Cid} integrates software repositories for common artefact types
+(DEB, JAR, Tarballs, Docker Images), supports repository proxying,
+repository dumps, repostory restore and repositroy garbage collection.
+
+
+@subsection [FUTURE] Integrated monitoring system
+
+There is many reasons why monitoring should be part of the continuous
+integration and deployment pipeline.  Furthermore, because the
+monitoring problem has the same input as the deployment problem,
+moitoring fits rather naturally in the pipeline. @b{El Cid} features
+integrates a standard monitoring suite.

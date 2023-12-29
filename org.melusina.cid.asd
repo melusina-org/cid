@@ -15,7 +15,8 @@
   :description "Continuous Integration and Delivery"
   :author "Michaël Le Barbier"
   :license "MIT License"
-  :depends-on (#:clsql
+  :depends-on (#:alexandria
+	       #:clsql
 	       #:clsql-sqlite3)
   :components
   ((:module "src"
