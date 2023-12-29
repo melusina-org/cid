@@ -67,8 +67,12 @@ a public cloud, among many other possibilities."))
 
 (defmethod print-object ((instance steward) stream)
   (print-unreadable-object (instance stream :type t :identity t)
-    (with-slots (pathname) instance
-      (format stream "~S" pathname))))
+    (when (and (slot-boundp instance 'tenant-pathname)
+	       (slot-boundp instance 'project-pathname)
+	       (slot-boundp instance 'pathname))
+      (with-slots (tenant-pathname project-pathname pathname) instance
+	(format stream "~A ~A ~A"
+		tenant-pathname project-pathname pathname)))))
 
 (defmethod initialize-instance :after ((instance steward) &rest initargs &key &allow-other-keys)
   (declare (ignore initargs))

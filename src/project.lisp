@@ -43,9 +43,9 @@
   (print-unreadable-object (instance stream :type t :identity t)
     (when (and (slot-boundp instance 'pathname)
 	       (slot-boundp instance 'tenant-pathname))
-      (with-slots (pathname displayname tenant) instance
+      (with-slots (tenant-pathname pathname displayname) instance
 	(format stream "~A ~A ~S"
-		(tenant-pathname tenant) pathname displayname)))))
+		tenant-pathname pathname displayname)))))
 
 (defun list-projects (&key tenant)
   "List existing tenants."

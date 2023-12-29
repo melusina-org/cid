@@ -121,7 +121,6 @@
     (assert-type steward 'cid:steward)
     (assert-type steward steward-class)
     (ensure-that-steward-joined-slots-are-set steward)))
- 
 
 (define-testcase ensure-that-configure-steward-returns-the-instance (steward)
   (assert-eq steward (cid:configure-steward steward)))
