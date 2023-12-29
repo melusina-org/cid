@@ -158,12 +158,17 @@ stack. The prerequisites and dependences are:
 % git clone https://github.com/melusina-org/cid
 ~~~
 
-### Build
+### From checkout to up and running
 
-~~~ console
-CL-USER> (ql:quickload '#:org.melusina.cid/development)
-CL-USER> (org.melusina.cid/development:build)
-CL-USER> (org.melusina.cid/development:run)
+With a Common Lisp listener, issue the following commands:
+
+~~~ lisp
+CL-USER> (ql:quickload '#:org.melusina.cid/user)
+CL-USER> (in-package #:org.melusina.cid/user)
+CID/USER> (development:build)
+CID/USER> (operation:create-project)
+CID/USER> (operation:configure-project)
+CID/USER> (operation:start-project)
 ~~~
 
 ### From checkout to up and running

@@ -85,8 +85,8 @@
 
 (defmethod print-object ((instance project) stream)
   (print-unreadable-object (instance stream :type t :identity t)
-    (with-slots (name status) instance
-      (format stream ":NAME ~S :STATUS ~A" name status))))
+    (with-slots (name tag) instance
+      (format stream ":NAME ~S :TAG ~S" name tag))))
 
 (defparameter *project*
   (make-project :name "local" :tag "latest"))
@@ -127,11 +127,13 @@
 	  :do (docker:update-volume volume))
     (values project)))
 
-(defun create-project (&key name (docker-compose *docker-compose*) project tag)
+(defun create-project (&key name tag (docker-compose *docker-compose*) project)
+  (unless (or name tag project)
+    (setf project *project*))
   (if project
       (setf name (project-name project)
 	    docker-compose (project-docker-compose project)
-	    tag (project-tag tag))
+	    tag (project-tag project))
       (progn
 	(unless name
 	  (error "A project requires a NAME."))

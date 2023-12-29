@@ -19,9 +19,6 @@
 (define-testcase ensure-that-volume-does-not-exist (volume)
   (assert-nil (docker:find-volume (docker:volume-name volume))))
 
-(define-testcase ensure-that-projects-without-name-cannot-be-created ()
-  (assert-condition (operation:create-project) error))
-
 (define-testcase validate-project-lifecycle ()
   (let* ((name
 	   (string-downcase confidence:*testsuite-id*))

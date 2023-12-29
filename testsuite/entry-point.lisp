@@ -22,7 +22,6 @@
   (validate-docker-volume-lifecycle)
   (validate-docker-image-lifecycle)
   (ensure-that-every-image-can-be-built)
-  (ensure-that-projects-without-name-cannot-be-created)
   (validate-project-lifecycle))
 
 (define-testcase integration-tests ()
