@@ -59,13 +59,13 @@ networks:
 
 volumes:
   cid-trac:
-    external:
-      name: cid-${cid_project:-local}-trac
+    name: cid-${cid_project:-local}-trac
+    external: true
   cid-git:
-    external:
-      name: cid-${cid_project:-local}-git
+    name: cid-${cid_project:-local}-git
+    external: true
   cid-www:
-    external:
-      name: cid-${cid_project:-local}-www
+    name: cid-${cid_project:-local}-www
+    external: true
 
 # End of file `cid.yml'
