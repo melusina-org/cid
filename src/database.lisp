@@ -22,7 +22,7 @@
 
 (defparameter *database-application-class-list*
   '(tenant project
-    ;; Stewards
+    ;; Resources and Stewards
     empty property property-list filesystem-subtree
     docker-engine macos-security)
   "The list of application classes to initialise

@@ -13,47 +13,104 @@
 
 (in-package #:org.melusina.cid)
 
-(clsql:def-view-class property nil
-  ((property-list-id
-    :db-kind :key
-    :db-constraints :not-null
-    :type integer)
-   (name
-    :type keyword
-    :db-kind :key
-    :db-constraints :not-null
-    :initarg :name
-    :accessor property-name)
-   (value
-    :type string
-    :initarg :value
-    :accessor property-value)))
+;;;;
+;;;; Steward
+;;;;
 
 (clsql:def-view-class property-list (steward)
-  ((pathname
-    :initform "property-list"
-    :type string)
-   (steward-class
+  ((steward-class
     :allocation :class
     :initform 'property-list
     :type symbol)
    (description
     :allocation :class
-    :initform "A steward that do not actually own resources."
+    :initform "A steward that owns named text properties."
     :type string)
    (properties
-    :db-kind :join
-    :db-info (:join-class property
-	      :home-key stewardid
-	      :foreign-key property-list-id
-	      :set t)))
+    :initform nil
+    :db-kind :virtual))
   (:documentation
-   "A steward for that do not actuall own resources.
-For property-list resources, every step of the lifecycle is a no-operation."))
+   "A steward that owns named text properties.
+These text properties are not persistent."))
 
-(defun make-property-list (&rest initargs &key tenant project)
+(defun make-property-list (&rest initargs &key tenant project pathname)
   "Make a property-list steward."
-  (declare (ignore tenant project))
-  (apply #'make-instance 'property-list initargs))
+  (declare (ignore initargs))
+  (funcall #'make-instance 'property-list
+	   :tenant tenant
+	   :project project
+	   :pathname pathname))
+
+;;;;
+;;;; Resource
+;;;;
+
+(clsql:def-view-class property (resource)
+  ((steward-class
+    :type symbol
+    :initform 'property-list
+    :allocation :class)
+   (value
+    :type string
+    :initarg :value
+    :accessor property-value))
+  (:documentation
+   "A named text property. The name of the property is its pathname."))
+
+(defun make-property (&rest initargs &key property-list pathname value)
+  "Make a property steward."
+  (declare (ignore initargs))
+  (check-type property-list property-list)
+  (funcall #'make-instance 'property
+	   :steward property-list
+	   :pathname pathname
+	   :value value))
+
+(defmethod examine-resource append ((instance property))
+  (with-slots (name value) instance
+    (list
+     :value value)))
+
+(defmethod list-resource-identifiers ((instance property-list) (resource-class (eql 'property)))
+  (loop :for (identifier . value) :in (slot-value instance 'properties)
+	:collect identifier))
+
+(defmethod create-resource ((instance property))
+  (with-slots (steward identifier state pathname value) instance
+    (push (cons pathname value)
+	  (slot-value steward 'properties))
+    (setf identifier pathname)
+    (setf state t)))
+
+(defmethod delete-resource ((instance property))
+  (with-slots (steward identifier state pathname value) instance
+    (remove pathname (slot-value steward 'properties) :test #'string= :key #'car)
+    (setf identifier nil)
+    (setf state nil)))
+
+(defmethod update-resource-from-instance ((instance property))
+  (with-slots (steward identifier pathname value) instance
+    (remove identifier (slot-value steward 'properties) :test #'string= :key #'car)
+    (setf identifier pathname)
+    (push (cons identifier value)
+	  (slot-value steward 'properties))))
+
+(defmethod import-resource ((instance property-list) &key pathname description identifier)
+  (flet ((setf-description-and-identifier (resource)
+	   (setf (slot-value resource 'description) description
+		 (slot-value resource 'identifier) identifier))
+	 (find-value-or-fail ()
+	   (or (alexandria:assoc-value (slot-value instance 'properties) identifier :test #'string=)
+	       (resource-error
+		'import-resource nil 
+		"Cannot import resource"
+		"There is no resource with identifier ~A in property list ~A." identifier (steward-pathname instance)))))
+			       
+  (let ((property
+	  (make-property :property-list instance
+			 :pathname pathname
+			 :value (find-value-or-fail))))
+    (setf-description-and-identifier property)
+    (values property))))
 
 ;;;; End of file `property-list.lisp'

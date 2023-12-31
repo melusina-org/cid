@@ -25,11 +25,14 @@
 
 (defun sort-plist (plist)
   "Sort the provided PLIST so that its keys are in ascending order."
+  (flet ((remove-undefined-properties (alist)
+	   (remove nil alist :key #'cdr))
+	 (sort-properties (alist)
+	   (sort alist #'string< :key #'car)))    
   (alexandria:alist-plist
-   (sort (alexandria:plist-alist plist)
-	 #'string<
-	 :key #'car)))
-
+   (sort-properties
+    (remove-undefined-properties
+     (alexandria:plist-alist plist))))))
 
 
 ;;;;

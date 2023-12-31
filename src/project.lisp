@@ -31,12 +31,13 @@
     :type string
     :initarg :displayname)
    (tenant
-    :reader project-tenant
     :db-kind :join
     :db-info (:join-class tenant
 	      :home-key tenant-pathname
 	      :foreign-key pathname
-	      :set nil)))
+	      :set nil)
+    :initarg :tenant
+    :reader project-tenant))
   (:base-table project))
 
 (defmethod print-object ((instance project) stream)
@@ -46,6 +47,22 @@
       (with-slots (tenant-pathname pathname displayname) instance
 	(format stream "~A ~A ~S"
 		tenant-pathname pathname displayname)))))
+
+(defmethod initialize-instance :after ((instance project) &rest initargs &key &allow-other-keys)
+  (declare (ignore initargs))
+  (flet ((finalize-tenant-slot ()
+	   (when (slot-boundp instance 'tenant)
+	     (with-slots (tenant) instance
+	       (unless (typep tenant 'tenant)
+		 (setf tenant (find-tenant tenant))))))
+	 (finalize-tenant-pathname-slot ()
+	   (when (and (slot-boundp instance 'tenant)
+		      (not (slot-boundp instance 'tenant-pathname)))
+	     (with-slots (tenant) instance
+	       (setf (slot-value instance 'tenant-pathname)
+		     (tenant-pathname tenant))))))
+    (finalize-tenant-slot)
+    (finalize-tenant-pathname-slot)))
 
 (defun list-projects (&key tenant)
   "List existing tenants."
@@ -64,8 +81,7 @@
 (defun find-project (designator &key tenant)
   "Find the project associated to DESIGNATOR."
   (flet ((return-early-if-tenant-does-not-exist ()
-	   (when tenant
-	     (setf tenant (find-tenant tenant)))
+	   (setf tenant (find-tenant tenant))
 	   (unless tenant
 	     (return-from find-project nil)))
 	 (find-by-pathname (pathname tenant-pathname)
@@ -92,6 +108,7 @@
     (make-instance 'project
 		   :tenant-pathname (tenant-pathname tenant)
 		   :pathname pathname
+		   :tenant tenant
 		   :displayname displayname)))
 
 ;;;; End of file `project.lisp'

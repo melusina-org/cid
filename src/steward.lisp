@@ -19,11 +19,13 @@
   ((tenant-pathname
     :type string
     :db-kind :key
-    :db-constraints :not-null)
+    :db-constraints :not-null
+    :reader tenant-pathname)
    (project-pathname
     :type string
     :db-kind :key
-    :db-constraints :not-null)
+    :db-constraints :not-null
+    :reader project-pathname)
    (pathname
     :type string
     :db-kind :key
@@ -91,7 +93,7 @@ a public cloud, among many other possibilities."))
 	 (finalize-tenant-pathname-slot ()
 	   (when (and (slot-boundp instance 'tenant)
 		      (not (slot-boundp instance 'tenant-pathname)))
-	     (with-slots (tenant) instance
+	     (with-slots (tenant tenant-pathname) instance
 	       (setf (slot-value instance 'tenant-pathname)
 		     (tenant-pathname tenant)))))
 	 (finalize-project-slot ()

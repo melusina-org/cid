@@ -23,7 +23,7 @@
     :type symbol)
    (description
     :allocation :class
-    :initform "A steward that do not actually own resources."
+    :initform "A steward …"
     :type string))
   (:documentation
    "A steward for that do not actuall own resources.

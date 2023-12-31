@@ -13,44 +13,24 @@
 
 (in-package #:org.melusina.cid/testsuite)
 
-(define-testcase validate-steward-resource-relationships (resource)
-  (assert-t* (cid:resource-steward resource))
-  (with-slots ((steward cid:steward)) resource
-    (assert-type steward 'cid:steward)
-    (assert-string=
-     (cid:tenant-pathname (cid:steward-tenant steward))
-     (cid:tenant-pathname (cid:resource-tenant resource)))
-    (assert-string=
-     (cid:tenant-pathname (cid:steward-project steward))
-     (cid:tenant-pathname (cid:resource-tenant resource)))
-    (assert-string=
-     (cid:tenant-pathname (cid:steward-project steward))
-     (cid:tenant-pathname (cid:resource-project resource)))
-    (assert-string=
-     (cid:project-pathname (cid:steward-project steward))
-     (cid:project-pathname (cid:resource-project resource)))
-    (assert-string=
-     (cid:steward-pathname (cid:resource-steward resource))
-     (cid:steward-pathname resource))
-    (assert-type steward (slot-value resource 'cid::steward-class))))
-
-(define-testcase validate-property-list-property-lifecycle ()
+(define-testcase property-list-unit-test ()
   (with-test-database
     (populate-tenant-table)
     (populate-project-table)
     (populate-steward-tables)
-    (let* ((testplist
-	     (cid:make-property-list :tenant "testsuite"
-				     :project "testproject"
-				     :pathname "testplist"))
-	   (property-1
-	     (cid:make-property :property-list testplist
-				:pathname "property-1"
-				:value "Some value for property 1")))
-      (validate-steward-resource-relationships property-1)
-      (assert-type property-1 'cid:property))))
-
-(define-testcase property-list-unit-test ()
-  (validate-property-list-property-lifecycle)) 
+    (let ((testplist
+	    (cid:make-property-list :tenant "testsuite"
+				    :project "testproject"
+				    :pathname "testplist")))
+      (flet ((make-property ()
+	       (let ((index (random 10000)))
+		 (cid:make-property :property-list testplist
+				    :pathname (format nil "property-~A" index)
+				    :value (format nil "Some value for property ~A" index)))))
+	(resource-unit-test
+	 :resource-type 'cid:property
+	 :make-resource #'make-property
+	 :slot-name 'cid::value
+	 :new-slot-value "Edited value for property")))))
 
 ;;;; End of file `property-list.lisp'

@@ -17,13 +17,13 @@
   (database-unit-test)
   (tenant-unit-test)
   (project-unit-test)
-  (steward-unit-test))
+  (steward-unit-test)
+  (property-list-unit-test))
 
 (define-testcase component-tests ()
-  (project-component-test)
   (steward-component-test)
   (docker-component-test)
-  (build-compoenent-test))
+  (build-component-test))
 
 (define-testcase integration-tests ()
   (project-integration-test))

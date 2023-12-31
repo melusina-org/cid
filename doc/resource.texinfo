@@ -18,3 +18,23 @@ Resources are persistent objects that are attached to a tenant and a
 project.
 
 @section The Resources Dictionary
+
+@include include/class-org.melusina.cid-resource.texinfo
+
+@include include/condition-org.melusina.cid-resource-error.texinfo
+@include include/fun-org.melusina.cid-resource-error.texinfo
+@include include/condition-org.melusina.cid-resource-confirmation.texinfo
+@include include/fun-org.melusina.cid-resource-confirmation.texinfo
+@include include/macro-org.melusina.cid-with-resource-confirmation.texinfo
+
+@include include/fun-org.melusina.cid-resource-exists-p.texinfo
+@include include/fun-org.melusina.cid-resource-ready-p.texinfo
+@include include/fun-org.melusina.cid-import-resource.texinfo
+@include include/fun-org.melusina.cid-create-resource.texinfo
+@include include/fun-org.melusina.cid-examine-resource.texinfo
+@include include/fun-org.melusina.cid-update-instance-from-resource.texinfo
+@include include/fun-org.melusina.cid-update-resource-from-instance.texinfo
+@include include/fun-org.melusina.cid-delete-resource.texinfo
+
+@include include/fun-org.melusina.cid-list-resource-identifiers.texinfo
+@include include/fun-org.melusina.cid-list-resources.texinfo

@@ -38,6 +38,7 @@
 		 (:file "tenant")
 		 (:file "project")
 		 (:file "steward")
+		 (:file "resource")
 		 (:module "stewards"
 		  :components ((:file "empty")
 			       (:file "property-list")
@@ -129,7 +130,10 @@
 		 (:file "database")
 		 (:file "tenant")
 		 (:file "project")
-		 (:file "steward")))
+		 (:file "steward")
+		 (:file "resource")
+		 (:module "stewards"
+		  :components ((:file "property-list")))))
    (:module "libexec"
     :components
     ((:module "lisp"

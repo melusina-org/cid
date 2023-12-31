@@ -46,16 +46,27 @@
    #:configure-steward
    ;; Resource
    #:resource
+   #:resource-identifier
    #:resource-pathname
    #:resource-steward
    #:resource-project
    #:resource-tenant
    #:resource-properties
-   #:list-resources
-   #:find-resource
-   #:compute-instance-resource-differences
+   #:resource-error
+   #:resource-confirmation
+   #:with-resource-confirmation
+   #:resource-exists-p
+   #:resource-ready-p
+   #:create-resource
+   #:delete-resource
    #:update-instance-from-resource
    #:update-resource-from-instance
+   #:examine-resource
+   #:import-resource
+   #:list-resources
+   #:list-resource-identifiers
+   #:examine-differences-between-instance-and-resource
+
    ;; Empty Steward
    #:empty
    #:make-empty
@@ -64,6 +75,7 @@
    #:property-name
    #:property-value
    #:property-list
+   #:make-property
    #:make-property-list
    ;; Filesystem Subtree
    #:filesystem-subtree
