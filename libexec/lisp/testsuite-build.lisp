@@ -37,4 +37,7 @@
   (loop :for image :in (enumerate-images :tag (string-downcase confidence:*testsuite-id*))
 	:do (ensure-that-image-can-be-built image)))
 
+(define-testcase build-component-test ()
+  (ensure-that-every-image-can-be-built))
+
 ;;;; End of file `testsuite-build.lisp'

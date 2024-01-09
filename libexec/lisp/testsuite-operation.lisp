@@ -105,4 +105,7 @@
 		  (build:image-name image)))
 		(ensure-that-image-does-not-exist image)))))
 
+(define-testcase project-integration-test ()
+  (validate-project-lifecycle))
+
 ;;;; End of file `testsuite-operation.lisp'

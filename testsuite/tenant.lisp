@@ -32,7 +32,7 @@
 	:for tenant = (apply #'cid:make-tenant example)
 	:do (clsql:update-records-from-instance tenant)))
 
-(define-testcase testsuite-tenant ()
+(define-testcase tenant-unit-test ()
   (with-test-database
     (populate-tenant-table)
     (assert-string=

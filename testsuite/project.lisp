@@ -32,7 +32,7 @@
 	:for project = (apply #'cid:make-project example)
 	:do (clsql:update-records-from-instance project)))
 
-(define-testcase testsuite-project ()
+(define-testcase project-unit-test ()
   (with-test-database
     (populate-tenant-table)
     (populate-project-table)

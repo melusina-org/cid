@@ -138,7 +138,7 @@
       (assert-string= tenant instance-tenant)
       (ensure-that-configure-steward-returns-the-instance steward))))
 
-(define-testcase testsuite-steward (&optional key)
+(define-testcase steward-unit-test (&optional key)
   (with-test-database
     (populate-tenant-table)
     (populate-project-table)
@@ -146,7 +146,7 @@
     (loop :for example :in (select-steward-examples-by-key key)
 	  :do (apply #'ensure-that-find-steward-produces-an-acceptable-result example))))
 
-(define-testcase component-test-steward (&optional key)
+(define-testcase steward-component-test (&optional key)
   (with-test-database
     (populate-tenant-table)
     (populate-project-table)

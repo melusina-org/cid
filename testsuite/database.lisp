@@ -13,7 +13,7 @@
 
 (in-package #:org.melusina.cid/testsuite)
 
-(define-testcase testsuite-database ()
+(define-testcase database-unit-test ()
   (with-test-database
     (assert-t* (probe-file (testsuite-database-name)))
     (assert-t (clsql:table-exists-p "tenant")))

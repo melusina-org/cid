@@ -51,4 +51,8 @@
     (assert-nil (docker:image-id image))
     (assert-nil (docker:find-image name))))
 
+(define-testcase docker-component-test ()
+  (validate-docker-volume-lifecycle)
+  (validate-docker-image-lifecycle))
+
 ;;;; End of file `testsuite-docker.lisp'
