@@ -17,32 +17,25 @@
 ;;;; Resource Class
 ;;;;
 
-(clsql:def-view-class resource nil
-  ((tenant-pathname
+(clsql:def-view-class resource (named-trait)
+  ((tenant-name
     :type string
     :db-kind :key
     :db-constraints :not-null
-    :reader tenant-pathname)
-   (project-pathname
+    :reader tenant-name)
+   (project-name
     :type string
     :db-kind :key
     :db-constraints :not-null
-    :reader project-pathname)
-   (steward-pathname
+    :reader project-name)
+   (steward-name
     :type string
     :db-kind :key
     :db-constraints :not-null
-    :reader steward-pathname)
+    :reader steward-name)
    (steward-class
     :type symbol
     :allocation :class)
-   (pathname
-    :type string
-    :initarg :pathname
-    :initform (error "A RESOURCE requires a PATHNAME.")
-    :documentation "A name for the RESOURCE.
-The fully qualified name of the RESOURCE, which should be a safe Unix path. This PATHNAME
-uniquely identifies the RESOURCE within the deployment it belongs to.")
    (description
     :type string
     :initarg :description
@@ -55,27 +48,27 @@ uniquely identifies the RESOURCE within the deployment it belongs to.")
     :documentation "The state of the resource.")
    (tenant
     :initarg :tenant
-    :reader resource-tenant
+    :reader tenant
     :db-kind :join
     :db-info (:join-class tenant
-	      :home-key tenant-pathname
-	      :foreign-key pathname
+	      :home-key tenant-name
+	      :foreign-key name
 	      :set nil))
    (project
     :initarg :project
-    :reader resource-project
+    :reader project
     :db-kind :join
     :db-info (:join-class project
-	      :home-key (tenant-pathname project-pathname)
-	      :foreign-key (tenant-pathname pathname)
+	      :home-key (tenant-name project-name)
+	      :foreign-key (tenant-name name)
 	      :set nil))
    (steward
     :initarg :steward
-    :reader resource-steward
+    :reader steward
     :db-kind :join
     :db-info (:join-class steward
-	      :home-key (tenant-pathname project-pathname steward-pathname)
-	      :foreign-key (tenant-pathname project-pathname pathname)
+	      :home-key (tenant-name project-name steward-name)
+	      :foreign-key (tenant-name project-name name)
 	      :set nil))
    (identifier
     :type string
@@ -89,20 +82,6 @@ not be determined automatically and requires the RESOURCE to be READ."))
   (:documentation "The class represents the state of resources required to a component deployment.
 These resources can be created, read, updated and deleted. Resources can depend on other
 resources. For a given STEWARD, any resource is uniquely identified by its IDENTIFIER slot."))
-
-(defmethod print-object ((instance resource) stream)
-  (print-unreadable-object (instance stream :type t :identity t)
-    (when (and (slot-boundp instance 'tenant-pathname)
-	       (slot-boundp instance 'project-pathname)
-	       (slot-boundp instance 'steward-pathname)
-	       (slot-boundp instance 'pathname)
-	       (slot-boundp instance 'identifier))
-      (with-slots (tenant-pathname project-pathname steward-pathname
-		   pathname identifier)
-	  instance
-	(format stream "~A ~A ~A ~A ~A"
-		tenant-pathname project-pathname steward-pathname
-		pathname (or identifier "N/A"))))))
 
 (defmethod describe-object ((instance resource) stream)
   (with-slots (description steward) instance
@@ -135,37 +114,37 @@ resources. For a given STEWARD, any resource is uniquely identified by its IDENT
 	     (with-slots (tenant) instance
 	       (unless (typep tenant 'tenant)
 		 (setf tenant (find-tenant tenant))))))
-	 (finalize-tenant-pathname-slot ()
+	 (finalize-tenant-name-slot ()
 	   (when (and (slot-boundp instance 'tenant)
-		      (not (slot-boundp instance 'tenant-pathname)))
-	     (with-slots (tenant tenant-pathname) instance
-	       (setf (slot-value instance 'tenant-pathname)
-		     (tenant-pathname tenant)))))
+		      (not (slot-boundp instance 'tenant-name)))
+	     (with-slots (tenant tenant-name) instance
+	       (setf (slot-value instance 'tenant-name)
+		     (tenant-name tenant)))))
 	 (finalize-project-slot ()
 	   (when (and (slot-boundp instance 'project)
 		      (slot-boundp instance 'tenant))
 	     (with-slots (project tenant) instance
 	       (unless (typep project 'project)
 		 (setf project (find-project project :tenant tenant))))))
-	 (finalize-project-pathname-slot ()
+	 (finalize-project-name-slot ()
 	   (when (and (slot-boundp instance 'project)
 		      (slot-value instance 'project)
-		      (not (slot-boundp instance 'project-pathname)))
+		      (not (slot-boundp instance 'project-name)))
 	     (with-slots (project) instance
-	       (setf (slot-value instance 'project-pathname)
-		     (project-pathname project)))))
+	       (setf (slot-value instance 'project-name)
+		     (project-name project)))))
 	 (finalize-steward-slot ()
 	   (when (slot-boundp instance 'steward)
 	     (with-slots (steward) instance
 	       (unless (typep steward 'steward)
 		 (setf steward (find-steward steward))))))
-	 (finalize-steward-pathname-slot ()
+	 (finalize-steward-name-slot ()
 	   (when (and (slot-boundp instance 'steward)
 		      (slot-value instance 'steward)
-		      (not (slot-boundp instance 'steward-pathname)))
+		      (not (slot-boundp instance 'steward-name)))
 	     (with-slots (steward) instance
-	       (setf (slot-value instance 'steward-pathname)
-		     (steward-pathname steward)))))
+	       (setf (slot-value instance 'steward-name)
+		     (steward-name steward)))))
 	 (check-that-steward-and-steward-class-match ()
 	   (with-slots (steward steward-class) instance
 	     (unless (typep steward steward-class)
@@ -176,11 +155,11 @@ to initialise this resource was a ~A."
     (initialize-project-slot-from-steward-slot)
     (initialize-tenant-slot-from-project-slot)
     (finalize-tenant-slot)
-    (finalize-tenant-pathname-slot)
+    (finalize-tenant-name-slot)
     (finalize-project-slot)
-    (finalize-project-pathname-slot)
+    (finalize-project-name-slot)
     (finalize-steward-slot)
-    (finalize-steward-pathname-slot)
+    (finalize-steward-name-slot)
     (check-that-steward-and-steward-class-match)
     (values)))
 
@@ -216,15 +195,15 @@ operator.  It is allowed to feature details specific to the operation or
 the resource, so that it is usually unsafe to publish this EXPLANATION."))
   (:report
    (lambda (condition stream)
-     (with-slots (pathname steward) (resource-error-resource condition)
+     (with-slots (name steward) (resource-error-resource condition)
        (let ((*print-circle* nil))
 	 (format stream "~&Operation on resource ~A failed.
 
 The steward ~A trying to ~A the resource ~A met an error condition.
 ~A" 
-		 pathname
-		 (slot-value (find-steward steward) 'pathname)
-		 (resource-error-operation condition) pathname
+		 name
+		 (slot-value (find-steward steward) 'name)
+		 (resource-error-operation condition) name
 		 (resource-error-description condition))
 	 (with-slots (explanation) condition
 	   (when explanation
@@ -268,15 +247,15 @@ operator.  It is allowed to feature details specific to the operation or
 the resource, so that it is usually unsafe to publish this EXPLANATION."))
   (:report
    (lambda (condition stream)
-     (with-slots (pathname steward) (resource-confirmation-resource condition)
+     (with-slots (name steward) (resource-confirmation-resource condition)
        (let ((*print-circle* nil))
 	 (format stream "Operation on resource ~A requires confirmation.
 
 The steward ~A is trying to ~A the resource ~A and requires confirmation to proceed.
 ~A" 
-		 pathname
-		 (slot-value (find-steward steward) 'pathname)
-		 (resource-confirmation-operation condition) pathname
+		 name
+		 (slot-value (find-steward steward) 'name)
+		 (resource-confirmation-operation condition) name
 		 (resource-confirmation-description condition))
 	 (with-slots (explanation) condition
 	   (when explanation
@@ -346,9 +325,9 @@ This returns the RESOURCE instance."))
 
 (defmethod create-resource :around ((instance resource))
   "Enforce calling convention and ensure that we do not recreate a resource that already exists."
-  (with-slots (pathname identifier state) instance
+  (with-slots (name identifier state) instance
     (when state
-      (error "Cannot create the resource ~A (~A) as it already exists." pathname identifier)
+      (cerror "Cannot create the resource ~A (~A) as it already exists." name identifier)
       (return-from create-resource instance)))
   (call-next-method)
   (values instance))
@@ -359,9 +338,9 @@ This returns the RESOURCE instance."))
 
 (defmethod delete-resource :around ((instance resource))
   "Enforce calling convention and ensure that we do not delete a resource that does not exist."
-  (with-slots (pathname identifier state) instance
+  (with-slots (name identifier state) instance
     (unless state
-      (warn "Cannot delete the resource ~A (~A) as it does not exist." pathname identifier)
+      (warn "Cannot delete the resource ~A (~A) as it does not exist." name identifier)
       (return-from delete-resource instance))
     (call-next-method)
     (when (eq state nil)
@@ -408,26 +387,27 @@ keywords are sorted in ascending order.")
   (sort-plist (call-next-method)))
 
 (defmethod examine-resource append ((instance resource))
-  (with-slots (steward pathname identifier description state) instance
+  (with-slots (steward name identifier description state) instance
     (list
-     :steward (steward-pathname steward)
-     :pathname pathname
+     :steward (steward-name steward)
+     :name name
      :identifier identifier
      :description description
      :state state)))
 
-(defgeneric import-resource (steward &key pathname description identifier)
+(defgeneric import-resource (steward &key name displayname description identifier)
   (:documentation
    "Import a RESOURCE based on its IDENTIFIER into its STEWARD.
 This assumes a resource has been created in STEWARD by a third party and
 imports it into the current system by creating a resource for it."))
 
-(defmethod import-resource :around (steward &key pathname description identifier)
+(defmethod import-resource :around (steward &key name displayname description identifier)
   (let ((instance
 	  (call-next-method)))
     (macrolet ((setf-slot-value (slot-name)
 		 `(setf (slot-value instance ',slot-name) ,slot-name)))
-      (setf-slot-value pathname)
+      (setf-slot-value name)
+      (setf-slot-value displayname)
       (setf-slot-value description)
       (setf-slot-value identifier)
       (setf-slot-value steward))
@@ -442,8 +422,8 @@ These resources can be imported."))
   "List resources of RESOURCE-CLASS known by STEWARD."
   (loop :for identifier :in (list-resource-identifiers steward resource-class)
 	:collect (import-resource
-		  :steward steward
+		  steward
 		  :identifier identifier
-		  :pathname identifier)))
+		  :name identifier)))
 
 ;;;; End of file `resource.lisp'

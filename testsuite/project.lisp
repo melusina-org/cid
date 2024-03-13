@@ -14,7 +14,7 @@
 (in-package #:org.melusina.cid/testsuite)
 
 (defparameter *example-project-definitions*
-  '((:pathname "testproject"
+  '((:name "testproject"
      :displayname "Test Project"
      :tenant "testsuite"))
   "Some project definitions that can be used in the testsuites.")
@@ -24,7 +24,7 @@
   (flet ((example-getf (indicator)
 	   (getf (first *example-project-definitions*) indicator)))	   
     (cid:find-project
-     (example-getf :pathname) :tenant (example-getf :tenant))))
+     (example-getf :name) :tenant (example-getf :tenant))))
 
 (defun populate-project-table ()
   "Populate the PROJECT table with some test data."
@@ -37,26 +37,22 @@
     (populate-tenant-table)
     (populate-project-table)
     (assert-string= "Test Project"
-		    (cid:project-displayname
-		     (cid:find-project "testproject"
-				       :tenant "testsuite")))
+		    (cid:displayname
+		     (cid:find-project "testproject" :tenant "testsuite")))
     (assert-string= "Test Tenant"
-		    (cid:tenant-displayname
-		     (cid:project-tenant
-		      (cid:find-project "testproject"
-					:tenant "testsuite"))))
+		    (cid:displayname
+		     (cid:tenant
+		      (cid:find-project "testproject" :tenant "testsuite"))))
     (assert-t*
      (with-output-to-string (*standard-output*)
        (describe
-	(cid:find-project "testproject"
-			  :tenant "testsuite"))))
+	(cid:find-project "testproject" :tenant "testsuite"))))
     (assert-eq (example-project)
-	       (cid:find-project (example-project)
-				 :tenant nil))
+	       (cid:find-project (example-project) :tenant nil))
     (assert-condition
 	(clsql:update-records-from-instance
 	 (cid:make-project
-	  :pathname "testproject"
+	  :name "testproject"
 	  :displayname "Test Project 2"
 	  :tenant "testsuite"))
 	error)))

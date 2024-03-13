@@ -13,26 +13,25 @@
 
 (in-package #:org.melusina.cid/testsuite)
 
-
 (define-testcase validate-steward-resource-relationships (resource)
   (assert-t* (cid:resource-steward resource))
   (with-slots ((steward cid:steward)) resource
     (assert-type steward 'cid:steward)
     (assert-string=
-     (cid:tenant-pathname (cid:steward-tenant steward))
-     (cid:tenant-pathname (cid:resource-tenant resource)))
+     (cid:name (cid:tenant steward))
+     (cid:name (cid:tenant resource)))
     (assert-string=
-     (cid:tenant-pathname (cid:steward-project steward))
-     (cid:tenant-pathname (cid:resource-tenant resource)))
+     (cid::tenant-name (cid:project steward))
+     (cid:name (cid:tenant resource)))
     (assert-string=
-     (cid:tenant-pathname (cid:steward-project steward))
-     (cid:tenant-pathname (cid:resource-project resource)))
+     (cid::tenant-name (cid:project steward))
+     (cid::tenant-name (cid:project resource)))
     (assert-string=
-     (cid:project-pathname (cid:steward-project steward))
-     (cid:project-pathname (cid:resource-project resource)))
+     (cid::project-name (cid:project steward))
+     (cid::project-name (cid:project resource)))
     (assert-string=
-     (cid:steward-pathname (cid:resource-steward resource))
-     (cid:steward-pathname resource))
+     (cid::steward-name (cid:steward resource))
+     (cid::steward-name resource))
     (assert-type steward (slot-value resource 'cid::steward-class))))
 
 (define-testcase validate-resource-lifecycle (resource &key slot-name new-slot-value)

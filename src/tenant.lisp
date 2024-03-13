@@ -15,27 +15,9 @@
 
 (clsql:file-enable-sql-reader-syntax)
 
-(clsql:def-view-class tenant ()
-  ((pathname
-    :accessor tenant-pathname
-    :type string
-    :db-kind :key
-    :initarg :pathname
-    :description "The PATHNAME element designates the tenant.
-This is a string of characters from the portable filename character set.")
-   (displayname
-    :accessor tenant-displayname
-    :type string
-    :initarg :displayname
-    :description "The DISPLAYNAME element is used in informational screens to denote the tenant."))
+(clsql:def-view-class tenant (named-trait)
+  nil
   (:base-table tenant))
-
-(defmethod print-object ((instance tenant) stream)
-  (print-unreadable-object (instance stream :type t :identity t)
-    (when (and (slot-boundp instance 'pathname)
-	       (slot-boundp instance 'displayname))
-      (with-slots (pathname displayname) instance
-	(format stream "~A ~S" pathname displayname)))))
 
 (defun list-tenants ()
   "List existing tenants."
@@ -43,17 +25,19 @@ This is a string of characters from the portable filename character set.")
 
 (defun find-tenant (designator)
   "Find the tenant associated to DESIGNATOR."
-  (typecase designator
-    (tenant
-     designator)
-    (string
-     (caar (clsql:select 'tenant :where [= [slot-value 'tenant 'pathname] designator])))
-    (null
-     nil)))
+  (flet ((find-by-name (name)
+	   (caar (clsql:select 'tenant :where [= [slot-value 'tenant 'name] name]))))
+    (etypecase designator
+      (tenant
+       designator)
+      (string
+       (find-by-name designator))
+      (null
+       nil))))
 
-(defun make-tenant (&rest initargs &key pathname displayname)
+(defun make-tenant (&rest initargs &key name displayname)
   "Make a TENANT with the given attributes."
-  (declare (ignore pathname displayname))
+  (declare (ignore name displayname))
   (apply #'make-instance 'tenant initargs))
 
 ;;;; End of file `tenant.lisp'

@@ -21,10 +21,7 @@
   "The connection specification for the database.")
 
 (defparameter *database-application-class-list*
-  '(tenant project
-    ;; Resources and Stewards
-    empty property property-list filesystem-subtree
-    docker-engine macos-security)
+  '(tenant project)
   "The list of application classes to initialise
 when connecting to the database for the first time.")
 

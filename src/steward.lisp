@@ -15,25 +15,17 @@
 
 (clsql:file-enable-sql-reader-syntax)
 
-(clsql:def-view-class steward ()
-  ((tenant-pathname
+(clsql:def-view-class steward (named-trait)
+  ((tenant-name
     :type string
     :db-kind :key
     :db-constraints :not-null
-    :reader tenant-pathname)
-   (project-pathname
+    :reader tenant-name)
+   (project-name
     :type string
     :db-kind :key
     :db-constraints :not-null
-    :reader project-pathname)
-   (pathname
-    :type string
-    :db-kind :key
-    :db-constraints :not-null
-    :initarg :pathname
-    :reader steward-pathname
-    :documentation "A name for the STEWARD.
-The fully qualified name of the STEWARD, which should be a safe Unix path.")
+    :reader project-name)
    (steward-class
     :type symbol
     :allocation :class
@@ -45,20 +37,20 @@ This slot is only bound for concrete classes.")
     :initform nil
     :documentation "A short description of the STEWARD.")
    (tenant
-    :reader steward-tenant
+    :reader tenant
     :initarg :tenant
     :db-kind :join
     :db-info (:join-class tenant
-	      :home-key tenant-pathname
-	      :foreign-key pathname
+	      :home-key tenant-name
+	      :foreign-key name
 	      :set nil))
    (project
-    :reader steward-project
+    :reader project
     :initarg :project
     :db-kind :join
     :db-info (:join-class project
-	      :home-key (tenant-pathname project-pathname)
-	      :foreign-key (tenant-pathname pathname)
+	      :home-key (tenant-name project-name)
+	      :foreign-key (tenant-name name)
 	      :set nil)))
   (:documentation "The class represents stewards responsible for
 resources consumed by the deployment of software components.
@@ -66,15 +58,6 @@ resources consumed by the deployment of software components.
 Some examples of STEWARDS are the localhost, a configured docker engine,
 a remote host accesible over SSH, a kubernetes cluster hosted in
 a public cloud, among many other possibilities."))
-
-(defmethod print-object ((instance steward) stream)
-  (print-unreadable-object (instance stream :type t :identity t)
-    (when (and (slot-boundp instance 'tenant-pathname)
-	       (slot-boundp instance 'project-pathname)
-	       (slot-boundp instance 'pathname))
-      (with-slots (tenant-pathname project-pathname pathname) instance
-	(format stream "~A ~A ~A"
-		tenant-pathname project-pathname pathname)))))
 
 (defmethod initialize-instance :after ((instance steward) &rest initargs &key &allow-other-keys)
   (declare (ignore initargs))
@@ -90,58 +73,74 @@ a public cloud, among many other possibilities."))
 	     (with-slots (tenant) instance
 	       (unless (typep tenant 'tenant)
 		 (setf tenant (find-tenant tenant))))))
-	 (finalize-tenant-pathname-slot ()
+	 (finalize-tenant-name-slot ()
 	   (when (and (slot-boundp instance 'tenant)
-		      (not (slot-boundp instance 'tenant-pathname)))
-	     (with-slots (tenant tenant-pathname) instance
-	       (setf (slot-value instance 'tenant-pathname)
-		     (tenant-pathname tenant)))))
+		      (not (slot-boundp instance 'tenant-name)))
+	     (with-slots (tenant tenant-name) instance
+	       (setf (slot-value instance 'tenant-name)
+		     (tenant-name tenant)))))
 	 (finalize-project-slot ()
 	   (when (and (slot-boundp instance 'project)
 		      (slot-boundp instance 'tenant))
 	     (with-slots (project tenant) instance
 	       (unless (typep project 'project)
 		 (setf project (find-project project :tenant tenant))))))
-	 (finalize-project-pathname-slot ()
+	 (finalize-project-name-slot ()
 	   (when (and (slot-boundp instance 'project)
 		      (slot-value instance 'project)
-		      (not (slot-boundp instance 'project-pathname)))
+		      (not (slot-boundp instance 'project-name)))
 	     (with-slots (project) instance
-	       (setf (slot-value instance 'project-pathname)
-		     (project-pathname project))))))
+	       (setf (slot-value instance 'project-name)
+		     (project-name project))))))
     (initialize-tenant-slot-from-project-slot)
     (finalize-tenant-slot)
-    (finalize-tenant-pathname-slot)
+    (finalize-tenant-name-slot)
     (finalize-project-slot)
-    (finalize-project-pathname-slot)))
+    (finalize-project-name-slot)))
 
 (defun find-steward (designator &key tenant project steward-class)
   "The steward designated by DESIGNATOR.
 When DESIGNATOR is a STEWARD, it is immediately returned. When
-DESIGNATOR is a string, it is interpreted as a pathname to search
+DESIGNATOR is a string, it is interpreted as a name to search
 stewards in the given project."
-  (when (typep designator 'steward)
-    (return-from find-steward designator))
-  (when tenant
-    (setf tenant (find-tenant tenant)))
-  (when project
-    (setf project (find-project project :tenant tenant))
-    (unless tenant
-      (setf tenant (project-tenant project))))
-  (unless project
-    (error "A PROJECT is required to find a steward."))
-  (unless steward-class
-    (error "A STEWARD-CLASS is required to find a steward."))
-  (flet ((find-by-pathname (pathname)
+  (flet ((check-tenant ()
+	   (unless tenant
+	     (error "A TENANT is required to find a steward.")))
+	 (check-project ()
+	   (unless project
+	     (error "A PROJECT is required to find a steward.")))
+	 (check-steward-class ()
+	     (unless steward-class
+	       (error "A STEWARD-CLASS is required to find a steward.")))
+	 (return-early-if-tenant-does-not-exist ()
+	   (when tenant
+	     (setf tenant (find-tenant tenant)))
+	   (unless tenant
+	     (return-from find-steward nil)))
+	 (return-early-if-project-does-not-exist ()
+	   (when project
+	     (setf project (find-project project :tenant tenant)))
+	   (unless project
+	     (return-from find-steward nil)))
+	 (find-by-name (name)
 	   (caar
 	    (clsql:select
 	     steward-class
- 	     :where [and [= [tenant-pathname] (tenant-pathname project)]
-                         [= [project-pathname] (project-pathname project)]
-                         [= [pathname] pathname]]))))
+ 	     :where [and [= [tenant-name] (tenant-name tenant)]
+                         [= [project-name] (project-name project)]
+                         [= [name] name]]))))
     (etypecase designator
+      (steward
+       designator)
       (string
-       (find-by-pathname designator)))))
+       (check-tenant)
+       (check-project)
+       (check-steward-class)
+       (return-early-if-tenant-does-not-exist)
+       (return-early-if-project-does-not-exist)
+       (find-by-name designator))
+      (null
+       nil))))
 
 
 ;;;;

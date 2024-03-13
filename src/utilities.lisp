@@ -34,6 +34,13 @@
     (remove-undefined-properties
      (alexandria:plist-alist plist))))))
 
+(defun remove-property (plist property)
+  "Return a copy from PLIST with PROPERTY removed."
+  (loop :for (name value . tail) :on plist
+	:for property-p = t :then (not property-p)
+	:when (and property-p (not (eq property name)))
+	:append (list name value)))
+
 
 ;;;;
 ;;;; Check instance slots

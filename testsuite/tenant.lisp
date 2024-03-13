@@ -14,9 +14,9 @@
 (in-package #:org.melusina.cid/testsuite)
 
 (defparameter *example-tenant-definitions*
-  '((:pathname "testsuite"
+  '((:name "testsuite"
      :displayname "Test Tenant")
-    (:pathname "acme"
+    (:name "acme"
      :displayname "Acme Inc."))
   "Some tenant definitions that can be used in the testsuites.")
 
@@ -24,7 +24,7 @@
   "Some tenant that can be used in the testsuite."
   (flet ((example-getf (indicator)
 	   (getf (first *example-tenant-definitions*) indicator)))	   
-    (cid:find-tenant (example-getf :pathname))))
+    (cid:find-tenant (example-getf :name))))
 
 (defun populate-tenant-table ()
   "Populate the TENANT table with some test data."
@@ -37,17 +37,17 @@
     (populate-tenant-table)
     (assert-string=
      "Test Tenant"
-     (cid:tenant-displayname (cid:find-tenant "testsuite")))
+     (cid:displayname (cid:find-tenant "testsuite")))
     (assert-condition
 	(clsql:update-records-from-instance
-	 (cid:make-tenant :pathname "testsuite"
+	 (cid:make-tenant :name "testsuite"
 			  :displayname "Alternative Display Name"))
 	error)
     (assert-string-match
      (with-output-to-string (*standard-output*)
        (describe (cid:find-tenant "testsuite")))
-     "*TENANT testsuite \"Test Tenant\"*")
+     "*TENANT testsuite Test Tenant*")
     (assert-nil
-     (cid:find-tenant "This is not an actual tenant pathname"))))
+     (cid:find-tenant "This is not an actual tenant name"))))
 
 ;;;; End of file `tenant.lisp'

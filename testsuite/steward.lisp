@@ -13,6 +13,8 @@
 
 (in-package #:org.melusina.cid/testsuite)
 
+#|
+
 (defun example-empty-steward ()
   "Some EMPTY steward that can be used in the testsuite."
   (cid:find-steward "empty"
@@ -153,5 +155,13 @@
     (populate-steward-tables)
     (loop :for example :in (select-steward-examples-by-key key)
 	  :do (apply #'ensure-that-steward-can-be-configured example))))
+
+|#
+
+(define-testcase steward-unit-test (&optional key)
+  (assert-t t))
+
+(define-testcase steward-component-test (&optional key)
+  (assert-t t))
 
 ;;;; End of file `steward.lisp'

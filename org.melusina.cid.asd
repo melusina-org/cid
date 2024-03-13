@@ -35,16 +35,12 @@
     :components ((:file "package")
 		 (:file "utilities")
 		 (:file "database")
+		 (:module "traits"
+		  :components ((:file "named")))
 		 (:file "tenant")
 		 (:file "project")
 		 (:file "steward")
 		 (:file "resource")
-		 (:module "stewards"
-		  :components ((:file "empty")
-			       (:file "property-list")
-			       (:file "filesystem-subtree")
-			       (:file "docker-engine")
-			       (:file "macos-security")))
 		 (:file "entry-point")))))
 
 (asdf:defsystem #:org.melusina.cid/console
@@ -131,9 +127,7 @@
 		 (:file "tenant")
 		 (:file "project")
 		 (:file "steward")
-		 (:file "resource")
-		 (:module "stewards"
-		  :components ((:file "property-list")))))
+		 (:file "resource")))
    (:module "libexec"
     :components
     ((:module "lisp"

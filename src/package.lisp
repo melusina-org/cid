@@ -22,26 +22,21 @@
    #:connect-database
    #:disconnect-database
    #:with-database
+   ;; Named Trait
+   #:name
+   #:displayname
    ;; Tenant
    #:tenant
-   #:tenant-pathname
-   #:tenant-displayname
    #:list-tenants
    #:make-tenant
    #:find-tenant
    ;; Project
    #:project
-   #:project-pathname
-   #:project-displayname
-   #:project-tenant
    #:list-projects
    #:make-project
    #:find-project
    ;; Steward
    #:steward
-   #:steward-pathname
-   #:steward-project
-   #:steward-tenant
    #:find-steward
    #:configure-steward
    ;; Resource
@@ -65,30 +60,7 @@
    #:import-resource
    #:list-resources
    #:list-resource-identifiers
-   #:examine-differences-between-instance-and-resource
-
-   ;; Empty Steward
-   #:empty
-   #:make-empty
-   ;; Properties
-   #:property
-   #:property-name
-   #:property-value
-   #:property-list
-   #:make-property
-   #:make-property-list
-   ;; Filesystem Subtree
-   #:filesystem-subtree
-   #:make-filesystem-subtree
-   ;; Docker Engine
-   #:docker-engine
-   #:make-docker-engine
-   #:docker-image
-   #:docker-container
-   #:docker-volume
-   ;; MacOS X Security
-   #:macos-security
-   #:make-macos-security))
+   #:examine-differences-between-instance-and-resource))
 
 (in-package #:org.melusina.cid)
 

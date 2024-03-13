@@ -15,38 +15,21 @@
 
 (clsql:file-enable-sql-reader-syntax)
 
-(clsql:def-view-class project ()
-  ((tenant-pathname
+(clsql:def-view-class project (named-trait)
+  ((tenant-name
     :type string
     :db-kind :key
-    :initarg :tenant-pathname
-    :reader tenant-pathname)
-   (pathname
-    :db-kind :key
-    :type string
-    :initarg :pathname
-    :reader project-pathname)
-   (displayname
-    :accessor project-displayname
-    :type string
-    :initarg :displayname)
+    :initarg :tenant-name
+    :reader tenant-name)
    (tenant
     :db-kind :join
     :db-info (:join-class tenant
-	      :home-key tenant-pathname
-	      :foreign-key pathname
+	      :home-key tenant-name
+	      :foreign-key name
 	      :set nil)
     :initarg :tenant
-    :reader project-tenant))
+    :reader tenant))
   (:base-table project))
-
-(defmethod print-object ((instance project) stream)
-  (print-unreadable-object (instance stream :type t :identity t)
-    (when (and (slot-boundp instance 'pathname)
-	       (slot-boundp instance 'tenant-pathname))
-      (with-slots (tenant-pathname pathname displayname) instance
-	(format stream "~A ~A ~S"
-		tenant-pathname pathname displayname)))))
 
 (defmethod initialize-instance :after ((instance project) &rest initargs &key &allow-other-keys)
   (declare (ignore initargs))
@@ -55,28 +38,34 @@
 	     (with-slots (tenant) instance
 	       (unless (typep tenant 'tenant)
 		 (setf tenant (find-tenant tenant))))))
-	 (finalize-tenant-pathname-slot ()
+	 (finalize-tenant-name-slot ()
 	   (when (and (slot-boundp instance 'tenant)
-		      (not (slot-boundp instance 'tenant-pathname)))
+		      (not (slot-boundp instance 'tenant-name)))
 	     (with-slots (tenant) instance
-	       (setf (slot-value instance 'tenant-pathname)
-		     (tenant-pathname tenant))))))
+	       (setf (slot-value instance 'tenant-name)
+		     (tenant-name tenant))))))
     (finalize-tenant-slot)
-    (finalize-tenant-pathname-slot)))
+    (finalize-tenant-name-slot)))
 
 (defun list-projects (&key tenant)
   "List existing tenants."
-  (cond
-    (tenant
-     (setf tenant (find-tenant tenant))
-     (unless tenant
-       (return-from list-projects nil))
-     (clsql:select 'project
-		   :where [= [slot-value 'project 'tenant-pathname]
-		             (slot-value tenant 'pathname)]
-		   :flatp t))
-    (t
-     (clsql:select 'project :flatp t))))
+  (flet ((return-early-if-tenant-does-not-exist ()
+	   (setf tenant (find-tenant tenant))
+	   (unless tenant
+	     (return-from list-projects nil)))
+	 (list-for-tenant (tenant-name)
+	   (clsql:select
+	    'project
+	    :where [= [slot-value 'project 'tenant-name] tenant-name]
+	    :flatp t))
+	 (list-every-project ()
+	   (clsql:select 'project :flatp t)))
+    (cond
+      (tenant
+       (return-early-if-tenant-does-not-exist)
+       (list-for-tenant (name tenant)))
+      (t
+       (list-every-project)))))
 
 (defun find-project (designator &key tenant)
   "Find the project associated to DESIGNATOR."
@@ -84,31 +73,31 @@
 	   (setf tenant (find-tenant tenant))
 	   (unless tenant
 	     (return-from find-project nil)))
-	 (find-by-pathname (pathname tenant-pathname)
+	 (find-by-name (tenant-name name)
 	   (caar
 	    (clsql:select
 	     'project
-	     :where [and [= [slot-value 'project 'pathname] pathname]
-                         [= [slot-value 'project 'tenant-pathname] tenant-pathname]]))))
+	     :where [and [= [slot-value 'project 'name] name]
+                         [= [slot-value 'project 'tenant-name] tenant-name]]))))
     (etypecase designator
       (project
        designator)
       (string
        (return-early-if-tenant-does-not-exist)
-       (find-by-pathname designator (tenant-pathname tenant)))
+       (find-by-name (name tenant) designator))
       (null
        nil))))
 
-(defun make-project (&rest initargs &key pathname displayname tenant)
+(defun make-project (&rest initargs &key name displayname tenant)
   "Make a PROJECT with the given attributes."
   (declare (ignore initargs))
   (let ((tenant
 	  (or (find-tenant tenant)
 	      (error "Cannot find tenant ~S." tenant))))
     (make-instance 'project
-		   :tenant-pathname (tenant-pathname tenant)
-		   :pathname pathname
+		   :tenant-name (name tenant)
 		   :tenant tenant
+		   :name name
 		   :displayname displayname)))
 
 ;;;; End of file `project.lisp'
