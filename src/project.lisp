@@ -15,39 +15,14 @@
 
 (clsql:file-enable-sql-reader-syntax)
 
-(clsql:def-view-class project (named-trait)
-  ((tenant-name
-    :type string
-    :db-kind :key
-    :initarg :tenant-name
-    :reader tenant-name)
-   (tenant
-    :db-kind :join
-    :db-info (:join-class tenant
-	      :home-key tenant-name
-	      :foreign-key name
-	      :set nil)
-    :initarg :tenant
-    :reader tenant))
+(clsql:def-view-class project (named-trait tenant-trait)
+  nil
   (:base-table project))
 
-(defmethod initialize-instance :after ((instance project) &rest initargs &key &allow-other-keys)
-  (declare (ignore initargs))
-  (flet ((finalize-tenant-slot ()
-	   (when (slot-boundp instance 'tenant)
-	     (with-slots (tenant) instance
-	       (unless (typep tenant 'tenant)
-		 (setf tenant (find-tenant tenant))))))
-	 (finalize-tenant-name-slot ()
-	   (when (and (slot-boundp instance 'tenant)
-		      (not (slot-boundp instance 'tenant-name)))
-	     (with-slots (tenant) instance
-	       (setf (slot-value instance 'tenant-name)
-		     (tenant-name tenant))))))
-    (finalize-tenant-slot)
-    (finalize-tenant-name-slot)))
+(defmethod address-components ((instance project))
+  '(tenant-name))
 
-(defun list-projects (&key tenant)
+(defun list-projects (&key (tenant *tenant*))
   "List existing tenants."
   (flet ((return-early-if-tenant-does-not-exist ()
 	   (setf tenant (find-tenant tenant))
@@ -90,14 +65,57 @@
 
 (defun make-project (&rest initargs &key name displayname tenant)
   "Make a PROJECT with the given attributes."
+  (declare (ignore name displayname tenant))
+  (apply #'make-instance 'project initargs))
+
+(defparameter *project* nil
+  "The current PROJECT used in operations.")
+
+(clsql:def-view-class project-trait nil
+  ((project-name
+    :type string
+    :db-kind :key
+    :reader project-name)
+   (project
+    :db-kind :join
+    :db-info (:join-class project
+	      :home-key project-name
+	      :foreign-key name
+	      :set nil)
+    :initarg :project
+    :reader project))
+  (:documentation "A trait for instances specific to a project.
+The trait provides initialisation for the PROJECT-NAME and PROJECT slots
+based on provided values."))
+
+(defmethod initialize-instance :after ((instance project-trait) &rest initargs &key &allow-other-keys)
   (declare (ignore initargs))
-  (let ((tenant
-	  (or (find-tenant tenant)
-	      (error "Cannot find tenant ~S." tenant))))
-    (make-instance 'project
-		   :tenant-name (name tenant)
-		   :tenant tenant
-		   :name name
-		   :displayname displayname)))
+  (flet ((finalize-project-slot ()
+	   (cond
+	     ((and (slot-boundp instance 'project)
+		   (slot-boundp instance 'tenant)
+		   (not (typep (slot-value instance 'project) 'project)))
+	      (with-slots (tenant project) instance
+		(setf project (or (find-project project :tenant tenant)
+				  (error "Cannot find project ~S for tenant ~A." project tenant)))))
+	     ((and (not (slot-boundp instance 'project))
+		   (not (slot-boundp instance 'project-name))
+		   *project*)
+	      (setf (slot-value instance 'project) *project*))))
+	 (finalize-project-name-slot ()
+	   (when (and (slot-boundp instance 'project)
+		      (typep (slot-value instance 'project) 'project)
+		      (not (slot-boundp instance 'project-name)))
+	     (setf (slot-value instance 'project-name) (name (slot-value instance 'project)))))
+	 (initialize-tenant-slot-from-project-slot ()
+	   (when (and (not (slot-boundp instance 'tenant))
+		      (slot-boundp instance 'project)
+		      (typep (slot-value instance 'project) 'project))
+	     (with-slots (project) instance
+	       (setf (slot-value instance 'tenant) (tenant project))))))
+    ;(break "initialize-instance :after ((instance project))")
+    (initialize-tenant-slot-from-project-slot)
+    (finalize-project-slot)
+    (finalize-project-name-slot)))
 
 ;;;; End of file `project.lisp'

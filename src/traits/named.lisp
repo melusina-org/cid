@@ -29,14 +29,8 @@ It must consist of characters in the portable filename character set.")
   (:documentation "The NAMED-TRAIT provides methods and attributes for identifying
 and describing an instance."))
 
-(defun check-that-string-is-in-the-portable-filename-character-set (string)
-  "Check that STRING is in the portable filename character set."
-  (labels ((portable-char-p (char)
-	     (or (alpha-char-p char)
-		 (digit-char-p char)
-		 (position char "-_"))))
-    (unless (every #'portable-char-p string)
-      (error "The string ~A does not consist of characters form the portable set." string))))
+(defgeneric address-components (object)
+  (:documentation "The list of slots used as address components to denote the named instance."))
 
 (defmethod initialize-instance :after ((instance named-trait) &rest initargs &key &allow-other-keys)
   (declare (ignore initargs))
@@ -52,7 +46,12 @@ and describing an instance."))
 		(slot-boundp instance 'displayname)))
 	 (print-name-slots ()
 	   (with-slots (name displayname) instance
-	     (format stream "~A ~A" name displayname)))
+	     (flet ((address-slot-value (slot-name)
+		      (when (slot-boundp instance slot-name)
+			(slot-value instance slot-name))))
+	       (format stream "~{~@[~A~]:~}~A" (mapcar #'address-slot-value (address-components instance)) name))
+	     (when displayname
+	       (format stream " ~A" displayname))))
 	 (print-unavailable-name ()
 	   (write-string "No name available" stream)))
     (print-unreadable-object (instance stream :type t :identity t)

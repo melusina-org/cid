@@ -22,15 +22,19 @@
    #:connect-database
    #:disconnect-database
    #:with-database
+   ;; Common Accessors
+   #:description
    ;; Named Trait
    #:name
    #:displayname
    ;; Tenant
+   #:*tenant*
    #:tenant
    #:list-tenants
    #:make-tenant
    #:find-tenant
    ;; Project
+   #:*project*
    #:project
    #:list-projects
    #:make-project
@@ -60,7 +64,18 @@
    #:import-resource
    #:list-resources
    #:list-resource-identifiers
-   #:examine-differences-between-instance-and-resource))
+   #:examine-differences-between-instance-and-resource
+   ;; Phony Stewards and Phony Resources
+   #:phony-steward
+   #:make-phony-steward
+   #:phony-resource
+   #:make-phony-resource
+   ;; Local Filesystem Subtree
+   #:local-filesystem-subtree
+   #:make-local-filesystem-subtree
+   #:local-text-file
+   #:make-local-text-file
+   ))
 
 (in-package #:org.melusina.cid)
 

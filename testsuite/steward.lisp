@@ -13,80 +13,22 @@
 
 (in-package #:org.melusina.cid/testsuite)
 
-#|
-
-(defun example-empty-steward ()
-  "Some EMPTY steward that can be used in the testsuite."
-  (cid:find-steward "empty"
+(defun example-phony-steward ()
+  "Some PHONY steward that can be used in the testsuite."
+  (cid:find-steward "phony"
 		    :tenant "testsuite"
 		    :project "testproject"
-		    :steward-class 'cid:empty))
-
-(defun example-property-list-steward ()
-  "Some PROPERTY-LIST steward that can be used in the testsuite."
-  (cid:find-steward "plist"
-		    :tenant "testsuite"
-		    :project "testproject"
-		    :steward-class 'cid:property-list))
-
-(defun example-filesystem-subtree-steward ()
-  "Some FILESYSTEM-SUBTREE steward that can be used in the testsuite."
-  (cid:find-steward "fs"
-		    :tenant "testsuite"
-		    :project "testproject"
-		    :steward-class 'cid:filesystem-subtree))
-
-(defun example-docker-engine-steward ()
-  "Some DOCKER-ENGINE steward that can be used in the testsuite."
-  (cid:find-steward "docker"
-		    :tenant "testsuite"
-		    :project "testproject"
-		    :steward-class 'cid:docker-engine))
-
-(defun example-macos-security-steward ()
-  "Some MACOS-SECURITY steward that can be used in the testsuite."
-  (cid:find-steward "secrets"
-		    :tenant "testsuite"
-		    :project "testproject"
-		    :steward-class 'cid:macos-security))
+		    :steward-class 'cid:phony-steward))
 
 (defparameter *example-steward-definitions*
   (list
    (list
-    :key :empty
-    :find-steward #'example-empty-steward
-    :steward-class 'cid:empty
-    :pathname "empty"
+    :key :phony
+    :steward-class 'cid:phony-steward
+    :name "phony"
     :tenant "testsuite"
-    :project "testproject")
-   (list
-    :key :property-list
-    :find-steward #'example-property-list-steward
-    :steward-class 'cid:property-list
-    :pathname "plist"
-    :tenant "testsuite"
-    :project "testproject")
-   (list
-    :key :filesystem-subtree
-    :find-steward #'example-filesystem-subtree-steward
-    :steward-class 'cid:filesystem-subtree
-    :pathname "fs"
-    :tenant "testsuite"
-    :project "testproject")
-   (list
-    :key :docker-engine
-    :find-steward #'example-docker-engine-steward
-    :steward-class 'cid:docker-engine
-    :pathname "docker"
-    :tenant "testsuite"
-    :project "testproject")
-   (list
-    :key :macos-security
-    :find-steward #'example-macos-security-steward
-    :steward-class 'cid:macos-security
-    :pathname "secrets"
-    :tenant "testsuite"
-    :project "testproject"))
+    :project "testproject"
+    :make-steward nil))
   "Some steward definitions that can be used in the testsuites.")
 
 (defun select-steward-examples-by-key (&optional key)
@@ -101,25 +43,29 @@
      *example-steward-definitions*)))
 
 (defun populate-steward-tables ()
-  "Populate the TENANT table with some test data."
-  (flet ((make-steward (&key key find-steward steward-class pathname tenant project)
-	   (declare (ignore key find-steward))
-	   (make-instance steward-class
-			  :pathname pathname
-			  :tenant tenant
-			  :project project)))
+  "Populate the STEWARD tables with some test data."
+  (flet ((make-steward (&key key steward-class name tenant project make-steward)
+	   (declare (ignore key))
+	   (apply #'make-instance steward-class
+		  :name name
+		  :tenant tenant
+		  :project project
+		  make-steward)))
     (loop :for example :in *example-steward-definitions*
 	  :for steward = (apply #'make-steward example)
 	  :do (clsql:update-records-from-instance steward))))
 
 (define-testcase ensure-that-steward-joined-slots-are-set (instance)
-  (assert-t (slot-boundp instance 'cid:tenant-pathname))
-  (assert-t (slot-boundp instance 'cid:project-pathname))
+  (assert-t (slot-boundp instance 'cid::tenant-name))
+  (assert-t (slot-boundp instance 'cid::project-name))
   (assert-t* (slot-value instance 'cid:tenant))
   (assert-t* (slot-value instance 'cid:project)))
 
-(define-testcase ensure-that-find-steward-produces-an-acceptable-result (&key key find-steward pathname steward-class tenant project)
-  (let ((steward (funcall find-steward)))
+(define-testcase ensure-that-find-steward-produces-an-acceptable-result (&key key name steward-class tenant project
+									      make-steward)
+  (declare (ignore key make-steward))
+  (let ((steward
+	  (cid:find-steward name :tenant tenant :project project :steward-class steward-class)))
     (assert-type steward 'cid:steward)
     (assert-type steward steward-class)
     (ensure-that-steward-joined-slots-are-set steward)))
@@ -127,15 +73,18 @@
 (define-testcase ensure-that-configure-steward-returns-the-instance (steward)
   (assert-eq steward (cid:configure-steward steward)))
 
-(define-testcase ensure-that-steward-can-be-configured (&key key find-steward pathname steward-class tenant project)
-  (let ((steward (funcall find-steward)))
+(define-testcase ensure-that-steward-can-be-configured (&key key name steward-class tenant project
+							     make-steward)
+  (declare (ignore key make-steward))
+  (let ((steward
+	  (cid:find-steward name :tenant tenant :project project :steward-class steward-class)))
     (assert-type steward 'cid:steward)
     (assert-type steward steward-class)
-    (with-slots ((instance-pathname cid::pathname)
-		 (instance-project cid::project-pathname)
-		 (instance-tenant cid::tenant-pathname))
+    (with-slots ((instance-name cid::name)
+		 (instance-project cid::project-name)
+		 (instance-tenant cid::tenant-name))
 	steward
-      (assert-string= pathname instance-pathname)
+      (assert-string= name instance-name)
       (assert-string= project instance-project)
       (assert-string= tenant instance-tenant)
       (ensure-that-configure-steward-returns-the-instance steward))))
@@ -155,13 +104,5 @@
     (populate-steward-tables)
     (loop :for example :in (select-steward-examples-by-key key)
 	  :do (apply #'ensure-that-steward-can-be-configured example))))
-
-|#
-
-(define-testcase steward-unit-test (&optional key)
-  (assert-t t))
-
-(define-testcase steward-component-test (&optional key)
-  (assert-t t))
 
 ;;;; End of file `steward.lisp'

@@ -29,6 +29,8 @@
 	       #:cl-ppcre
 	       #:clsql
 	       #:clsql-sqlite3
+	       #:ironclad
+	       #:osicat
 	       #:org.melusina.cid/clsql-extension)
   :components
   ((:module "src"
@@ -41,6 +43,8 @@
 		 (:file "project")
 		 (:file "steward")
 		 (:file "resource")
+		 (:module "stewards"
+		  :components ((:file "phony")))
 		 (:file "entry-point")))))
 
 (asdf:defsystem #:org.melusina.cid/console
@@ -127,7 +131,9 @@
 		 (:file "tenant")
 		 (:file "project")
 		 (:file "steward")
-		 (:file "resource")))
+		 (:file "resource")
+		 (:module "stewards"
+		  :components ((:file "phony")))))
    (:module "libexec"
     :components
     ((:module "lisp"

@@ -79,4 +79,32 @@
 		      ,(initarg-symbol initarg)))))
 	`(progn ,@body)))))
 
+
+;;;;
+;;;; File Checksum
+;;;;
+
+(defun file-checksum (pathname &optional (digest-name :sha256))
+  "Compute a checksum of PATHNAME using DIGEST-NAME."
+  (ironclad:byte-array-to-hex-string
+   (ironclad:digest-file digest-name pathname)))
+
+
+;;;;
+;;;; Portable Filename Character Set
+;;;;
+
+(defun portable-filename-character-set-p (string)
+  "Predicate that recognises a STRING in the portable filename character set."
+  (labels ((portable-char-p (char)
+	     (or (alpha-char-p char)
+		 (digit-char-p char)
+		 (position char "-_."))))
+    (every #'portable-char-p string)))
+ 
+(defun check-that-string-is-in-the-portable-filename-character-set (string)
+  "Check that STRING is in the portable filename character set."
+  (unless (portable-filename-character-set-p string)
+    (error "The string ~A does not consist of characters form the portable set." string)))
+
 ;;;; End of file `utilities.lisp'

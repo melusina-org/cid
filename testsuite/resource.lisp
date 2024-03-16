@@ -14,51 +14,78 @@
 (in-package #:org.melusina.cid/testsuite)
 
 (define-testcase validate-steward-resource-relationships (resource)
-  (assert-t* (cid:resource-steward resource))
+  (assert-t* (cid:tenant resource))
+  (assert-t* (cid:project resource))
+  (assert-t* (cid:steward resource))
   (with-slots ((steward cid:steward)) resource
     (assert-type steward 'cid:steward)
-    (assert-string=
-     (cid:name (cid:tenant steward))
-     (cid:name (cid:tenant resource)))
-    (assert-string=
-     (cid::tenant-name (cid:project steward))
-     (cid:name (cid:tenant resource)))
-    (assert-string=
-     (cid::tenant-name (cid:project steward))
-     (cid::tenant-name (cid:project resource)))
-    (assert-string=
-     (cid::project-name (cid:project steward))
-     (cid::project-name (cid:project resource)))
-    (assert-string=
-     (cid::steward-name (cid:steward resource))
-     (cid::steward-name resource))
-    (assert-type steward (slot-value resource 'cid::steward-class))))
+    (block resource-and-steward-share-the-same-tenant
+      (assert-string=
+       (cid:name (cid:tenant steward))
+       (cid:name (cid:tenant resource)))
+      (assert-string=
+       (cid::tenant-name (cid:project steward))
+       (cid:name (cid:tenant resource))))
+    (block resource-and-steward-share-the-same-project
+      (assert-string=
+       (cid::tenant-name (cid:project steward))
+       (cid::tenant-name (cid:project resource)))
+      (assert-string=
+       (cid:name (cid:project steward))
+       (cid:name (cid:project resource))))
+    (block steward-joined-slot-is-consistently-set
+      (assert-string=
+       (cid:name (cid:steward resource))
+       (cid::steward-name resource))
+      (assert-type steward (slot-value resource 'cid::steward-class)))))
 
-(define-testcase validate-resource-lifecycle (resource &key slot-name new-slot-value)
-  "Run a RESOURCE through its typical lifecycle.
-The typical lifecycle of a resource is CREATE, EXAMINE, UPDATE, DELETE. In order
-to update the resource we use SLOT-NAME and a NEW-SLOT-VALUE."
-  (assert-t* (cid:resource-steward resource))
+(define-testcase non-existent-resource-invariants (resource)
+  (assert-t* (cid:steward resource))
   (assert-nil (cid:resource-exists-p resource))
   (assert-nil (cid:resource-ready-p resource))
-  (assert-nil (cid:resource-identifier resource))
-  (cid:create-resource resource)
+  (assert-nil (cid:resource-identifier resource)))
+
+(define-testcase existent-resource-invariants (resource)
   (assert-t (cid:resource-exists-p resource))
   (assert-t (cid:resource-ready-p resource))
   (assert-t* (cid:examine-resource resource))
   (assert-t* (cid:resource-identifier resource))
   (assert-type (cid:resource-identifier resource) 'string)
-  (when slot-name
-    (setf (slot-value resource slot-name) new-slot-value)
-    (cid:update-resource-from-instance resource)
-    (assert-t (cid:resource-exists-p resource))
-    (assert-t (cid:resource-ready-p resource))
-    (assert-t* (cid:examine-resource resource))
-    (assert-t* (cid:resource-identifier resource)))
-  (cid:delete-resource resource)
-  (assert-nil (cid:resource-exists-p resource))
-  (assert-nil (cid:resource-ready-p resource))
-  (assert-nil (cid:resource-identifier resource)))
+  (assert-condition (cid:create-resource resource)
+      simple-error))
+
+(define-testcase validate-resource-lifecycle (resource &key slot-name new-slot-value)
+  "Run a RESOURCE through its typical lifecycle.
+The typical lifecycle of a resource is CREATE, EXAMINE, UPDATE, DELETE. In order
+to update the resource we use SLOT-NAME and a NEW-SLOT-VALUE."
+  (non-existent-resource-invariants resource)
+  (cid:create-resource resource)
+  (existent-resource-invariants resource)
+  (block import-resource
+    (let ((imported-resource
+	    (cid:import-resource (cid:steward resource) (type-of resource)
+				 :name (cid:name resource)
+				 :displayname (cid:displayname resource)
+				 :description (cid:description resource)
+				 :identifier (cid:resource-identifier resource))))
+      (assert-equalp
+       (cid:examine-resource resource)
+       (cid:examine-resource imported-resource))
+      (existent-resource-invariants imported-resource)
+      (cid:delete-resource imported-resource)
+      (non-existent-resource-invariants imported-resource)
+      (cid:update-instance-from-resource resource)
+      (non-existent-resource-invariants resource)
+      (cid:create-resource resource)
+      (existent-resource-invariants resource)))
+  (block modify-resource
+    (when slot-name
+      (setf (slot-value resource slot-name) new-slot-value)
+      (cid:update-resource-from-instance resource)
+      (existent-resource-invariants resource)))
+  (block delete-resource
+    (cid:delete-resource resource)
+    (non-existent-resource-invariants resource)))
 
 (define-testcase ensure-that-resources-are-created-only-once (resource)
   "Ensure that resources are created only once.
@@ -66,7 +93,7 @@ When CREATE-RESOURCE is called on an already created resource,
 it is expected that an ERROR is signalled. This is because
 we cannot guarantee that the existing resource is configured
 according to the instance slots."
-  (assert-t* (cid:resource-steward resource))
+  (assert-t* (cid:steward resource))
   (assert-nil (cid:resource-exists-p resource))
   (assert-nil (cid:resource-ready-p resource))
   (assert-nil (cid:resource-identifier resource))
@@ -80,7 +107,7 @@ according to the instance slots."
       simple-error))
 
 (define-testcase ensure-that-not-created-resources-cannot-be-deleted (resource)
-  (assert-t* (cid:resource-steward resource))
+  (assert-t* (cid:steward resource))
   (assert-nil (cid:resource-exists-p resource))
   (assert-nil (cid:resource-ready-p resource))
   (assert-nil (cid:resource-identifier resource))

@@ -16,9 +16,12 @@
 (define-testcase unit-tests ()
   (database-unit-test)
   (tenant-unit-test)
-  (project-unit-test))
+  (project-unit-test)
+  (steward-unit-test)
+  (phony-unit-test))
 
 (define-testcase component-tests ()
+  (steward-component-test)
   (docker-component-test)
   (build-component-test))
 

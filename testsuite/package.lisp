@@ -32,6 +32,7 @@
    #:assert-t*
    #:assert-nil
    #:assert-eq
+   #:assert-equalp
    #:assert-set-equal
    #:assert-string=
    #:assert-string-match
