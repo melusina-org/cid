@@ -18,7 +18,8 @@
   (tenant-unit-test)
   (project-unit-test)
   (steward-unit-test)
-  (phony-unit-test))
+  (phony-unit-test)
+  (local-filesystem-subtree-unit-test))
 
 (define-testcase component-tests ()
   (steward-component-test)

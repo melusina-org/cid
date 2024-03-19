@@ -18,11 +18,11 @@
     (populate-tenant-table)
     (populate-project-table)
     (populate-steward-tables)
-    (let* ((phony-steward
-	     (cid:find-steward "phony"
-			       :tenant "testsuite"
-			       :project "testproject"
-			       :steward-class 'cid:phony-steward)))
+    (let ((phony-steward
+	    (cid:find-steward "phony"
+			      :tenant "testsuite"
+			      :project "testproject"
+			      :steward-class 'cid:phony-steward)))
       (flet ((make-phony-resource ()
 	       (cid:make-phony-resource :phony-steward phony-steward
 					:name "phony-1"

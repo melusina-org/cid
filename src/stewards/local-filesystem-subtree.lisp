@@ -89,7 +89,6 @@ In this subtree, text files can be created and updated."))
 Deeper hierarchies are not implemented." pathname))
     (apply #'make-instance 'local-text-file
 	   :steward local-filesystem-subtree
-	   :identifier (namestring pathname)
 	   (remove-property initargs :local-filesystem-subtree))))
 
 (defmethod examine-resource append ((instance local-text-file))
@@ -101,29 +100,87 @@ Deeper hierarchies are not implemented." pathname))
      :content content
      :checksum checksum)))
 
+(defun local-text-file-absolute-pathname (local-text-file)
+  (check-type local-text-file local-text-file)
+  (merge-pathnames
+   (slot-value local-text-file 'pathname)
+   (slot-value (slot-value local-text-file 'steward) 'pathname)))
+
 (defmethod update-instance-from-resource ((instance local-text-file))
-  (let ((absolute-pathname
-	  (merge-pathnames
-	   (pathname
-	    (slot-value instance 'identifier))
-	   (slot-value (slot-value instance 'steward) 'pathname))))
-    (unless (probe-file absolute-pathname)
-      (with-slots (state) instance
-	(setf state nil)
-	(return-from update-instance-from-resource instance)))
-    (flet ((file-mode (pathname)
-	     (osicat-posix:stat-mode (osicat-posix:stat pathname)))
-	   (file-content (pathname)
-	     (with-output-to-string (contents)
-	       (with-open-file (input pathname :external-format (slot-value instance 'external-format))
-		 (loop :for char = (read-char input nil nil)
-		       :while char
-		       :do (write-char char contents))))))
+  (flet ((ensure-pathname-is-set-when-identifier-is-set ()
+	   (when (and (slot-boundp instance 'identifier)
+		      (slot-value instance 'identifier)
+		      (not (slot-boundp instance 'pathname)))
+	     (setf (slot-value instance 'pathname)
+		   (pathname (slot-value instance 'identifier)))))
+	 (return-early-when-file-does-not-exist (absolute-pathname)
+	   (unless (probe-file absolute-pathname)
+	     (with-slots (state identifier) instance
+	       (setf state nil
+		     identifier nil)
+	       (return-from update-instance-from-resource instance))))
+	 (file-mode (pathname)
+	   (osicat-posix:stat-mode (osicat-posix:stat pathname)))
+	 (file-content (pathname)
+	   (with-output-to-string (contents)
+	     (with-open-file (input pathname :external-format (slot-value instance 'external-format))
+	       (loop :for char = (read-char input nil nil)
+		     :while char
+		     :do (write-char char contents))))))
+    (ensure-pathname-is-set-when-identifier-is-set)
+    (let ((absolute-pathname
+	    (local-text-file-absolute-pathname instance)))
+      (return-early-when-file-does-not-exist absolute-pathname)
       (with-slots (identifier pathname state mode content checksum) instance
-	(setf pathname (pathname identifier)
+	(setf identifier (namestring pathname)
 	      mode (file-mode absolute-pathname)
 	      content (file-content absolute-pathname)
 	      checksum (file-checksum absolute-pathname)
 	      state t)))))
+
+(defmethod create-resource ((instance local-text-file))
+  (flet ((return-early-when-file-already-exists (pathname)
+	   (unless (probe-file pathname)
+	     (resource-error 'create-resource instance
+			     "File already exists."
+			     "There is already an existing file under the pathname ~S
+therefore the local text file ~A cannot be created." pathname instance)))
+	 (create-empty-file (pathname)
+	   (let ((flags
+		   (logior osicat-posix:o-creat osicat-posix:o-trunc osicat-posix:o-wronly))
+		 (mode
+		   (slot-value instance 'mode)))
+	     (osicat-posix:close
+	      (osicat-posix:open pathname flags mode))))
+	 (write-content-to-file (pathname)
+	   (with-slots (mode external-format content) instance
+	     (with-open-file (output pathname :direction :output
+					      :external-format external-format
+					      :if-does-not-exist :error)
+	       (write-string content output)))))
+  (let ((absolute-pathname
+	  (local-text-file-absolute-pathname instance)))
+    (return-early-when-file-already-exists absolute-pathname)
+    (create-empty-file absolute-pathname)
+    (write-content-to-file absolute-pathname)
+    (update-instance-from-resource instance))))
+
+(defmethod delete-resource ((instance local-text-file))
+  (flet ((return-early-when-file-does-not-exist (pathname)
+	   (unless (probe-file pathname)
+	     (with-slots (state identifier) instance
+	       (resource-error 'delete-resource instance
+			       "Cannot delete non-existent file."
+			       "There is no file under the pathname ~S
+and therefore the local text file ~A cannot be deleted." pathname instance))))
+	 (update-state-and-identifier ()
+	   (with-slots (identifier state) instance
+	     (setf state nil
+		   identifier nil))))
+    (let ((absolute-pathname
+	    (local-text-file-absolute-pathname instance)))
+      (return-early-when-file-does-not-exist absolute-pathname)
+      (delete-file absolute-pathname)
+      (update-state-and-identifier))))
 
 ;;;; End of file `local-filesystem-subtree.lisp'

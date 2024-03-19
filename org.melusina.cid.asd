@@ -44,7 +44,8 @@
 		 (:file "steward")
 		 (:file "resource")
 		 (:module "stewards"
-		  :components ((:file "phony")))
+		  :components ((:file "phony")
+			       (:file "local-filesystem-subtree")))
 		 (:file "entry-point")))))
 
 (asdf:defsystem #:org.melusina.cid/console
@@ -117,6 +118,7 @@
   :license "MIT License"
   :depends-on (#:drakma
 	       #:org.melusina.confidence
+	       #:org.melusina.rashell
 	       #:org.melusina.cid
 	       #:org.melusina.cid/development
 	       #:org.melusina.cid/operation
@@ -133,7 +135,8 @@
 		 (:file "steward")
 		 (:file "resource")
 		 (:module "stewards"
-		  :components ((:file "phony")))))
+		  :components ((:file "phony")
+			       (:file "local-filesystem-subtree")))))
    (:module "libexec"
     :components
     ((:module "lisp"

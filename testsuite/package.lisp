@@ -15,6 +15,7 @@
   (:use #:common-lisp)
   (:local-nicknames
    (#:confidence #:org.melusina.confidence)
+   (#:rashell #:org.melusina.rashell)
    (#:cid #:org.melusina.cid)
    (#:console #:org.melusina.cid/console)
    (#:docker #:org.melusina.cid/docker)
