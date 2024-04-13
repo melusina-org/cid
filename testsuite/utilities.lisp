@@ -134,9 +134,17 @@ This uses `DRAKMA:HTTP-REQUEST' to perform the request."
 	       (setf (values body status-code headers uri stream close)
 		     (apply 'drakma:http-request actual-url actual-args))))
 	(restart-case (perform-request-and-store-response)
-	  (retry-http-request ()
+	  (http-retry ()
+	    (perform-request-and-store-response))
+	  (http-sleep-and-retry ()
+	    (sleep 5)
 	    (perform-request-and-store-response)))))
     (values http-reply)))
+
+(defun restart-with-http-sleep-and-retry (condition)
+  (declare (ignore condition))
+  (let ((restart (find-restart 'http-sleep-and-retry)))
+    (when restart (invoke-restart restart))))
 
 (defparameter *http-reply* nil
   "The HTTP-REPLY under scrutiny.")

@@ -24,45 +24,32 @@
 	  (operation:project-hostname project))
 	(port
 	  (operation:project-http-port project)))
-    (flet ((trac-location (&rest location)
-	     (apply
-	      #'concatenate
-	      'string
-	      "/trac/"
-	      instance
-	      (loop :for location-part :in location
-		    :collect "/"
-		    :collect location-part))))
-      (with-http-reply
-	  ((trac-location "wiki")
-	   :hostname hostname
-	   :port port)
-	(assert-http-status 200)
-	(assert-http-body "Welcome to Trac"))
-      (with-http-reply
-	  ((trac-location "timeline")
-	   :hostname hostname
-	   :port port)
-	(assert-http-status 200)
-	(assert-http-body "Timeline"))
-      (with-http-reply
-	  ((trac-location "roadmap")
-	   :hostname hostname
-	   :port port)
-	(assert-http-status 200)
-	(assert-http-body "Roadmap"))
-      (with-http-reply
-	  ((trac-location "report")
-	   :hostname hostname
-	   :port port)
-	(assert-http-status 200)
-	(assert-http-body "Available Reports"))
-      (with-http-reply
-	  ((trac-location "search")
-	   :hostname hostname
-	   :port port)
-	(assert-http-status 200)
-	(assert-http-body "Search")))))
+    (labels ((trac-location (&rest location)
+	       (apply
+		#'concatenate
+		'string
+		"/trac/"
+		instance
+		(loop :for location-part :in location
+		      :collect "/"
+		      :collect location-part)))
+	     (validate-location-1 (trac-location http-body http-status)
+	       (with-http-reply
+		   ((trac-location trac-location)
+		    :hostname hostname
+		    :port port)
+		 (assert-http-status http-status)
+		 (assert-http-body http-body)))
+	     (validate-location (trac-location http-body &optional (http-status 200))
+	       (handler-bind ((stream-error #'restart-with-http-sleep-and-retry))
+		 (validate-location-1 trac-location http-body http-status))))
+      (loop :for (trac-location . http-body)
+	    :in '(("wiki" .  "Welcome to Trac")
+		  ("timeline" . "Timeline")
+		  ("roadmap" . "Roadmap")
+		  ("report" . "Available Reports")
+		  ("search" . "Search"))
+	    :do (validate-location trac-location http-body)))))
 
 (define-testcase validate-project-lifecycle ()
   (let* ((name
