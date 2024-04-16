@@ -35,19 +35,27 @@
 (define-testcase tenant-unit-test ()
   (with-test-database
     (populate-tenant-table)
-    (assert-string=
-     "Test Tenant"
-     (cid:displayname (cid:find-tenant "testsuite")))
-    (assert-condition
-	(clsql:update-records-from-instance
-	 (cid:make-tenant :name "testsuite"
-			  :displayname "Alternative Display Name"))
-	error)
-    (assert-string-match
-     (with-output-to-string (*standard-output*)
-       (describe (cid:find-tenant "testsuite")))
-     "*TENANT testsuite Test Tenant*")
-    (assert-nil
-     (cid:find-tenant "This is not an actual tenant name"))))
+    (flet ((ensure-that-find-tenant-returns-tenant-for-known-name ()
+	     (assert-string=
+	      "Test Tenant"
+	      (cid:displayname (cid:find-tenant "testsuite"))))
+	   (ensure-that-find-tenant-returns-nil-for-unknown-name ()
+	     (assert-nil
+	      (cid:find-tenant "This is not an actual tenant name")))
+	   (ensure-that-make-tenant-with-taken-name-fails ()
+	     (assert-condition
+		 (clsql:update-records-from-instance
+		  (cid:make-tenant :name "testsuite"
+				   :displayname "Alternative Display Name"))
+		 error))
+	   (ensure-that-describe-tenant-follows-the-expected-format ()
+	     (assert-string-match
+	      (with-output-to-string (*standard-output*)
+		(describe (cid:find-tenant "testsuite")))
+	      "*TENANT testsuite Test Tenant*")))
+      (ensure-that-find-tenant-returns-tenant-for-known-name)
+      (ensure-that-find-tenant-returns-nil-for-unknown-name)
+      (ensure-that-make-tenant-with-taken-name-fails)
+      (ensure-that-describe-tenant-follows-the-expected-format))))
 
 ;;;; End of file `tenant.lisp'

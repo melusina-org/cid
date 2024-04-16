@@ -55,54 +55,56 @@
 	  :for steward = (apply #'make-steward example)
 	  :do (clsql:update-records-from-instance steward))))
 
-(define-testcase ensure-that-steward-joined-slots-are-set (instance)
-  (assert-t (slot-boundp instance 'cid::tenant-name))
-  (assert-t (slot-boundp instance 'cid::project-name))
-  (assert-t* (slot-value instance 'cid:tenant))
-  (assert-t* (slot-value instance 'cid:project)))
-
-(define-testcase ensure-that-find-steward-produces-an-acceptable-result (&key key name steward-class tenant project
-									      make-steward)
-  (declare (ignore key make-steward))
-  (let ((steward
-	  (cid:find-steward name :tenant tenant :project project :steward-class steward-class)))
-    (assert-type steward 'cid:steward)
-    (assert-type steward steward-class)
-    (ensure-that-steward-joined-slots-are-set steward)))
-
-(define-testcase ensure-that-configure-steward-returns-the-instance (steward)
-  (assert-eq steward (cid:configure-steward steward)))
-
-(define-testcase ensure-that-steward-can-be-configured (&key key name steward-class tenant project
-							     make-steward)
-  (declare (ignore key make-steward))
-  (let ((steward
-	  (cid:find-steward name :tenant tenant :project project :steward-class steward-class)))
-    (assert-type steward 'cid:steward)
-    (assert-type steward steward-class)
-    (with-slots ((instance-name cid::name)
-		 (instance-project cid::project-name)
-		 (instance-tenant cid::tenant-name))
-	steward
-      (assert-string= name instance-name)
-      (assert-string= project instance-project)
-      (assert-string= tenant instance-tenant)
-      (ensure-that-configure-steward-returns-the-instance steward))))
-
 (define-testcase steward-unit-test (&optional key)
-  (with-test-database
-    (populate-tenant-table)
-    (populate-project-table)
-    (populate-steward-tables)
-    (loop :for example :in (select-steward-examples-by-key key)
-	  :do (apply #'ensure-that-find-steward-produces-an-acceptable-result example))))
+  (flet ((ensure-that-find-steward-produces-an-acceptable-result (&key key name steward-class tenant project
+								       make-steward)
+	   (declare (ignore key make-steward))
+	   (flet ((ensure-that-steward-has-expected-type (instance)
+		    (assert-type instance 'cid:steward)
+		    (assert-type instance steward-class))
+		  (ensure-that-steward-joined-slots-are-set (instance)
+		    (assert-t (slot-boundp instance 'cid::tenant-name))
+		    (assert-t (slot-boundp instance 'cid::project-name))
+		    (assert-t* (slot-value instance 'cid:tenant))
+		    (assert-t* (slot-value instance 'cid:project)))
+		  (ensure-that-steward-was-created-with-the-provided-values (instance)
+		    (with-slots ((instance-name cid::name)
+				 (instance-project cid::project-name)
+				 (instance-tenant cid::tenant-name))
+			instance
+		      (assert-string= name instance-name)
+		      (assert-string= project instance-project)
+		      (assert-string= tenant instance-tenant))))
+	     (let ((steward
+		     (cid:find-steward name :tenant tenant :project project :steward-class steward-class)))
+	       (ensure-that-steward-has-expected-type steward)
+	       (ensure-that-steward-joined-slots-are-set steward)
+	       (ensure-that-steward-was-created-with-the-provided-values steward)))))
+    (with-test-database
+      (populate-tenant-table)
+      (populate-project-table)
+      (populate-steward-tables)
+      (loop :for example :in (select-steward-examples-by-key key)
+	    :do (apply #'ensure-that-find-steward-produces-an-acceptable-result example)))))
 
 (define-testcase steward-component-test (&optional key)
-  (with-test-database
-    (populate-tenant-table)
-    (populate-project-table)
-    (populate-steward-tables)
-    (loop :for example :in (select-steward-examples-by-key key)
-	  :do (apply #'ensure-that-steward-can-be-configured example))))
+  (flet ((ensure-that-steward-can-be-configured (&key key name steward-class tenant project
+						      make-steward)
+	   (declare (ignore key make-steward))
+	   (flet ((ensure-that-configure-steward-returns-the-instance (steward)
+		    (assert-eq steward (cid:configure-steward steward)))
+		  (ensure-that-steward-has-expected-type (instance)
+		    (assert-type instance 'cid:steward)
+		    (assert-type instance steward-class)))
+	     (let ((steward
+		     (cid:find-steward name :tenant tenant :project project :steward-class steward-class)))
+	       (ensure-that-steward-has-expected-type steward)
+	       (ensure-that-configure-steward-returns-the-instance steward)))))
+    (with-test-database
+      (populate-tenant-table)
+      (populate-project-table)
+      (populate-steward-tables)
+      (loop :for example :in (select-steward-examples-by-key key)
+	    :do (apply #'ensure-that-steward-can-be-configured example)))))
 
 ;;;; End of file `steward.lisp'
