@@ -131,16 +131,15 @@ Deeper hierarchies are not implemented." pathname))
     (let ((absolute-pathname
 	    (local-text-file-absolute-pathname instance)))
       (return-early-when-file-does-not-exist absolute-pathname)
-      (with-slots (identifier pathname state mode content checksum) instance
-	(setf identifier (namestring pathname)
-	      mode (file-mode absolute-pathname)
+      (with-slots (pathname state mode content checksum) instance
+	(setf mode (file-mode absolute-pathname)
 	      content (file-content absolute-pathname)
 	      checksum (file-checksum absolute-pathname)
 	      state t)))))
 
 (defmethod create-resource ((instance local-text-file))
   (flet ((return-early-when-file-already-exists (pathname)
-	   (unless (probe-file pathname)
+	   (when (probe-file pathname)
 	     (resource-error 'create-resource instance
 			     "File already exists."
 			     "There is already an existing file under the pathname ~S
@@ -163,15 +162,18 @@ therefore the local text file ~A cannot be created." pathname instance)))
     (return-early-when-file-already-exists absolute-pathname)
     (create-empty-file absolute-pathname)
     (write-content-to-file absolute-pathname)
+    (with-slots (identifier pathname) instance
+      (setf identifier (namestring pathname)))
     (update-instance-from-resource instance))))
 
 (defmethod delete-resource ((instance local-text-file))
   (flet ((return-early-when-file-does-not-exist (pathname)
 	   (unless (probe-file pathname)
 	     (with-slots (state identifier) instance
-	       (resource-error 'delete-resource instance
-			       "Cannot delete non-existent file."
-			       "There is no file under the pathname ~S
+	       (resource-no-longer-exists
+		'delete-resource instance
+		"Cannot delete non-existent file."
+		"There is no file under the pathname ~S
 and therefore the local text file ~A cannot be deleted." pathname instance))))
 	 (update-state-and-identifier ()
 	   (with-slots (identifier state) instance

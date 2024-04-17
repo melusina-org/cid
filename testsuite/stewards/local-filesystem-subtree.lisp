@@ -38,5 +38,4 @@
 	   :resource-type 'cid:local-text-file
 	   :make-resource #'make-local-text-file))))))
 
-
 ;;;; End of file `local-filesystem-subtree.lisp'

@@ -54,7 +54,7 @@ For phony resources, every step of the lifecycle is a no-operation."))
 
 (defun make-phony-resource (&rest initargs &key phony-steward name displayname description)
   "Make a phony resource."
-  (declare (ignore displayname description))
+  (declare (ignore name displayname description))
   (apply #'make-instance 'phony-resource
 	 :steward phony-steward
 	 (remove-property initargs :phony-steward)))
@@ -85,14 +85,14 @@ This resource already exists."
   (with-slots (steward identifier state delete-error-p) instance
     (with-slots (resource-identifiers) steward
       (unless (member identifier resource-identifiers :test #'string=)
-	(resource-error
-	 'create-resource instance
+	(resource-no-longer-exists
+	 'delete-resource instance
 	 "Cannot delete phony resource, resource does not exist."
 	 "It is not possible for steward ~A to delete the phony resource ~A.
 This resource does not actually exist."
 	 steward instance))
       (when delete-error-p
-	(resource-error
+	(resource-no-longer-exists
 	 'delete-resource instance
 	 "Cannot delete phony resource."
 	 "It is not possible for steward ~A to delete the phony resource ~A.

@@ -52,6 +52,7 @@
    #:resource-tenant
    #:resource-properties
    #:resource-error
+   #:resource-no-longer-exists
    #:resource-confirmation
    #:with-resource-confirmation
    #:resource-exists-p

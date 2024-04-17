@@ -111,7 +111,7 @@ to initialise this resource was a ~A."
 
 
 ;;;;
-;;;; Resource Conditions
+;;;; Resource Error
 ;;;;
 
 (define-condition resource-error (error)
@@ -139,32 +139,75 @@ error DESCRIPTIONS used by the same steward.")
 This longer EXPLANATION is a text that could be presented to the console
 operator.  It is allowed to feature details specific to the operation or
 the resource, so that it is usually unsafe to publish this EXPLANATION."))
-  (:report
-   (lambda (condition stream)
-     (with-slots (name steward) (resource-error-resource condition)
-       (let ((*print-circle* nil))
-	 (format stream "~&Operation on resource ~A failed.
-
-The steward ~A trying to ~A the resource ~A met an error condition.
-~A" 
-		 name
-		 (slot-value (find-steward steward) 'name)
-		 (resource-error-operation condition) name
-		 (resource-error-description condition))
-	 (with-slots (explanation) condition
-	   (when explanation
-	     (format stream "~&~A" explanation)))))))
+  (:report describe-resource-error)
   (:documentation
    "This condition is signaled when a steward operating a resource meets an error condition."))
 
+(defun describe-resource-error (condition stream)
+  (with-slots (name steward) (resource-error-resource condition)
+    (let ((*print-circle* nil))
+      (format stream "~&Operation on resource ~A failed.
+
+The steward ~A trying to ~A the resource ~A met an error condition.
+~A" 
+	      name
+	      (slot-value (find-steward steward) 'name)
+	      (resource-error-operation condition) name
+	      (resource-error-description condition))
+      (with-slots (explanation) condition
+	(when explanation
+	  (format stream "~&~A" explanation))))))
+
 (defun resource-error (operation resource description &optional control-string &rest format-arguments)
   "Signal a RESOURCE-ERROR."
-  (signal 'resource-error
-	  :operation operation
-	  :resource resource
-	  :description description
-	  :explanation (when control-string
-			 (apply #'format nil control-string format-arguments))))
+  (error 'resource-error
+	 :operation operation
+	 :resource resource
+	 :description description
+	 :explanation (when control-string
+			(apply #'format nil control-string format-arguments))))
+
+
+;;;;
+;;;; Resource no Longer Exists
+;;;;
+
+(define-condition resource-no-longer-exists (resource-error)
+  nil
+  (:report describe-resource-no-longer-exists)
+  (:documentation
+   "This condition is signaled when a steward operating a resource realises the actual
+resource no longer exists."))
+
+(defun describe-resource-no-longer-exists (condition stream)
+  (with-slots (name steward) (resource-error-resource condition)
+    (let ((*print-circle* nil))
+      (format stream "~&Operation on resource ~A failed.
+
+The steward ~A trying to ~A the resource ~A realised that the actual
+resource no longer exists.
+~A" 
+	      name
+	      (slot-value (find-steward steward) 'name)
+	      (resource-error-operation condition) name
+	      (resource-error-description condition))
+      (with-slots (explanation) condition
+	(when explanation
+	  (format stream "~&~A" explanation))))))
+
+(defun resource-no-longer-exists (operation resource description &optional control-string &rest format-arguments)
+  "Signal a RESOURCE-ERROR."
+  (error 'resource-no-longer-exists
+	 :operation operation
+	 :resource resource
+	 :description description
+	 :explanation (when control-string
+			(apply #'format nil control-string format-arguments))))
+
+
+;;;;
+;;;; Resource Confirmation
+;;;;
 
 (define-condition resource-confirmation (serious-condition)
   ((operation
@@ -283,12 +326,22 @@ This returns the RESOURCE instance."))
 This returns the RESOURCE instance."))
 
 (defmethod delete-resource :around ((instance resource))
-  "Enforce calling convention and ensure that we do not delete a resource that does not exist."
+  "Enforce calling convention and ensure that we do not delete a resource that does not exist.
+When a RESOURCE-NO-LONGER-EXISTS condition is met, a CONTINUE restart is made available allowing
+to assume the delete operation was succesful."
   (with-slots (name identifier state) instance
     (unless state
       (warn "Cannot delete the resource ~A (~A) as it does not exist." name identifier)
       (return-from delete-resource instance))
-    (call-next-method)
+    (restart-case (call-next-method)
+      (continue ()
+	:report
+	"Ignore no longer existing resource and assume the delete operation was successful."
+	:test
+	(lambda (condition)
+	  (and (typep condition 'resource-no-longer-exists)
+	       (eq (resource-error-operation condition) 'delete-resource)))
+	(values)))
     (when (eq state nil)
       (setf identifier nil)))
   (values instance))

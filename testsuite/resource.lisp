@@ -84,32 +84,13 @@ to update the resource we use SLOT-NAME and a NEW-SLOT-VALUE."
 	   (exercise-delete-resource (resource)
 	     (cid:delete-resource resource)))
       (non-existent-resource-invariants resource)
-      (cid:create-resource resource)
+      (cid:create-resource resource) 
       (existent-resource-invariants resource)
       (exercise-import-resource resource)
       (exercise-modify-resource resource)
       (existent-resource-invariants resource)
       (exercise-delete-resource resource)
       (non-existent-resource-invariants resource))))
-
-(define-testcase ensure-that-resources-are-created-only-once (resource)
-  "Ensure that resources are created only once.
-When CREATE-RESOURCE is called on an already created resource,
-it is expected that an ERROR is signalled. This is because
-we cannot guarantee that the existing resource is configured
-according to the instance slots."
-  (assert-t* (cid:steward resource))
-  (assert-nil (cid:resource-exists-p resource))
-  (assert-nil (cid:resource-ready-p resource))
-  (assert-nil (cid:resource-identifier resource))
-  (cid:create-resource resource)
-  (assert-t (cid:resource-exists-p resource))
-  (assert-t (cid:resource-ready-p resource))
-  (assert-t* (cid:examine-resource resource))
-  (assert-t* (cid:resource-identifier resource))
-  (assert-type (cid:resource-identifier resource) 'string)
-  (assert-condition (cid:create-resource resource)
-      simple-error))
 
 (define-testcase ensure-that-not-created-resources-cannot-be-deleted (resource)
   (assert-t* (cid:steward resource))
@@ -119,6 +100,38 @@ according to the instance slots."
   (assert-condition (cid:delete-resource resource)
       simple-warning))
 
+(define-testcase ensure-that-resources-are-created-only-once (resource)
+  "Ensure that resources are created only once.
+When CREATE-RESOURCE is called on an already created resource,
+it is expected that an ERROR is signalled. This is because
+we cannot guarantee that the existing resource is configured
+according to the instance slots."
+  (unwind-protect
+       (progn (assert-t* (cid:steward resource))
+	      (assert-nil (cid:resource-exists-p resource))
+	      (assert-nil (cid:resource-ready-p resource))
+	      (assert-nil (cid:resource-identifier resource))
+	      (cid:create-resource resource)
+	      (assert-t (cid:resource-exists-p resource))
+	      (assert-t (cid:resource-ready-p resource))
+	      (assert-t* (cid:examine-resource resource))
+	      (assert-t* (cid:resource-identifier resource))
+	      (assert-type (cid:resource-identifier resource) 'string)
+	      (assert-condition (cid:create-resource resource)
+		  simple-error))
+    (cid:delete-resource resource)))
+
+(define-testcase ensure-that-delete-signals-resource-no-longer-exists (resource)
+  (cid:create-resource resource)
+  (let ((imported-resource
+	  (cid:import-resource (cid:steward resource) (type-of resource)
+			       :name (cid:name resource)
+			       :displayname (cid:displayname resource)
+			       :description (cid:description resource)
+			       :identifier (cid:resource-identifier resource))))
+    (cid:delete-resource imported-resource)
+    (assert-condition (cid:delete-resource resource) cid:resource-no-longer-exists)))
+
 (define-testcase resource-unit-test (&key make-resource slot-name new-slot-value resource-type)
   (verify-steward-resource-relationships (funcall make-resource))
   (verify-resource-lifecycle-invariants (funcall make-resource)
@@ -126,6 +139,7 @@ according to the instance slots."
 					:new-slot-value new-slot-value)
   (ensure-that-not-created-resources-cannot-be-deleted (funcall make-resource))
   (ensure-that-resources-are-created-only-once (funcall make-resource))
+  (ensure-that-delete-signals-resource-no-longer-exists (funcall make-resource))
   (assert-type (funcall make-resource) 'cid:resource)
   (when resource-type
     (assert-type (funcall make-resource) resource-type)))
