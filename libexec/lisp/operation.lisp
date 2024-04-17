@@ -342,7 +342,7 @@
 (defun start-project (&optional (project *project*))
   (with-project-environment project
     (uiop:run-program
-     (list "docker-compose"
+     (list "docker" "compose"
 	   "--project-name" (project-name project)
 	   "--file" (namestring
 		     (project-docker-compose project))
@@ -353,7 +353,7 @@
 (defun stop-project (&optional (project *project*))
   (with-project-environment project
     (uiop:run-program
-     (list "docker-compose"
+     (list "docker" "compose"
 	   "--project-name" (project-name project)
 	   "--file" (namestring
 		     (project-docker-compose project))
@@ -364,11 +364,11 @@
 (defun delete-project (&optional (project *project*))
   (with-project-environment project
     (uiop:run-program
-     (list "docker-compose"
+     (list "docker" "compose"
 	   "--project-name" (project-name project)
 	   "--file" (namestring
 		     (project-docker-compose project))
-	   "rm")
+	   "rm" "--volumes" "--force")
      :output t
      :error-output t)
     (with-slots (pathname) project
