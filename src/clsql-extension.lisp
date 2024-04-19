@@ -23,7 +23,7 @@
   (declare (ignore database db-type))
   (pathname val))
 
-(defmethod clsql::database-get-type-specifier ((type (eql 'pathname)) args database db-type)
+(defmethod clsql-sys::database-get-type-specifier ((type (eql 'pathname)) args database db-type)
   (declare (ignore args database db-type))
   "VARCHAR(255)")
 
