@@ -45,7 +45,8 @@
 		 (:file "resource")
 		 (:module "stewards"
 		  :components ((:file "phony")
-			       (:file "local-filesystem-subtree")))
+			       (:file "local-filesystem-subtree")
+			       (:file "docker-engine")))
 		 (:file "entry-point")))))
 
 (asdf:defsystem #:org.melusina.cid/console
@@ -136,7 +137,8 @@
 		 (:file "resource")
 		 (:module "stewards"
 		  :components ((:file "phony")
-			       (:file "local-filesystem-subtree")))))
+			       (:file "local-filesystem-subtree")
+			       (:file "docker-engine")))))
    (:module "libexec"
     :components
     ((:module "lisp"

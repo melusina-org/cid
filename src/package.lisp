@@ -76,6 +76,11 @@
    #:make-local-filesystem-subtree
    #:local-text-file
    #:make-local-text-file
+   ;; Docker Engine
+   #:docker-engine
+   #:make-docker-engine
+   #:docker-volume
+   #:make-docker-volume
    ))
 
 (in-package #:org.melusina.cid)

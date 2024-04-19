@@ -365,7 +365,12 @@ on its IDENTIFIER, then the IDENTIFIER is wiped and NIL is returned."))
 		    "Cannot update instance from resource without a resource identifier."
 		    "The resource instance ~A has no resource identifier attached
 it is therefore impossible to examine the resource attached to this identifier." instance))		    
-  (call-next-method)
+  (handler-case (call-next-method)
+    (resource-no-longer-exists (condition)
+      (declare (ignore condition))
+      (with-slots (state identifier) instance
+	(setf state nil
+	      identifier nil))))
   (values instance))
 
 (defgeneric update-resource-from-instance (instance)
@@ -426,8 +431,11 @@ imports it into the current system by creating a resource for it."
    "List the identifiers for resources of RESOURCE-CLASS known by STEWARD.
 These resources can be imported."))
 
-(defun list-resources (steward resource-class)
-  "List resources of RESOURCE-CLASS known by STEWARD."
+(defgeneric list-resources (steward resource-class)
+  (:documentation
+   "List resources of RESOURCE-CLASS known by STEWARD."))
+
+(defmethod list-resources (steward resource-class)
   (loop :for identifier :in (list-resource-identifiers steward resource-class)
 	:collect (import-resource
 		  steward

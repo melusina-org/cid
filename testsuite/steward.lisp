@@ -28,6 +28,13 @@
     :name "phony"
     :tenant "testsuite"
     :project "testproject"
+    :make-steward nil)
+   (list
+    :key :docker-engine
+    :steward-class 'cid:docker-engine
+    :name "local-docker-engine"
+    :tenant "testsuite"
+    :project "testproject"
     :make-steward nil))
   "Some steward definitions that can be used in the testsuites.")
 

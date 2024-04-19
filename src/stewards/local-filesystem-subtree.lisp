@@ -57,7 +57,7 @@ In this subtree, text files can be created and updated."))
     :initarg :pathname
     :documentation "The pathname of the file relative to its stweward.")
    (mode
-    :type int
+    :type integer
     :initarg :mode
     :initform #o644)
    (external-format

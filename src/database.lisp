@@ -21,7 +21,11 @@
   "The connection specification for the database.")
 
 (defparameter *database-application-class-list*
-  '(tenant project phony-steward phony-resource)
+  '(tenant project
+    phony-steward phony-resource
+    local-filesystem-subtree local-text-file
+    docker-engine docker-volume
+    )
   "The list of application classes to initialise
 when connecting to the database for the first time.")
 
