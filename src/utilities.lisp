@@ -107,4 +107,54 @@
   (unless (portable-filename-character-set-p string)
     (error "The string ~A does not consist of characters form the portable set." string)))
 
+
+;;;;
+;;;; Extract JSON Fields
+;;;;
+
+(defun extract-json-fields (string fields)
+  "Extract FIELDS from TEXT and return them in a property list.
+The items of the FIELDS specification describe how to extract fields
+from the text.  Each item in the FIELDS specification is a property
+list with the following entries:
+
+  :NAME STRING
+    The NAME of the object field where the value is stored.
+  :TYPE SYMBOL
+    The TYPE of the value. This is one of
+      'INTEGER, 'STRING, '(OR STRING NULL), '(LIST STRING)
+  :PROPERTY KEYWORD
+    The name of the PROPERTY where the value is to be stored.
+  :KEY FUNCTION
+    A function to apply on the field value.
+"
+  (flet ((extract-json-field (object &key name type property (key 'identity))
+	   (flet ((fetch ()
+		    (multiple-value-bind (value present-p) (gethash name object)
+		      (unless present-p
+			(error "Cannot read field ~A from JSON text." name))
+		      (alexandria:switch (type :test #'equal)
+			('integer
+			 (check-type value integer)
+			 (values value))
+			('string
+			 (string value))
+			('(or string null)
+			  (unless (string= "<none>" value)
+			    (string value)))
+			('(list string)
+			  (loop :for item :in value
+				:collect (string item)))
+			(t
+			 (error "Cannot extact field of type ~A from JSON text." type)))))
+		  (extract (text)
+		    (when text
+		      (funcall key text)))
+		  (pack (value)
+		    (list property value)))
+	     (pack (extract (fetch))))))
+    (loop :with object = (yason:parse string)
+	  :for field :in fields
+	  :nconc (apply #'extract-json-field object field))))
+
 ;;;; End of file `utilities.lisp'

@@ -1,0 +1,53 @@
+* Stewards must have a PROBE-RESOURCE method
+It seems useful for a steward to feature a PROBE-RESOURCE which
+returns a property list. This PROBE-RESOURCE method can be used to
+detect if a resource no longer exists and can be used by the
+UPDATE-INSTANCE-FROM-RESOURCE methods, so that updating instances can
+be implemented generically.
+
+* Resources do not need a NAME nor a DISPLAYNAME
+It does not seem useful for resources to have a mandatory NAME. A NAME
+or a DESIGNATOR could be useful when describing a software stack but
+requiring them prevents the IMPORT-RESOURCE to work properly. Hence
+resource DESIGNATORS seem to be indpendant from the resource themselve
+but are probably attached to the software stack themselve.
+
+* Steward must be aware if resource namespace is global or scoped to a project
+Some stewards create resources identified by a name provided by the
+user. The steward must be aware if the resource namespace is global or
+is scoped to a tenant/project.
+
+* Resource identifiers are sometimes only known after creating the resource
+
+* Resource identifiers and state should be initialised via initargs
+When we import a resource, we know the state and the identifier of the
+resource so that constructors should be able to set these values
+directly.
+
+* Resources must expose a predicate telling if it can be built or not
+* Resources must expose a predicate telling it they can be modified or not
+* Resources must expose a predicate telling it they can be deleted or not
+
+* Support persistance of BUILD-TIME-VARIABLES in DOCKER-IMAGE
+
+* Support FIND-RESOURCE STEWARD RESOURCE-TYPE FILTERS
+
+* Implement a DOCKER-IMAGE-BLUEPRINT
+The docker image blueprint contains all the details about building
+a docker image, so that the details are capsulated away from the
+DOCKER-IMAGE itself.
+
+* Select identity of docker images
+
+Working on objects that have multiple names and not unique identifiers
+requires extra care.
+
+~~~ console
+% docker image rm "sha256:3459897320cfdb7481333856a0900bf09acbb47566cab56d5a2c03f41508f271"
+Error response from daemon: conflict: unable to delete 3459897320cf (must be forced) - image is referenced in multiple repositories
+Exit Status > 0
+~~~
+
+It seems like we need a special category of resources or artefacts
+which can be tagged or labelled, so that we can have a consistent
+approach.  Maybe consider tags and artefacts distinct things?

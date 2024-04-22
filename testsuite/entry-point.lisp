@@ -19,7 +19,8 @@
   (project-unit-test)
   (steward-unit-test)
   (phony-unit-test)
-  (local-filesystem-subtree-unit-test))
+  (local-filesystem-subtree-unit-test)
+  (docker-engine-unit-test))
 
 (define-testcase component-tests ()
   (steward-component-test)

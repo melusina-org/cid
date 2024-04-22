@@ -316,7 +316,7 @@ This returns the RESOURCE instance."))
   "Enforce calling convention and ensure that we do not recreate a resource that already exists."
   (with-slots (name identifier state) instance
     (when state
-      (cerror "Cannot create the resource ~A (~A) as it already exists." name identifier)
+      (cerror "Recreate the resource." "Cannot create the resource ~A (~A) as it already exists." name identifier)
       (return-from create-resource instance)))
   (call-next-method)
   (values instance))
@@ -421,6 +421,7 @@ imports it into the current system by creating a resource for it."
     (unless (resource-exists-p instance)
       (resource-error
        'import-resource
+       instance
        "Resource not found"
        "The resource ~S was not found by steward ~A and it is impossible to import it."
        identifier steward))
