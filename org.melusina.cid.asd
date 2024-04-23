@@ -30,7 +30,6 @@
 	       #:clsql
 	       #:clsql-sqlite3
 	       #:ironclad
-	       #:osicat
 	       #:yason
 	       #:org.melusina.cid/clsql-extension)
   :components

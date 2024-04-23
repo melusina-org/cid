@@ -120,7 +120,13 @@ Deeper hierarchies are not implemented." pathname))
 		     identifier nil)
 	       (return-from update-instance-from-resource instance))))
 	 (file-mode (pathname)
-	   (osicat-posix:stat-mode (osicat-posix:stat pathname)))
+	   (flet ((stat ()
+		    (uiop:run-program
+		     (list "stat" "-f" "%Dp" (namestring pathname))
+		     :output :string))
+		  (clip (mode)
+		    (logand mode #o777)))
+	     (clip (parse-integer (stat)))))
 	 (file-content (pathname)
 	   (with-output-to-string (contents)
 	     (with-open-file (input pathname :external-format (slot-value instance 'external-format))
@@ -145,12 +151,13 @@ Deeper hierarchies are not implemented." pathname))
 			     "There is already an existing file under the pathname ~S
 therefore the local text file ~A cannot be created." pathname instance)))
 	 (create-empty-file (pathname)
-	   (let ((flags
-		   (logior osicat-posix:o-creat osicat-posix:o-trunc osicat-posix:o-wronly))
-		 (mode
-		   (slot-value instance 'mode)))
-	     (osicat-posix:close
-	      (osicat-posix:open pathname flags mode))))
+	   (let ((octal-mode
+		   (write-to-string 
+		    (slot-value instance 'mode)
+		    :base 8))
+		 (path
+		   (namestring pathname)))
+	     (uiop:run-program (list "install" "-m" octal-mode "/dev/null" path))))
 	 (write-content-to-file (pathname)
 	   (with-slots (mode external-format content) instance
 	     (with-open-file (output pathname :direction :output
