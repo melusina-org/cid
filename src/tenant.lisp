@@ -17,34 +17,47 @@
 
 (clsql:def-view-class tenant (named-trait)
   nil
-  (:base-table tenant))
-
-(defmethod address-components ((instance tenant))
-  '())
-
-(defun list-tenants ()
-  "List existing tenants."
-  (clsql:select 'tenant :flatp t))
-
-(defun find-tenant (designator)
-  "Find the tenant associated to DESIGNATOR."
-  (flet ((find-by-name (name)
-	   (caar (clsql:select 'tenant :where [= [slot-value 'tenant 'name] name]))))
-    (etypecase designator
-      (tenant
-       designator)
-      (string
-       (find-by-name designator))
-      (null
-       nil))))
+  (:base-table tenant)
+  (:documentation "The class representing a TENANT.
+When a CLSQL database is connected, tenants can be persisted on this database.
+The contents of such a database can be examined with LIST-TENANTS
+and FIND-TENANT."))
 
 (defun make-tenant (&rest initargs &key name displayname)
   "Make a TENANT with the given attributes."
   (declare (ignore name displayname))
   (apply #'make-instance 'tenant initargs))
 
+(defmethod address-components ((instance tenant))
+  '())
+
+(defun list-tenants ()
+  "List existing tenants.
+When a CLSQL database is connected, the list of tenants existing
+in the database is returned."
+  (clsql:select 'tenant :flatp t))
+
+(defun find-tenant (designator)
+  "Find the tenant associated to DESIGNATOR.
+When DESIGNATOR is a string, it is used as a primary key to search
+the table of persisted tenants in a connected CLSQL database."
+  (flet ((find-tenant-by-name (name)
+	   (caar (clsql:select 'tenant :where [= [slot-value 'tenant 'name] name]))))
+    (etypecase designator
+      (tenant
+       designator)
+      (string
+       (find-tenant-by-name designator))
+      (null
+       nil))))
+
+
+;;;;
+;;;; Tenant Trait
+;;;;
+
 (defparameter *tenant* nil
-  "The current TENANT used in operations.")
+  "The current TENANT used when creating projects, stewards and resources.")
 
 (clsql:def-view-class tenant-trait nil
   ((tenant-name
@@ -79,7 +92,8 @@ based on provided values."))
 	 (finalize-tenant-name-slot ()
 	   (when (and (slot-boundp instance 'tenant)
 		      (not (slot-boundp instance 'tenant-name)))
-	     (setf (slot-value instance 'tenant-name) (name (slot-value instance 'tenant))))))
+	     (setf (slot-value instance 'tenant-name)
+		   (name (slot-value instance 'tenant))))))
     (finalize-tenant-slot)
     (finalize-tenant-name-slot)))
 

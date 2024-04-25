@@ -8,11 +8,13 @@ Tenants define a scope for software stack deployments, users and
 projects. They represent organisational units of any size.
 
 Some example of a tenant can be an individual, a team, an external
-contributor to a team, a project gathering a dozen of teams or a large
-organisation.
+contributor to a team, a large organisation gathering dozens of
+teams, and so on.
 
 @section The Tenants Dictionary
 
+@include include/class-org.melusina.cid-tenant.texinfo
 @include include/fun-org.melusina.cid-make-tenant.texinfo
 @include include/fun-org.melusina.cid-find-tenant.texinfo
 @include include/fun-org.melusina.cid-list-tenants.texinfo
+@include include/var-org.melusina.cid-star-tenant-star.texinfo

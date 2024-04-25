@@ -17,13 +17,24 @@
 
 (clsql:def-view-class project (named-trait tenant-trait)
   nil
-  (:base-table project))
+  (:base-table project)
+  (:documentation "The class representing a PROJECT.
+When a CLSQL database is connected, projects can be persisted on this database.
+The contents of such a database can be examined with LIST-PROJECTS
+and FIND-PROJECT."))
+
+(defun make-project (&rest initargs &key name displayname tenant)
+  "Make a PROJECT with the given attributes."
+  (declare (ignore name displayname tenant))
+  (apply #'make-instance 'project initargs))
 
 (defmethod address-components ((instance project))
   '(tenant-name))
 
 (defun list-projects (&key (tenant *tenant*))
-  "List existing tenants."
+  "List existing projects.
+When a CLSQL database is connected, the list of projects existing
+in the database is returned."
   (flet ((return-early-if-tenant-does-not-exist ()
 	   (setf tenant (find-tenant tenant))
 	   (unless tenant
@@ -63,13 +74,8 @@
       (null
        nil))))
 
-(defun make-project (&rest initargs &key name displayname tenant)
-  "Make a PROJECT with the given attributes."
-  (declare (ignore name displayname tenant))
-  (apply #'make-instance 'project initargs))
-
 (defparameter *project* nil
-  "The current PROJECT used in operations.")
+  "The current PROJECT used when creating stewards and resources.")
 
 (clsql:def-view-class project-trait nil
   ((project-name
@@ -113,7 +119,6 @@ based on provided values."))
 		      (typep (slot-value instance 'project) 'project))
 	     (with-slots (project) instance
 	       (setf (slot-value instance 'tenant) (tenant project))))))
-    ;(break "initialize-instance :after ((instance project))")
     (initialize-tenant-slot-from-project-slot)
     (finalize-project-slot)
     (finalize-project-name-slot)))
