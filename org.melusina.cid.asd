@@ -49,6 +49,15 @@
 			       (:file "docker-engine")))
 		 (:file "entry-point")))))
 
+(asdf:defsystem #:org.melusina.cid/poc
+  :description "Proof of Concept for El Cid"
+  :author "Michaël Le Barbier"
+  :license "MIT License"
+  :depends-on (#:org.melusina.cid)
+  :components
+  ((:module "src"
+    :components ((:file "poc")))))
+
 (asdf:defsystem #:org.melusina.cid/console
   :description "Administration Console for El Cid"
   :author "Michaël Le Barbier"
@@ -154,6 +163,7 @@
   :license "MIT License"
   :depends-on (#:org.melusina.confidence
 	       #:org.melusina.cid
+	       #:org.melusina.cid/poc
 	       #:org.melusina.cid/colima
 	       #:org.melusina.cid/docker
 	       #:org.melusina.cid/console
