@@ -69,6 +69,9 @@ are also available at https://opensource.org/licenses/MIT
 * Project::
 * Steward::
 * Resource::
+* Phony::
+* Local Filesystem Subtree::
+* Docker Engine::
 @end menu
 
 @end ifnottex
@@ -85,6 +88,18 @@ are also available at https://opensource.org/licenses/MIT
 @node Steward, Resource, Project, Top
 @include steward.texinfo
 
-@node Resource, , Steward, Top
+@node Resource, Phony, Steward, Top
 @include resource.texinfo
+
+@chapter Stewards and Resources
+
+@node Phony, Local Filesystem Subtree, Top
+@include phony.texinfo
+
+@node Local Filesystem Subtree, Docker Engine, Top
+@include local-filesystem-subtree.texinfo
+
+@node Docker Engine, , Top
+@include docker-engine.texinfo
+
 @bye

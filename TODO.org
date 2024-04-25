@@ -31,6 +31,9 @@ directly.
 * Support persistance of BUILD-TIME-VARIABLES in DOCKER-IMAGE
 
 * Support FIND-RESOURCE STEWARD RESOURCE-TYPE FILTERS
+The FIND-RESOURCE feature can use a STEWARD as a repository and use
+custom FILTERS to select resources of a given type matching some
+criterias.
 
 * Implement a DOCKER-IMAGE-BLUEPRINT
 The docker image blueprint contains all the details about building

@@ -22,23 +22,3 @@ project.
 @include include/class-org.melusina.cid-steward.texinfo
 @include include/fun-org.melusina.cid-configure-steward.texinfo
 @include include/fun-org.melusina.cid-find-steward.texinfo
-
-@section Empty Steward
-@include include/class-org.melusina.cid-empty.texinfo
-@include include/fun-org.melusina.cid-make-empty.texinfo
-
-@section Docker Engine
-@include include/class-org.melusina.cid-docker-engine.texinfo
-@include include/fun-org.melusina.cid-make-docker-engine.texinfo
-
-@section Filesystem Subtree
-@include include/class-org.melusina.cid-filesystem-subtree.texinfo
-@include include/fun-org.melusina.cid-make-filesystem-subtree.texinfo
-
-@section Property List
-@include include/class-org.melusina.cid-property-list.texinfo
-@include include/fun-org.melusina.cid-make-property-list.texinfo
-
-@section MacOS Security
-@include include/class-org.melusina.cid-macos-security.texinfo
-@include include/fun-org.melusina.cid-make-macos-security.texinfo

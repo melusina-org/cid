@@ -1,0 +1,6 @@
+@section Local Filesystem Subtree
+
+@include include/class-org.melusina.cid-local-filesystem-subtree.texinfo
+@include include/class-org.melusina.cid-local-text-file.texinfo
+@include include/fun-org.melusina.cid-make-local-filesystem-subtree.texinfo
+@include include/fun-org.melusina.cid-make-local-text-file.texinfo
