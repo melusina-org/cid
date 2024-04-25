@@ -1,0 +1,6 @@
+@section Simulator and Simulations
+
+@include include/class-org.melusina.cid-simulator.texinfo
+@include include/fun-org.melusina.cid-make-simulator.texinfo
+@include include/class-org.melusina.cid-simulation.texinfo
+@include include/fun-org.melusina.cid-make-simulation.texinfo

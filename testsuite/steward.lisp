@@ -13,19 +13,19 @@
 
 (in-package #:org.melusina.cid/testsuite)
 
-(defun example-phony-steward ()
-  "Some PHONY steward that can be used in the testsuite."
-  (cid:find-steward "phony"
+(defun example-simulator ()
+  "Some SIMULATOR steward that can be used in the testsuite."
+  (cid:find-steward "simulator"
 		    :tenant "testsuite"
 		    :project "testproject"
-		    :steward-class 'cid:phony-steward))
+		    :steward-class 'cid:simulator))
 
 (defparameter *example-steward-definitions*
   (list
    (list
-    :key :phony
-    :steward-class 'cid:phony-steward
-    :name "phony"
+    :key :simulator
+    :steward-class 'cid:simulator
+    :name "simulator"
     :tenant "testsuite"
     :project "testproject"
     :make-steward nil)

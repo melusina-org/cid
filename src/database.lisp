@@ -22,7 +22,7 @@
 
 (defparameter *database-application-class-list*
   '(tenant project
-    phony-steward phony-resource
+    simulator simulation
     local-filesystem-subtree local-text-file
     docker-engine docker-volume
     )

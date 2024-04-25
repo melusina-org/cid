@@ -18,7 +18,7 @@
   (tenant-unit-test)
   (project-unit-test)
   (steward-unit-test)
-  (phony-unit-test)
+  (simulator-unit-test)
   (local-filesystem-subtree-unit-test)
   (docker-engine-unit-test))
 

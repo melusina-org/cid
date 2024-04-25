@@ -44,7 +44,7 @@
 		 (:file "steward")
 		 (:file "resource")
 		 (:module "stewards"
-		  :components ((:file "phony")
+		  :components ((:file "simulator")
 			       (:file "local-filesystem-subtree")
 			       (:file "docker-engine")))
 		 (:file "entry-point")))))
@@ -136,7 +136,7 @@
 		 (:file "steward")
 		 (:file "resource")
 		 (:module "stewards"
-		  :components ((:file "phony")
+		  :components ((:file "simulator")
 			       (:file "local-filesystem-subtree")
 			       (:file "docker-engine")))))
    (:module "libexec"

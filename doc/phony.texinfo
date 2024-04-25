@@ -1,6 +1,0 @@
-@section Phony Steward
-
-@include include/class-org.melusina.cid-phony-steward.texinfo
-@include include/fun-org.melusina.cid-make-phony-resource.texinfo
-@include include/class-org.melusina.cid-phony-resource.texinfo
-@include include/fun-org.melusina.cid-make-phony-steward.texinfo

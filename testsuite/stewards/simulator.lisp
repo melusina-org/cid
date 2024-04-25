@@ -1,4 +1,4 @@
-;;;; phony.lisp — Property List Stewards for El Cid
+;;;; simulator.lisp — Property List Stewards for El Cid
 
 ;;;; El Cid (https://github.com/melusina-org/cid)
 ;;;; This file is part of El Cid.
@@ -13,23 +13,23 @@
 
 (in-package #:org.melusina.cid/testsuite)
 
-(define-testcase phony-unit-test ()
+(define-testcase simulator-unit-test ()
   (with-test-database
     (populate-tenant-table)
     (populate-project-table)
     (populate-steward-tables)
-    (let ((phony-steward
-	    (cid:find-steward "phony"
+    (let ((simulator
+	    (cid:find-steward "simulator"
 			      :tenant "testsuite"
 			      :project "testproject"
-			      :steward-class 'cid:phony-steward)))
-      (flet ((make-phony-resource ()
-	       (cid:make-phony-resource :phony-steward phony-steward
-					:name "phony-1"
-					:displayname "Phony Resource #1"
-					:description "A phony resource used in the testsuite.")))
+			      :steward-class 'cid:simulator)))
+      (flet ((make-simulation ()
+	       (cid:make-simulation :simulator simulator
+				    :name "simulation-1"
+				    :displayname "Simulation Resource #1"
+				    :description "A simulation resource used in the testsuite.")))
 	(resource-unit-test
-	 :resource-type 'cid:phony-resource
-	 :make-resource #'make-phony-resource)))))
+	 :resource-type 'cid:simulation
+	 :make-resource #'make-simulation)))))
 
-;;;; End of file `phony.lisp'
+;;;; End of file `simulator.lisp'

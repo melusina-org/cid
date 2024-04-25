@@ -66,11 +66,11 @@
    #:list-resources
    #:list-resource-identifiers
    #:examine-differences-between-instance-and-resource
-   ;; Phony Stewards and Phony Resources
-   #:phony-steward
-   #:make-phony-steward
-   #:phony-resource
-   #:make-phony-resource
+   ;; Simulators and Simulations
+   #:simulator
+   #:make-simulator
+   #:simulation
+   #:make-simulation
    ;; Local Filesystem Subtree
    #:local-filesystem-subtree
    #:make-local-filesystem-subtree

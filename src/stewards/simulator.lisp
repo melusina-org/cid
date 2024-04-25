@@ -1,4 +1,4 @@
-;;;; phony.lisp — Phony Steward for El Cid
+;;;; simulator.lisp — Simulator Steward for El Cid
 
 ;;;; El Cid (https://github.com/melusina-org/cid)
 ;;;; This file is part of El Cid.
@@ -13,7 +13,7 @@
 
 (in-package #:org.melusina.cid)
 
-(clsql:def-view-class phony-steward (steward)
+(clsql:def-view-class simulator (steward)
   ((description
     :db-kind :virtual
     :allocation :class
@@ -26,18 +26,18 @@
     :documentation "The list of resource identifiers that have been created."))
   (:documentation
    "A steward for that do not actually own resources.
-For phony resources, every step of the lifecycle is a no-operation."))
+For simulator resources, every step of the lifecycle is a no-operation."))
 
-(defun make-phony-steward (&rest initargs &key tenant project name displayname pathname resource-identifiers)
-  "Make a PHONY-STEWARD with the given parameters."
+(defun make-simulator (&rest initargs &key tenant project name displayname pathname resource-identifiers)
+  "Make a SIMULATOR with the given parameters."
   (declare (ignore tenant project name displayname pathname resource-identifiers))
-  (apply #'make-instance 'phony-steward initargs))
+  (apply #'make-instance 'simulator initargs))
 
-(clsql:def-view-class phony-resource (resource)
+(clsql:def-view-class simulation (resource)
   ((steward-class
     :db-kind :virtual
     :type :symbol
-    :initform 'phony-steward
+    :initform 'simulator
     :allocation :class)
    (create-error-p
     :type boolean
@@ -50,52 +50,52 @@ For phony resources, every step of the lifecycle is a no-operation."))
     :initform nil
     :documentation "When set, this flag triggers an error when the resource is deleted."))
   (:documentation
-   "A phony resource, every step of the lifecycle is a no-operation."))
+   "A simulator resource, every step of the lifecycle is a no-operation."))
 
-(defun make-phony-resource (&rest initargs &key phony-steward name displayname description)
-  "Make a phony resource."
+(defun make-simulation (&rest initargs &key simulator name displayname description)
+  "Make a simulator resource."
   (declare (ignore name displayname description))
-  (apply #'make-instance 'phony-resource
-	 :steward phony-steward
-	 (remove-property initargs :phony-steward)))
+  (apply #'make-instance 'simulation
+	 :steward simulator
+	 (remove-property initargs :simulator)))
 
-(defmethod create-resource ((instance phony-resource))
+(defmethod create-resource ((instance simulation))
   (with-slots (steward name identifier state create-error-p) instance
     (with-slots (resource-identifiers) steward
       (when create-error-p
 	(resource-error
 	 'create-resource instance
-	 "Cannot create phony resource."
-	 "It is not possible for steward ~A to create the phony resource ~A.
+	 "Cannot create simulator resource."
+	 "It is not possible for steward ~A to create the simulator resource ~A.
 This resource is configured, so that an error is triggered when an attempt
 is made to create it."
 	 steward instance))
       (when (member name resource-identifiers :test #'string=)
 	(resource-error
 	 'create-resource instance
-	 "Cannot create phony resource, resource already exists."
-	 "It is not possible for steward ~A to create the phony resource ~A.
+	 "Cannot create simulator resource, resource already exists."
+	 "It is not possible for steward ~A to create the simulator resource ~A.
 This resource already exists."
 	 steward instance))
       (setf identifier name
 	    state t)
       (push name resource-identifiers))))
 
-(defmethod delete-resource ((instance phony-resource))
+(defmethod delete-resource ((instance simulation))
   (with-slots (steward identifier state delete-error-p) instance
     (with-slots (resource-identifiers) steward
       (unless (member identifier resource-identifiers :test #'string=)
 	(resource-no-longer-exists
 	 'delete-resource instance
-	 "Cannot delete phony resource, resource does not exist."
-	 "It is not possible for steward ~A to delete the phony resource ~A.
+	 "Cannot delete simulator resource, resource does not exist."
+	 "It is not possible for steward ~A to delete the simulator resource ~A.
 This resource does not actually exist."
 	 steward instance))
       (when delete-error-p
 	(resource-no-longer-exists
 	 'delete-resource instance
-	 "Cannot delete phony resource."
-	 "It is not possible for steward ~A to delete the phony resource ~A.
+	 "Cannot delete simulator resource."
+	 "It is not possible for steward ~A to delete the simulator resource ~A.
 This resource is configured, so that an error is triggered when an attempt
 is made to delete it."
 	 steward instance))
@@ -104,15 +104,15 @@ is made to delete it."
 	    identifier nil
 	    state nil))))
 
-(defmethod list-resource-identifiers ((steward phony-steward) (resource-class (eql 'phony-resource)))
+(defmethod list-resource-identifiers ((steward simulator) (resource-class (eql 'simulation)))
   (slot-value steward 'resource-identifiers))
 
-(defmethod update-instance-from-resource ((instance phony-resource))
+(defmethod update-instance-from-resource ((instance simulation))
   (with-slots (state identifier) instance
-    (if (member identifier (list-resource-identifiers (steward instance) 'phony-resource)
+    (if (member identifier (list-resource-identifiers (steward instance) 'simulation)
 		:test #'string=)
 	(setf state t)
 	(setf state nil
 	      identifier nil))))
 
-;;;; End of file `phony.lisp'
+;;;; End of file `simulator.lisp'
