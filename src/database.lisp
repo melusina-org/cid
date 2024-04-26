@@ -21,11 +21,13 @@
   "The connection specification for the database.")
 
 (defparameter *database-application-class-list*
-  '(tenant project
-    simulator simulation
-    local-filesystem-subtree local-text-file
-    docker-engine docker-volume
-    )
+  (append
+   '(tenant project)
+   '(simulator simulation)
+   #+org.melusina.cid/poc
+   '(local-filesystem-subtree local-text-file)
+   #+org.melusina.cid/poc
+   '(docker-engine docker-volume))
   "The list of application classes to initialise
 when connecting to the database for the first time.")
 

@@ -29,6 +29,7 @@
     :tenant "testsuite"
     :project "testproject"
     :make-steward nil)
+   #+org.melusina.cid/poc
    (list
     :key :docker-engine
     :steward-class 'cid:docker-engine

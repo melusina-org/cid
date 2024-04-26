@@ -19,7 +19,9 @@
   (project-unit-test)
   (steward-unit-test)
   (simulator-unit-test)
+  #+org.melusina.cid/poc
   (local-filesystem-subtree-unit-test)
+  #+org.melusina.cid/poc
   (docker-engine-unit-test))
 
 (define-testcase component-tests ()
