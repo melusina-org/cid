@@ -71,7 +71,8 @@
 (defun reload ()
   (ql:quickload '("org.melusina.atelier"
 		  "org.melusina.confidence"
-		  "org.melusina.cid/development")))
+		  "org.melusina.cid/user"
+		  "org.melusina.cid/poc")))
 
 (defun build (&key (tag "latest") (cache t))
   (dolist (image-name
