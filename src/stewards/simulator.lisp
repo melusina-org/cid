@@ -13,11 +13,16 @@
 
 (in-package #:org.melusina.cid)
 
+
+;;;;
+;;;; Simulator
+;;;;
+
 (clsql:def-view-class simulator (steward)
   ((description
     :db-kind :virtual
     :allocation :class
-    :initform "A steward that does not actually administrate resources."
+    :initform "A steward that does not administrate actual resources."
     :type string)
    (resource-identifiers
     :db-kind :virtual
@@ -25,32 +30,31 @@
     :initform nil
     :documentation "The list of resource identifiers that have been created."))
   (:documentation
-   "A steward for that do not actually own resources.
-For simulator resources, every step of the lifecycle is a no-operation."))
+   "A steward that does not administrate actual resources.
+A SIMULATOR stewards creates SIMULATION resources. These resources do not
+have underlying resources but otherwise support all operations that a regular
+resource supports.  It is possible to use a SIMULATOR and SIMULATION resources
+to test lifecycles and invariants, and as a draft when implementing
+new resources."))
 
 (defun make-simulator (&rest initargs &key tenant project name displayname pathname resource-identifiers)
   "Make a SIMULATOR with the given parameters."
   (declare (ignore tenant project name displayname pathname resource-identifiers))
   (apply #'make-instance 'simulator initargs))
 
+
+;;;;
+;;;; Simulation
+;;;;
+
 (clsql:def-view-class simulation (resource)
   ((steward-class
     :db-kind :virtual
     :type :symbol
     :initform 'simulator
-    :allocation :class)
-   (create-error-p
-    :type boolean
-    :initarg :create-error-p
-    :initform nil
-    :documentation "When set, this flag triggers an error when the resource is created.")
-   (delete-error-p
-    :type boolean
-    :initarg :delete-error-p
-    :initform nil
-    :documentation "When set, this flag triggers an error when the resource is deleted."))
+    :allocation :class))
   (:documentation
-   "A simulator resource, every step of the lifecycle is a no-operation."))
+   "A resource simulation, every step of the lifecycle is a no-operation."))
 
 (defun make-simulation (&rest initargs &key simulator name displayname description)
   "Make a simulator resource."
@@ -60,16 +64,8 @@ For simulator resources, every step of the lifecycle is a no-operation."))
 	 (remove-property initargs :simulator)))
 
 (defmethod create-resource ((instance simulation))
-  (with-slots (steward name identifier state create-error-p) instance
+  (with-slots (steward name identifier state) instance
     (with-slots (resource-identifiers) steward
-      (when create-error-p
-	(resource-error
-	 'create-resource instance
-	 "Cannot create simulator resource."
-	 "It is not possible for steward ~A to create the simulator resource ~A.
-This resource is configured, so that an error is triggered when an attempt
-is made to create it."
-	 steward instance))
       (when (member name resource-identifiers :test #'string=)
 	(resource-error
 	 'create-resource instance
@@ -90,14 +86,6 @@ This resource already exists."
 	 "Cannot delete simulator resource, resource does not exist."
 	 "It is not possible for steward ~A to delete the simulator resource ~A.
 This resource does not actually exist."
-	 steward instance))
-      (when delete-error-p
-	(resource-no-longer-exists
-	 'delete-resource instance
-	 "Cannot delete simulator resource."
-	 "It is not possible for steward ~A to delete the simulator resource ~A.
-This resource is configured, so that an error is triggered when an attempt
-is made to delete it."
 	 steward instance))
       (setf resource-identifiers
 	    (delete identifier resource-identifiers :test #'string=)
