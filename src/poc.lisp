@@ -1,4 +1,4 @@
-;;;; poc.lisp — POC Composable Stacks for El Cid
+;;;; poc.lisp — POC Composable Infrastructure Stacks for El Cid
 
 ;;;; El Cid (https://github.com/melusina-org/cid)
 ;;;; This file is part of El Cid.
@@ -81,7 +81,15 @@ This sets CID:*TENANT* and CID:*PROJECT* to work on the POC."
     :project cid:*project*
     :name "sws"
     :displayname "Simulated Web Services"
-    :credential "ThisIsNotARealSecret")))
+    :credential "ThisIsNotARealSecret"))
+  (loop :for class
+	:in '(cloud-private-network
+	      cloud-container-image-registry
+	      cloud-container-cluster
+	      cloud-container-service
+	      cloud-public-load-balancer
+	      stack)
+	:do (pushnew class cid::*database-application-class-list*)))
 
 
 ;;;;
@@ -93,11 +101,7 @@ This sets CID:*TENANT* and CID:*PROJECT* to work on the POC."
     :db-kind :virtual
     :type :symbol
     :initform 'cloud-vendor
-    :allocation :class)
-   (identifier
-    :type string
-    :initarg :identifier
-    :documentation "The identifier of the network."))
+    :allocation :class))
   (:documentation "This class represents a private network."))
 
 (defun make-cloud-private-network (&rest initargs &key cloud-vendor identifier)
