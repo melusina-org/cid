@@ -5,12 +5,13 @@ detect if a resource no longer exists and can be used by the
 UPDATE-INSTANCE-FROM-RESOURCE methods, so that updating instances can
 be implemented generically.
 
-* Resources do not need a NAME nor a DISPLAYNAME
-It does not seem useful for resources to have a mandatory NAME. A NAME
-or a DESIGNATOR could be useful when describing a software stack but
-requiring them prevents the IMPORT-RESOURCE to work properly. Hence
-resource DESIGNATORS seem to be indpendant from the resource themselve
-but are probably attached to the software stack themselve.
+* Resources do not need a NAME, a DISPLAYNAME nor a DESCRIPTION
+It does not seem useful for resources to have a mandatory NAME,
+DISPLAYNAME and description. A NAME or a DESIGNATOR could be useful
+when describing a software stack but requiring them prevents the
+IMPORT-RESOURCE to work properly. Hence resource DESIGNATORS seem to
+be indpendant from the resource themselve but are probably attached to
+the software stack itself.
 
 * Steward must be aware if resource namespace is global or scoped to a project
 Some stewards create resources identified by a name provided by the
@@ -54,3 +55,10 @@ Exit Status > 0
 It seems like we need a special category of resources or artefacts
 which can be tagged or labelled, so that we can have a consistent
 approach.  Maybe consider tags and artefacts distinct things?
+
+
+* Evaluate how to handle heterogeneous collections
+Infrastructure stacks are by nature heterogeneous collections,
+how to handle reading and writing them?
+
+WWW http://kevinmahoney.co.uk/articles/heterogeneous-collections/
