@@ -25,7 +25,6 @@
 			      :steward-class 'cid:simulator)))
       (flet ((make-simulation ()
 	       (cid:make-simulation :simulator simulator
-				    :name "simulation-1"
 				    :displayname "Simulation Resource #1"
 				    :description "A simulation resource used in the testsuite.")))
 	(resource-unit-test

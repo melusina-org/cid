@@ -56,26 +56,27 @@ new resources."))
   (:documentation
    "A resource simulation, every step of the lifecycle is a no-operation."))
 
-(defun make-simulation (&rest initargs &key simulator name displayname description)
+(defun make-simulation (&rest initargs &key simulator displayname description)
   "Make a simulator resource."
-  (declare (ignore name displayname description))
+  (declare (ignore displayname description))
   (apply #'make-instance 'simulation
 	 :steward simulator
 	 (remove-property initargs :simulator)))
 
 (defmethod create-resource ((instance simulation))
-  (with-slots (steward name identifier state) instance
+  (with-slots (steward identifier state) instance
     (with-slots (resource-identifiers) steward
-      (when (member name resource-identifiers :test #'string=)
+      (when (and identifier
+		 (member identifier resource-identifiers :test #'string=))
 	(resource-error
 	 'create-resource instance
 	 "Cannot create simulator resource, resource already exists."
 	 "It is not possible for steward ~A to create the simulator resource ~A.
 This resource already exists."
 	 steward instance))
-      (setf identifier name
+      (setf identifier (random-string)
 	    state t)
-      (push name resource-identifiers))))
+      (push identifier resource-identifiers))))
 
 (defmethod delete-resource ((instance simulation))
   (with-slots (steward identifier state delete-error-p) instance

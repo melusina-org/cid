@@ -17,7 +17,7 @@
 ;;;; Resource Class
 ;;;;
 
-(clsql:def-view-class resource (named-trait tenant-trait project-trait)
+(clsql:def-view-class resource (tenant-trait project-trait)
   ((steward-name
     :type string
     :db-kind :key
@@ -26,6 +26,12 @@
    (steward-class
     :type symbol
     :allocation :class)
+   (displayname
+    :accessor displayname
+    :type string
+    :initform nil
+    :initarg :displayname
+    :documentation "The DISPLAYNAME is used in informational screens to denote the resource instance.")
    (description
     :type string
     :initarg :description
@@ -314,9 +320,9 @@ This returns the RESOURCE instance."))
 
 (defmethod create-resource :around ((instance resource))
   "Enforce calling convention and ensure that we do not recreate a resource that already exists."
-  (with-slots (name identifier state) instance
+  (with-slots (identifier state) instance
     (when state
-      (cerror "Recreate the resource." "Cannot create the resource ~A (~A) as it already exists." name identifier)
+      (cerror "Recreate the resource." "Cannot create the resource ~A as it already exists." identifier)
       (return-from create-resource instance)))
   (call-next-method)
   (values instance))
@@ -329,9 +335,9 @@ This returns the RESOURCE instance."))
   "Enforce calling convention and ensure that we do not delete a resource that does not exist.
 When a RESOURCE-NO-LONGER-EXISTS condition is met, a CONTINUE restart is made available allowing
 to assume the delete operation was succesful."
-  (with-slots (name identifier state) instance
+  (with-slots (identifier state) instance
     (unless state
-      (warn "Cannot delete the resource ~A (~A) as it does not exist." name identifier)
+      (warn "Cannot delete the resource ~A as it does not exist." identifier)
       (return-from delete-resource instance))
     (restart-case (call-next-method)
       (continue ()
@@ -396,15 +402,15 @@ keywords are sorted in ascending order.")
   (sort-plist (call-next-method)))
 
 (defmethod examine-resource append ((instance resource))
-  (with-slots (steward name identifier description state) instance
+  (with-slots (steward displayname identifier description state) instance
     (list
      :steward (name steward)
-     :name name
+     :displayname displayname
      :identifier identifier
      :description description
      :state state)))
 
-(defun import-resource (steward resource-class &key name displayname description identifier)
+(defun import-resource (steward resource-class &key displayname description identifier)
   "Import a RESOURCE based on its IDENTIFIER into its STEWARD.
 This assumes a resource has been created in STEWARD by a third party and
 imports it into the current system by creating a resource for it."
@@ -413,7 +419,6 @@ imports it into the current system by creating a resource for it."
 			 :tenant (tenant steward)
 			 :project (project steward)
 			 :steward steward
-			 :name name
 			 :displayname displayname
 			 :description description
 			 :identifier identifier)))
@@ -441,7 +446,6 @@ These resources can be imported."))
 	:collect (import-resource
 		  steward
 		  resource-class
-		  :identifier identifier
-		  :name identifier)))
+		  :identifier identifier)))
 
 ;;;; End of file `resource.lisp'

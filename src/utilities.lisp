@@ -157,4 +157,40 @@ list with the following entries:
 	  :for field :in fields
 	  :nconc (apply #'extract-json-field object field))))
 
+
+
+;;;;
+;;;; Random String
+;;;;
+
+(defun random-string (&optional (length 32) (alphabet :base36))
+  "Prepare a random alphabetic string of given LENGTH.
+
+The returned string contains LENGTH characters chosen from
+the vector ALPHABET.  When ALPHABET is one of the keywords
+
+  :HEXADECIMAL :BASE36 and :BASE64
+
+the corresponding alphabet is used.
+
+This uses a very weak method that does not try to avoid collisions.x"
+  (flet ((actual-alphabet (alphabet)
+	   (case alphabet
+	     (:hexadecimal
+	      "0123456789abcdef")
+	     (:base36
+	      "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+	     (:base64
+	       "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz/-")
+	     (t
+	      alphabet))))
+    (loop :with id = (make-string length)
+	  :with actual-alphabet = (actual-alphabet alphabet)
+          :with alphabet-length = (length actual-alphabet)
+          :for i :below length
+          :do (setf (aref id i)
+                    (aref actual-alphabet (random alphabet-length)))
+          :finally (return id))))
+
+
 ;;;; End of file `utilities.lisp'

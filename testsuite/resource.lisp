@@ -63,7 +63,6 @@ to update the resource we use SLOT-NAME and a NEW-SLOT-VALUE."
     (flet ((exercise-import-resource (resource)
 	     (let ((imported-resource
 		     (cid:import-resource (cid:steward resource) (type-of resource)
-					  :name (cid:name resource)
 					  :displayname (cid:displayname resource)
 					  :description (cid:description resource)
 					  :identifier (cid:resource-identifier resource))))
@@ -125,7 +124,6 @@ according to the instance slots."
   (cid:create-resource resource)
   (let ((imported-resource
 	  (cid:import-resource (cid:steward resource) (type-of resource)
-			       :name (cid:name resource)
 			       :displayname (cid:displayname resource)
 			       :description (cid:description resource)
 			       :identifier (cid:resource-identifier resource))))
