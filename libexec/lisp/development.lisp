@@ -15,6 +15,7 @@
   (:use #:cl)
   (:local-nicknames
    (#:atelier #:org.melusina.atelier)
+   (#:cid #:org.melusina.cid)
    (#:build #:org.melusina.cid/build)
    (#:colima #:org.melusina.cid/colima))
   (:export
@@ -22,7 +23,8 @@
    #+quicklisp
    #:reload
    #:build
-   #:browse-database))
+   #:browse-database
+   #:recreate-database))
 
 (in-package #:org.melusina.cid/development)
 
@@ -98,7 +100,17 @@
       (setf *database-browser*
 	    (uiop:launch-program 
 	     (list "sqlitebrowser" (namestring pathname)))))))
-     
+
+(defun recreate-database ()
+  (when (and clsql:*default-database*
+	     (eq (clsql:database-type clsql:*default-database*)
+		 :sqlite3))
+    (let ((pathname
+	    (first (clsql-sys:connection-spec clsql:*default-database*))))
+      (cid:disconnect-database)
+      (delete-file pathname)
+      (cid:connect-database))))
+
 
 ;;;;
 ;;;; Command Stock
