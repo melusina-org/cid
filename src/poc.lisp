@@ -18,19 +18,21 @@
   (:export
    #:cloud-vendor
    #:make-cloud-vendor
-   #:cloud-private-network
    #:private-network
+   #:make-private-network
+   #:container-image-registry
+   #:make-container-image
    #:container-image-registry
    #:make-container-image-registry
-   #:find-cloud-container-image
-   #:cloud-container-cluster
-   #:make-cloud-container-cluster
-   #:cloud-container-service
-   #:make-cloud-container-service
-   #:cloud-public-load-balancer
-   #:make-cloud-public-load-balancer
-   #:stack
-   #:make-stack
+   #:find-container-image
+   #:container-cluster
+   #:make-container-cluster
+   #:container-service
+   #:make-container-service
+   #:public-load-balancer
+   #:make-public-load-balancer
+   #:infrastructure-stack
+   #:make-infrastructure-stack
    #:make-poc-stack))
 
 (in-package #:org.melusina.cid/poc)
@@ -83,12 +85,12 @@ This sets CID:*TENANT* and CID:*PROJECT* to work on the POC."
     :displayname "Simulated Web Services"
     :credential "ThisIsNotARealSecret"))
   (loop :for class
-	:in '(cloud-private-network
-	      cloud-container-image-registry
-	      cloud-container-cluster
-	      cloud-container-service
-	      cloud-public-load-balancer
-	      stack)
+	:in '(private-network
+	      container-image
+	      container-image-registry
+	      container-cluster
+	      container-service
+	      public-load-balancer)
 	:do (pushnew class cid::*database-application-class-list*)))
 
 
@@ -96,7 +98,7 @@ This sets CID:*TENANT* and CID:*PROJECT* to work on the POC."
 ;;;; Cloud Private Network
 ;;;;
 
-(clsql:def-view-class cloud-private-network (cid:simulation)
+(clsql:def-view-class private-network (cid:simulation)
   ((steward-class
     :db-kind :virtual
     :type :symbol
@@ -104,10 +106,36 @@ This sets CID:*TENANT* and CID:*PROJECT* to work on the POC."
     :allocation :class))
   (:documentation "This class represents a private network."))
 
-(defun make-cloud-private-network (&rest initargs &key cloud-vendor identifier)
-  "Make a CLOUD-PRIVATE-NETWORK."
+(defun make-private-network (&rest initargs &key cloud-vendor identifier)
+  "Make a PRIVATE-NETWORK."
   (declare (ignore identifier))
-  (apply #'make-instance 'cloud-private-network
+  (apply #'make-instance 'private-network
+	 :steward cloud-vendor
+	 (cid::remove-property initargs :cloud-vendor)))
+
+
+;;;;
+;;;; Container Image
+;;;;
+
+(clsql:def-view-class container-image (cid:simulation)
+  ((steward-class
+    :db-kind :virtual
+    :type :symbol
+    :initform 'cloud-vendor
+    :allocation :class)
+   (repository
+    :initarg :repository
+    :type string)
+   (tag
+    :initarg :tag
+    :type string))
+  (:documentation "This class represents a cloud image."))
+
+(defun make-container-image (&rest initargs &key cloud-vendor identifier repository tag)
+  "Make a PRIVATE-NETWORK."
+  (declare (ignore identifier repository tag))
+  (apply #'make-instance 'container-image
 	 :steward cloud-vendor
 	 (cid::remove-property initargs :cloud-vendor)))
 
@@ -116,7 +144,7 @@ This sets CID:*TENANT* and CID:*PROJECT* to work on the POC."
 ;;;; Cloud Container Image Registry
 ;;;;
 
-(clsql:def-view-class cloud-container-image-registry (cid:simulation)
+(clsql:def-view-class container-image-registry (cid:simulation)
   ((steward-class
     :db-kind :virtual
     :type :symbol
@@ -124,25 +152,25 @@ This sets CID:*TENANT* and CID:*PROJECT* to work on the POC."
     :allocation :class))
   (:documentation "This class represents a cloud image registry."))
 
-(defun make-cloud-container-image-registry (&rest initargs &key cloud-vendor identifier)
-  "Make a CLOUD-PRIVATE-NETWORK."
+(defun make-container-image-registry (&rest initargs &key cloud-vendor identifier)
+  "Make a PRIVATE-NETWORK."
   (declare (ignore identifier))
-  (apply #'make-instance 'cloud-container-image-registry
+  (apply #'make-instance 'container-image-registry
 	 :steward cloud-vendor
 	 (cid::remove-property initargs :cloud-vendor)))
 
-(defun find-cloud-container-image (&key image-registry repository tag)
+(defun find-container-image (&key image-registry repository tag)
   "Find a container image in IMAGE-REGISTRY with the given properties."
-  (declare (ignore image-registry repository tag))
-  (cerror "Continue" "Not implemented.")
-  (values "Some image"))
+  (make-container-image :cloud-vendor (cid:steward image-registry)
+			:repository repository
+			:tag tag))
 
 
 ;;;;
 ;;;; Cloud Container Cluster
 ;;;;
 
-(clsql:def-view-class cloud-container-cluster (cid:simulation)
+(clsql:def-view-class container-cluster (cid:simulation)
   ((steward-class
     :db-kind :virtual
     :type :symbol
@@ -153,10 +181,10 @@ This sets CID:*TENANT* and CID:*PROJECT* to work on the POC."
     :initarg :private-network))
   (:documentation "A cluster providing computational resources to services."))
 
-(defun make-cloud-container-cluster (&rest initargs &key cloud-vendor private-network)
-  "Make a CLOUD-CONTAINER-CLUSTER."
+(defun make-container-cluster (&rest initargs &key cloud-vendor private-network)
+  "Make a CONTAINER-CLUSTER."
   (declare (ignore private-network))
-  (apply #'make-instance 'cloud-container-cluster
+  (apply #'make-instance 'container-cluster
 	 :steward cloud-vendor
 	 (cid::remove-property initargs :cloud-vendor)))
 
@@ -165,7 +193,7 @@ This sets CID:*TENANT* and CID:*PROJECT* to work on the POC."
 ;;;; Cloud Container Service
 ;;;;
 
-(clsql:def-view-class cloud-container-service (cid:simulation)
+(clsql:def-view-class container-service (cid:simulation)
   ((steward-class
     :db-kind :virtual
     :type :symbol
@@ -189,12 +217,12 @@ Allowed values are one of :HTTP, :HTTPS, :TCP.")
     :documentation "The network PORT used by the service."))
   (:documentation "This class represents a cloud container service."))
 
-(defun make-cloud-container-service (&rest initargs
+(defun make-container-service (&rest initargs
 				     &key cloud-vendor cluster
 					  image protocol port)
-  "Make a CLOUD-CONTAINER-SERVICE."
+  "Make a CONTAINER-SERVICE."
   (declare (ignore cluster image protocol port))
-  (apply #'make-instance 'cloud-container-service
+  (apply #'make-instance 'container-service
 	 :steward cloud-vendor
 	 (cid::remove-property initargs :cloud-vendor)))
 
@@ -203,18 +231,37 @@ Allowed values are one of :HTTP, :HTTPS, :TCP.")
 ;;;; Cloud Public Load Balancer
 ;;;;
 
-(clsql:def-view-class cloud-public-load-balancer (cid:simulation)
+(clsql:def-view-class public-load-balancer (cid:simulation)
   ((steward-class
     :db-kind :virtual
     :type :symbol
     :initform 'cloud-vendor
-    :allocation :class))
+    :allocation :class)
+   (private-network-identifier
+    :initarg :private-network-identifier
+    :type string)
+   (private-network
+    :initarg :private-network
+    :reader private-network
+    :db-kind :join
+    :db-info (:join-class private-network
+	      :home-key (tenant-name project-name steward-name private-network-identifier)
+	      :foreign-key (tenant-name project-name steward-name identifier)
+	      :set nil))
+   (services
+    :initarg :services
+    :reader services
+    :db-kind :join
+    :db-info (:join-class container-service
+	      :home-key (tenant-name project-name steward-name identifier)
+	      :foreign-key (tenant-name project-name steward-name load-balancer-identifier)
+	      :set t)))
   (:documentation "This class represents a public load balancer."))
 
-(defun make-cloud-public-load-balancer (&rest initargs &key cloud-vendor private-network rules)
+(defun make-public-load-balancer (&rest initargs &key cloud-vendor private-network services)
   "Make a CLOUD-PUBLIC-LOADBALANCER."
-  (declare (ignore private-network rules))
-  (apply #'make-instance 'cloud-public-load-balancer
+  (declare (ignore private-network services))
+  (apply #'make-instance 'public-load-balancer
 	 :steward cloud-vendor
 	 (cid::remove-property initargs :cloud-vendor)))
 
@@ -223,7 +270,7 @@ Allowed values are one of :HTTP, :HTTPS, :TCP.")
 ;;;; Software Deployment Stack
 ;;;;
 
-(clsql:def-view-class stack (cid:simulation)
+(clsql:def-view-class infrastructure-stack ()
   ((resources
     :db-kind :virtual
     :initarg :resources
@@ -232,81 +279,69 @@ Allowed values are one of :HTTP, :HTTPS, :TCP.")
 An infrastructure stack is a collection of infrastructure resources
 defined, provisioned and modified as a unit."))
 
-(defun make-stack (&rest initargs &key resources)
-  "Make an infrastructure STACK."
+(defun make-infrastructure-stack (&rest initargs &key resources)
+  "Make an INFRASTRUCTURE-STACK."
   (declare (ignore resources))
-  (apply #'make-instance 'stack initargs))
+  (apply #'make-instance 'infrastructure-stack initargs))
+
+(defun save-infrastructure-stack (stack)
+  (with-slots (resources) stack
+    (loop :for resource :in resources
+	  :do (clsql:update-records-from-instance resource)
+	  :do (print resource))))
 
 (defun make-poc-stack (&key (tag *tag*) (cloud-vendor *cloud-vendor*))
   (let* ((private-network
-	   (make-cloud-private-network
+	   (make-private-network
 	    :cloud-vendor cloud-vendor))
 	 (image-registry
 	   (make-cloud-container-image-registry
 	    :cloud-vendor cloud-vendor))
 	 (cluster
-	   (make-cloud-container-cluster
+	   (make-container-cluster
 	    :cloud-vendor cloud-vendor
 	    :private-network private-network))
 	 (trac-image
-	   (find-cloud-container-image
+	   (find-container-image
 	    :image-registry image-registry
 	    :repository "cid/trac"
 	    :tag tag))
 	 (gitserver-image
-	   (find-cloud-container-image
+	   (find-container-image
 	    :image-registry image-registry
 	    :repository "cid/gitserver"
 	    :tag tag))
 	 (jenkins-image
-	   (find-cloud-container-image
+	   (find-container-image
 	    :image-registry image-registry
 	    :repository "cid/jenkins"
 	    :tag tag))
 	 (trac-service
-	   (make-cloud-container-service
+	   (make-container-service
 	    :cloud-vendor cloud-vendor
 	    :cluster cluster
 	    :image trac-image
 	    :protocol :http
 	    :port 80))
 	 (gitserver-service
-	   (make-cloud-container-service
+	   (make-container-service
 	    :cloud-vendor cloud-vendor
 	    :cluster cluster
 	    :image gitserver-image
 	    :protocol :tcp
 	    :port 22))
 	 (jenkins-service
-	   (make-cloud-container-service
+	   (make-container-service
 	    :cloud-vendor cloud-vendor
 	    :cluster cluster
 	    :image jenkins-image
 	    :protocol :http
 	    :port 80))
 	 (loadbalancer
-	   (make-cloud-public-load-balancer
+	   (make-public-load-balancer
 	    :cloud-vendor cloud-vendor
-	    :rules (list
-		    (list
-		     :port 80
-		     :protocol :http
-		     :action :redirect)
-		    (list
-		     :port 443
-		     :protocol :https
-		     :host "trac.*"
-		     :action trac-service)
-		    (list
-		     :port 443
-		     :protocol :https
-		     :host "jenkins.*"
-		     :action jenkins-service)
-		    (list
-		     :port 22
-		     :protocol :tcp
-		     :host "git.*"
-		     :action gitserver-service)))))
-    (make-stack :resources (list loadbalancer))))
+	    :services (list trac-service jenkins-service gitserver-service)
+	    :private-network private-network)))
+    (make-infrastructure-stack :resources (list loadbalancer))))
 
 ;;;; End of file `poc.lisp'
