@@ -188,6 +188,10 @@ This sets CID:*TENANT* and CID:*PROJECT* to work on the POC."
 	 :steward cloud-vendor
 	 (cid::remove-property initargs :cloud-vendor)))
 
+(defmethod cid:resource-prerequisites append ((instance container-cluster))
+  (with-slots (private-network) instance
+    (list private-network)))
+
 
 ;;;;
 ;;;; Cloud Container Service
@@ -225,6 +229,10 @@ Allowed values are one of :HTTP, :HTTPS, :TCP.")
   (apply #'make-instance 'container-service
 	 :steward cloud-vendor
 	 (cid::remove-property initargs :cloud-vendor)))
+
+(defmethod cid:resource-prerequisites append ((instance container-service))
+  (with-slots (cluster image) instance
+    (list cluster image)))
 
 
 ;;;;
@@ -264,6 +272,10 @@ Allowed values are one of :HTTP, :HTTPS, :TCP.")
   (apply #'make-instance 'public-load-balancer
 	 :steward cloud-vendor
 	 (cid::remove-property initargs :cloud-vendor)))
+
+(defmethod cid:resource-prerequisites append ((instance public-load-balancer))
+  (with-slots (private-network services) instance
+    (append services (list private-network))))
 
 
 ;;;;

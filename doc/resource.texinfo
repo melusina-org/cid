@@ -38,3 +38,5 @@ project.
 
 @include include/fun-org.melusina.cid-list-resource-identifiers.texinfo
 @include include/fun-org.melusina.cid-list-resources.texinfo
+
+@include include/fun-org.melusina.cid-resource-prerequisites.texinfo

@@ -303,6 +303,45 @@ operation is selected."
 
 
 ;;;;
+;;;; Resources with Prerequisites
+;;;;
+
+(defgeneric resource-prerequisites (resource)
+  (:method-combination append)
+  (:documentation
+   "List resources that need to be created before RESOURCES can be.
+Some resources require other resources to exist before being created
+themselves. The RESOURCE-PREREQUISITES generic function lists these
+prerequisites in an order so that any resource in the list appears
+before its prerequisites."))
+
+(defmethod resource-prerequisites append ((instance resource))
+  nil)
+
+(defmethod resource-prerequisites :around ((instance resource))
+  "Ensure the prerequisites of a resource are sorted."
+  (loop :for prerequisite :in (call-next-method)
+	:for deep-prerequisites = (resource-prerequisites prerequisite)
+	:append (cons prerequisite deep-prerequisites) :into prerequisites
+	:finally (return (remove-duplicates prerequisites :test #'eq))))
+
+
+;;;;
+;;;; CLSQL Persistence of Resources with Prerequisites
+;;;;
+
+(defmethod clsql:update-records-from-instance :before ((instance resource) &key (database clsql:*default-database*))
+  "Update records for INSTANCE prerequisites before INSTANCE records themselves."
+  (loop :for prerequisite :in (reverse (resource-prerequisites instance))
+	:do (clsql:update-records-from-instance prerequisite :database database)))
+
+(defmethod clsql:update-instance-from-records :before ((instance resource) &key (database clsql:*default-database*))
+  "Update INSTANCE prerequisites from their records before INSTANCE itself."
+  (loop :for prerequisite :in (reverse (resource-prerequisites instance))
+	:do (clsql:update-instance-from-records prerequisite :database database)))
+
+
+;;;;
 ;;;; Resource Lifecycle Methods
 ;;;;
 
@@ -331,6 +370,12 @@ This returns the RESOURCE instance."))
   (call-next-method)
   (values instance))
 
+(defmethod create-resource :before ((instance resource))
+  "Create INSTANCE prerequisites before INSTANCE itself."
+  (loop :for prerequisite :in (reverse (resource-prerequisites instance))
+	:unless (resource-exists-p prerequisite)
+	:do (create-resource prerequisite)))
+
 (defgeneric delete-resource (resource)
   (:documentation "Delete a RESOURCE using its steward.
 This returns the RESOURCE instance."))
@@ -355,6 +400,12 @@ to assume the delete operation was succesful."
     (when (eq state nil)
       (setf identifier nil)))
   (values instance))
+
+(defmethod delete-resource :after ((instance resource))
+  "Delete INSTANCE prerequisites after INSTANCE itself."
+  (loop :for prerequisite :in (resource-prerequisites instance)
+	:when (resource-exists-p prerequisite)
+	:do (delete-resource prerequisite)))
 
 (defgeneric update-instance-from-resource (instance)
   (:documentation "Update INSTANCE slots with attributes from resource.
@@ -396,10 +447,10 @@ recreating it."))
   (values instance))
 
 (defgeneric examine-resource (resource)
+  (:method-combination append)
   (:documentation "Dump the state of a RESOURCE.
 The result is a property list, mapping keywords to atoms. These
-keywords are sorted in ascending order.")
-  (:method-combination append))
+keywords are sorted in ascending order."))
 
 (defmethod examine-resource :around ((instance resource))
   "Ensure the results of examining a resource are sorted."

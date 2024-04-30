@@ -66,6 +66,7 @@
    #:list-resources
    #:list-resource-identifiers
    #:examine-differences-between-instance-and-resource
+   #:resource-prerequisites
    ;; Simulators and Simulations
    #:simulator
    #:make-simulator
