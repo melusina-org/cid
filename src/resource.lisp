@@ -20,12 +20,15 @@
 (clsql:def-view-class resource (tenant-trait project-trait)
   ((steward-name
     :type string
-    :db-kind :key
     :db-constraints :not-null
     :reader steward-name)
    (steward-class
     :type symbol
     :allocation :class)
+   (resource-serial
+    :type integer
+    :db-kind :key
+    :db-constraints (:auto-increment :not-null))
    (displayname
     :accessor displayname
     :type string
@@ -60,8 +63,9 @@ T meaning the resource exists and is ready or some resource lifecycle specific k
     :initform nil
     :documentation
     "A text uniquely identifying the RESOURCE in the context of its STEWARD.
-Depending on the RESOURCE and the STEWARD, this text can sometimes
-not be determined automatically and requires the RESOURCE to be READ."))
+Depending on the RESOURCE and the STEWARD, the identifier can be or not be
+a deterministic function of other resource properties. If and only if
+the underlying resource has not been created, the IDENTIFIER is NIL."))
   (:documentation "The class represents the state of resources required to a component deployment.
 These resources can be created, read, updated and deleted. Resources can depend on other
 resources. For a given STEWARD, any resource is uniquely identified by its IDENTIFIER slot."))

@@ -16,7 +16,10 @@
 (clsql:file-enable-sql-reader-syntax)
 
 (clsql:def-view-class project (named-trait tenant-trait)
-  nil
+  ((tenant-name
+    :type string
+    :db-kind :key
+    :reader tenant-name))
   (:base-table project)
   (:documentation "The class representing a PROJECT.
 When a CLSQL database is connected, projects can be persisted on this database.
@@ -80,7 +83,6 @@ in the database is returned."
 (clsql:def-view-class project-trait nil
   ((project-name
     :type string
-    :db-kind :key
     :reader project-name)
    (project
     :db-kind :join

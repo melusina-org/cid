@@ -16,7 +16,15 @@
 (clsql:file-enable-sql-reader-syntax)
 
 (clsql:def-view-class steward (named-trait tenant-trait project-trait)
-  ((description
+  ((tenant-name
+    :type string
+    :db-kind :key
+    :reader tenant-name)
+   (project-name
+    :type string
+    :db-kind :key
+    :reader project-name)
+   (description
     :type string
     :initarg :description
     :reader description

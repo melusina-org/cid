@@ -62,7 +62,6 @@ the table of persisted tenants in a connected CLSQL database."
 (clsql:def-view-class tenant-trait nil
   ((tenant-name
     :type string
-    :db-kind :key
     :reader tenant-name)
    (tenant
     :db-kind :join
