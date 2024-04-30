@@ -70,8 +70,7 @@ are also available at https://opensource.org/licenses/MIT
 * Steward::
 * Resource::
 * Simulator::
-@c * Local Filesystem Subtree::
-@c * Docker Engine::
+* Proof of Concept::
 @end menu
 
 @end ifnottex
@@ -93,14 +92,12 @@ are also available at https://opensource.org/licenses/MIT
 
 @chapter Stewards and Resources
 
-@c @node Simulator, Local Filesystem Subtree, Top
-@node Simulator, , Top
+@node Simulator, Proof of Concept, Top
 @include simulator.texinfo
 
-@c @node Local Filesystem Subtree, Docker Engine, Top
-@c @include local-filesystem-subtree.texinfo
+@chapter Proof of Concept
 
-@c @node Docker Engine, , Top
-@c @include docker-engine.texinfo
+@node Proof of Concept, , Top
+@include poc.texinfo
 
 @bye

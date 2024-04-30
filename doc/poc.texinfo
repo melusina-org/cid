@@ -1,0 +1,47 @@
+@section Cloud Vendor Simulator
+
+@include include/class-org.melusina.cid-slash-poc-cloud-vendor.texinfo
+@include include/fun-org.melusina.cid-slash-poc-make-cloud-vendor.texinfo
+
+@section Private Network Simulation
+
+@include include/class-org.melusina.cid-slash-poc-private-network.texinfo
+@include include/fun-org.melusina.cid-slash-poc-make-private-network.texinfo
+
+@section Container Image and Registry Simulation
+
+@include include/class-org.melusina.cid-slash-poc-container-image.texinfo
+@include include/fun-org.melusina.cid-slash-poc-make-container-image.texinfo
+@include include/class-org.melusina.cid-slash-poc-container-image-registry.texinfo
+@include include/fun-org.melusina.cid-slash-poc-make-container-image-registry.texinfo
+@include include/fun-org.melusina.cid-slash-poc-find-container-image.texinfo
+
+@section Container Cluster Simulation
+
+@include include/class-org.melusina.cid-slash-poc-container-cluster.texinfo
+@include include/fun-org.melusina.cid-slash-poc-make-container-cluster.texinfo
+
+@section Container Service Simulation
+
+@include include/class-org.melusina.cid-slash-poc-container-service.texinfo
+@include include/fun-org.melusina.cid-slash-poc-make-container-service.texinfo
+
+@section Public Load Balancer Simulation
+
+@include include/class-org.melusina.cid-slash-poc-public-load-balancer.texinfo
+@include include/fun-org.melusina.cid-slash-poc-make-public-load-balancer.texinfo
+
+@section Infrastructure Stack Simulation
+
+@include include/class-org.melusina.cid-slash-poc-infrastructure-stack.texinfo
+@include include/fun-org.melusina.cid-slash-poc-make-infrastructure-stack.texinfo
+
+@section Testsuite
+
+@include include/fun-org.melusina.cid-slash-testsuite-demonstrate-that-infrastructure-errors-can-be-resumed.texinfo
+@include include/fun-org.melusina.cid-slash-testsuite-demonstrate-that-infrastructure-stack-can-be-created-and-destroyed.texinfo
+@include include/fun-org.melusina.cid-slash-testsuite-demonstrate-that-infrastructure-stack-can-be-modified.texinfo
+@include include/fun-org.melusina.cid-slash-testsuite-demonstrate-that-infrastructure-stack-can-be-persisted.texinfo
+@include include/fun-org.melusina.cid-slash-testsuite-demonstrate-that-infrastructure-stacks-can-be-promoted-through-environments.texinfo
+@include include/fun-org.melusina.cid-slash-testsuite-demonstrate-that-infrastructure-stacks-cannot-be-misadvertently-duplicated.texinfo
+@include include/fun-org.melusina.cid-slash-testsuite-demonstrate-that-infrastructure-stacks-modification-can-be-reviewed-before-being-committed.texinfo

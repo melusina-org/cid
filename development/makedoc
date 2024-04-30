@@ -39,6 +39,15 @@ makedoc_runpatches()
 
 makedoc_extract()
 {
+    local makedocsystem
+    if [ $# -gt 1 ]; then
+      for makedocsystem in "$@"; do
+	makedoc_extract "${makedocsystem}"
+      done
+      return
+    elif [ $# -eq 1 ]; then
+      makedocsystem="$1"
+    fi
     makedoc_sbcl \
         --eval "(unless (ql:where-is-system :${makedocsystem})
                   (pushnew #p\".\" ql:*local-project-directories*)
@@ -80,7 +89,7 @@ makedoc_main()
 	exit 1
     fi
     set -e
-    makedoc_extract
+    makedoc_extract org.melusina.cid org.melusina.cid/poc org.melusina.cid/testsuite
     makedoc_runpatches
     makedoc_info
     makedoc_html

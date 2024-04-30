@@ -132,6 +132,7 @@
 	       #:org.melusina.confidence
 	       #:org.melusina.rashell
 	       #:org.melusina.cid
+	       #:org.melusina.cid/poc
 	       #:org.melusina.cid/development
 	       #:org.melusina.cid/operation
 	       #:org.melusina.cid/build
@@ -151,7 +152,8 @@
 			       #+org.melusina.cid/poc
 			       (:file "local-filesystem-subtree")
 			       #+org.melusina.cid/poc
-			       (:file "docker-engine")))))
+			       (:file "docker-engine")))
+		 (:file "poc")))
    (:module "libexec"
     :components
     ((:module "lisp"

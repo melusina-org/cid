@@ -20,7 +20,7 @@
    #:make-cloud-vendor
    #:private-network
    #:make-private-network
-   #:container-image-registry
+   #:container-image
    #:make-container-image
    #:container-image-registry
    #:make-container-image-registry
