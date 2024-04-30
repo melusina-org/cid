@@ -44,7 +44,22 @@ This testcase prepares an infrastructure stack value, then persist it
 to a CLSQL database and read it back. This ensures that the state of
 an infrastrcuture stack can be persisted, the lifespan of infrastructure
 resources is usually longer than those of Common Lisp sessions."
-  (assert-t nil))
+  (flet ((check-that-resources-are-associated-with-a-database (resources)
+	   (loop :for resource :in resources
+		 :do (assert-t* (clsql-sys::view-database resource))))
+	 (check-that-resources-are-not-associated-with-a-database (resources)
+	   (loop :for resource :in resources
+		 :do (assert-nil (clsql-sys::view-database resource))))
+	 (stack-resources (stack)
+	   (loop :for resource :in (slot-value stack 'poc::resources)
+		 :append (cid:resource-prerequisites resource))))		      
+    (let* ((delivery-stack
+	     (poc:make-delivery-stack :tag *testsuite-id*))
+	   (delivery-resources
+	     (stack-resources delivery-stack)))
+      (check-that-resources-are-not-associated-with-a-database delivery-resources)
+      (poc:save-infrastructure-stack delivery-stack)
+      (check-that-resources-are-associated-with-a-database delivery-resources))))
 
 (define-testcase demonstrate-that-infrastructure-stack-can-be-modified ()
   "Demonstrate that an infrastructure stack can be modified.
