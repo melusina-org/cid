@@ -19,7 +19,24 @@ This testcase prepares an infrastructure stack value, then creates
 the corresponding resources and deletes them.
 
 This is the smallest possible testcase for an infrastructure stack."
-  (assert-t nil))
+  (flet ((check-that-resources-exist (resources)
+	   (loop :for resource :in resources
+		 :do (assert-t* (cid:resource-exists-p resource))))
+	 (check-that-resources-do-not-exist (resources)
+	   (loop :for resource :in resources
+		 :do (assert-nil (cid:resource-exists-p resource))))
+	 (stack-resources (stack)
+	   (loop :for resource :in (slot-value stack 'poc::resources)
+		 :append (cid:resource-prerequisites resource))))		      
+    (let* ((delivery-stack
+	     (poc:make-delivery-stack :tag *testsuite-id*))
+	   (delivery-resources
+	     (stack-resources delivery-stack)))
+      (cid:create-resource delivery-stack)
+      (check-that-resources-exist delivery-resources)
+      (poc:save-infrastructure-stack delivery-stack)
+      (cid:delete-resource delivery-stack)
+      (check-that-resources-do-not-exist delivery-resources))))
 
 (define-testcase demonstrate-that-infrastructure-stack-can-be-persisted ()
   "Demonstrate that an infrastructure stack can be persisted.

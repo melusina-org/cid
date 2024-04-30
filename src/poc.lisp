@@ -33,7 +33,8 @@
    #:make-public-load-balancer
    #:infrastructure-stack
    #:make-infrastructure-stack
-   #:make-poc-stack))
+   #:save-infrastructure-stack
+   #:make-delivery-stack))
 
 (in-package #:org.melusina.cid/poc)
 
@@ -315,13 +316,23 @@ defined, provisioned and modified as a unit."))
   (declare (ignore resources))
   (apply #'make-instance 'infrastructure-stack initargs))
 
+(defmethod cid:create-resource ((instance infrastructure-stack))
+  (with-slots (resources) instance
+    (loop :for resource :in resources
+	  :do (cid:create-resource resource))))
+
+(defmethod cid:delete-resource ((instance infrastructure-stack))
+  (with-slots (resources) instance
+    (loop :for resource :in resources
+	  :do (cid:delete-resource resource))))
+
 (defun save-infrastructure-stack (stack)
   (with-slots (resources) stack
     (loop :for resource :in resources
 	  :do (clsql:update-records-from-instance resource)
 	  :do (print resource))))
 
-(defun make-poc-stack (&key (tag *tag*) (cloud-vendor *cloud-vendor*))
+(defun make-delivery-stack (&key (tag *tag*) (cloud-vendor *cloud-vendor*))
   (let* ((private-network
 	   (make-private-network
 	    :cloud-vendor cloud-vendor))

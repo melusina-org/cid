@@ -17,6 +17,7 @@
    (#:confidence #:org.melusina.confidence)
    (#:rashell #:org.melusina.rashell)
    (#:cid #:org.melusina.cid)
+   (#:poc #:org.melusina.cid/poc)
    (#:console #:org.melusina.cid/console)
    (#:docker #:org.melusina.cid/docker)
    (#:build #:org.melusina.cid/build)
