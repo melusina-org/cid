@@ -28,7 +28,7 @@
    (resource-serial
     :type integer
     :db-kind :key
-    :db-constraints (:auto-increment :not-null))
+    :db-constraints (:primary-key))
    (displayname
     :accessor displayname
     :type string

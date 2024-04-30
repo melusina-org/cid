@@ -177,8 +177,15 @@ This sets CID:*TENANT* and CID:*PROJECT* to work on the POC."
     :initform 'cloud-vendor
     :allocation :class)
    (private-network
-    :type string
-    :initarg :private-network))
+    :initarg :private-network
+    :reader private-network
+    :db-kind :join
+    :db-info (:join-class private-network
+	      :home-key private-network-serial
+	      :foreign-key resource-serial
+	      :set nil))
+   (private-network-serial
+    :type integer))
   (:documentation "A cluster providing computational resources to services."))
 
 (defun make-container-cluster (&rest initargs &key cloud-vendor private-network)
@@ -204,12 +211,25 @@ This sets CID:*TENANT* and CID:*PROJECT* to work on the POC."
     :initform 'cloud-vendor
     :allocation :class)
    (cluster
-    :type string
-    :initarg :cluster)
+    :initarg :cluster
+    :reader cluster
+    :db-kind :join
+    :db-info (:join-class container-cluster
+	      :home-key cluster-serial
+	      :foreign-key resource-serial
+	      :set nil))
+   (cluster-serial
+    :type integer)
    (image
-    :type string
     :initarg :image
-    :documentation "The container image providing the application.")
+    :reader image
+    :db-kind :join
+    :db-info (:join-class container-image
+	      :home-key image-serial
+	      :foreign-key resource-serial
+	      :set nil))
+   (image-serial
+    :type integer)
    (protocol
     :type keyword
     :initarg :protocol
@@ -245,17 +265,16 @@ Allowed values are one of :HTTP, :HTTPS, :TCP.")
     :type :symbol
     :initform 'cloud-vendor
     :allocation :class)
-   (private-network-identifier
-    :initarg :private-network-identifier
-    :type string)
    (private-network
     :initarg :private-network
     :reader private-network
     :db-kind :join
     :db-info (:join-class private-network
-	      :home-key (tenant-name project-name steward-name private-network-identifier)
-	      :foreign-key (tenant-name project-name steward-name identifier)
+	      :home-key private-network-serial
+	      :foreign-key resource-serial
 	      :set nil))
+   (private-network-serial
+    :type integer)
    (services
     :initarg :services
     :reader services
