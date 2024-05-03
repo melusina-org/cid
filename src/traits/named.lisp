@@ -15,7 +15,6 @@
 
 (clsql:def-view-class named-trait ()
   ((name
-    :db-kind :key
     :type string
     :initarg :name
     :reader name

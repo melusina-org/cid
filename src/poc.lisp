@@ -15,6 +15,12 @@
   (:use #:common-lisp)
   (:local-nicknames
    (#:cid #:org.melusina.cid))
+  (:import-from
+   #:org.melusina.cid
+   #:tenant-name
+   #:project-name
+   #:stack-name
+   #:name)
   (:export
    #:cloud-vendor
    #:make-cloud-vendor
@@ -37,6 +43,8 @@
    #:make-delivery-stack))
 
 (in-package #:org.melusina.cid/poc)
+
+(clsql:file-enable-sql-reader-syntax)
 
 
 ;;;;
@@ -91,7 +99,8 @@ This sets CID:*TENANT* and CID:*PROJECT* to work on the POC."
 	      container-image-registry
 	      container-cluster
 	      container-service
-	      public-load-balancer)
+	      public-load-balancer
+	      infrastructure-stack)
 	:do (pushnew class cid::*database-application-class-list*)))
 
 
@@ -286,6 +295,33 @@ Allowed values are one of :HTTP, :HTTPS, :TCP.")
 	      :set t)))
   (:documentation "This class represents a public load balancer."))
 
+(defmethod initialize-instance :after ((instance public-load-balancer)
+				       &rest initargs
+				       &key &allow-other-keys)
+  (declare (ignore initargs))
+  (flet ((finalize-private-network-slot ()
+	   (when (and (slot-boundp instance 'private-network)
+		      (not (slot-boundp instance 'private-network-serial))
+		      (slot-boundp (slot-value instance 'private-network)
+				   'cid:resource-serial))
+	     (with-slots (private-network) instance
+	       (setf (slot-value instance 'private-network-serial)
+		     (cid:resource-serial private-network))))))
+    (finalize-private-network-slot)))
+
+(defmethod clsql:update-records-from-instance :before ((instance public-load-balancer) &key (database clsql:*default-database*))
+  (declare (ignore database))
+  (flet ((finalize-private-network-slot ()
+	   (when (and (slot-boundp instance 'private-network)
+		      (not (slot-boundp instance 'private-network-serial))
+		      (slot-boundp (slot-value instance 'private-network)
+				   'cid:resource-serial))
+	     (with-slots (private-network) instance
+	       (setf (slot-value instance 'private-network-serial)
+		     (cid:resource-serial private-network))))))
+    (finalize-private-network-slot)))  
+
+
 (defun make-public-load-balancer (&rest initargs &key cloud-vendor private-network services)
   "Make a CLOUD-PUBLIC-LOADBALANCER."
   (declare (ignore private-network services))
@@ -297,13 +333,37 @@ Allowed values are one of :HTTP, :HTTPS, :TCP.")
   (with-slots (private-network services) instance
     (append services (list private-network))))
 
+
 
 ;;;;
 ;;;; Software Deployment Stack
 ;;;;
 
-(clsql:def-view-class infrastructure-stack ()
-  ((resources
+(clsql:def-view-class infrastructure-stack (cid::named-trait cid::tenant-trait cid::project-trait)
+  ((tenant-name
+    :db-kind :key
+    :type string
+    :initarg :tenant-name
+    :reader tenant-name)
+   (project-name
+    :db-kind :key
+    :type string
+    :initarg :project-name
+    :reader project-name)
+   (name
+    :db-kind :key
+    :type string
+    :initarg :name
+    :reader name
+    :documentation "The NAME of the instance.
+It must consist of characters in the portable filename character set.")
+   (description
+    :accessor description
+    :type string
+    :initarg :description
+    :documentation "The DESCRIPTION is used in informational screens
+to describe the infrastructure stack.")
+   (resources
     :db-kind :virtual
     :initarg :resources
     :initform nil))
@@ -311,10 +371,38 @@ Allowed values are one of :HTTP, :HTTPS, :TCP.")
 An infrastructure stack is a collection of infrastructure resources
 defined, provisioned and modified as a unit."))
 
-(defun make-infrastructure-stack (&rest initargs &key resources)
+(defmethod initialize-instance :after ((instance infrastructure-stack)
+				       &rest initargs
+				       &key &allow-other-keys)
+  (declare (ignore initargs))
+  (flet ((finalize-resource-list ()
+	   (setf (slot-value instance 'resources)
+		 (loop :for prerequisite :in (slot-value instance 'resources)
+		       :for deep-prerequisites = (cid:resource-prerequisites prerequisite)
+		       :append (cons prerequisite deep-prerequisites) :into prerequisites
+		       :finally (return (remove-duplicates prerequisites :test #'eq)))))
+	 (claim-ownership-on-resources ()
+	   (dolist (resource (slot-value instance 'resources))
+	     (with-slots (stack-name) resource
+	       (when stack-name
+		 (error "The resource ~A is already owned by the stack ~A"
+			resource stack-name))
+	       (setf stack-name (slot-value instance 'name))))))
+    (finalize-resource-list)
+    (claim-ownership-on-resources)))
+	 
+
+(defun make-infrastructure-stack (&rest initargs &key tenant project 
+						      name displayname
+						      description
+						      resources)
   "Make an INFRASTRUCTURE-STACK."
-  (declare (ignore resources))
+  (declare (ignore tenant project name displayname description resources))
   (apply #'make-instance 'infrastructure-stack initargs))
+
+
+(defmethod cid::address-components ((instance infrastructure-stack))
+  '(cid:tenant-name cid:project-name))
 
 (defmethod cid:create-resource ((instance infrastructure-stack))
   (with-slots (resources) instance
@@ -329,15 +417,47 @@ defined, provisioned and modified as a unit."))
 (defun save-infrastructure-stack (stack)
   (with-slots (resources) stack
     (loop :for resource :in resources
-	  :do (clsql:update-records-from-instance resource)
-	  :do (print resource))))
+	  :do (clsql:update-records-from-instance resource)))
+  (clsql:update-records-from-instance stack)
+  (values stack))
+
+(defun make-sql (tenant-name project-name stack-name)
+  (clsql:sql [union
+	       [select "public-load-balancer" [resource-serial]
+	         :from [public-load-balancer]
+		 :where [and [= [slot-value 'public-load-balancer 'tenant-name] tenant-name]
+                             [= [slot-value 'public-load-balancer 'project-name] project-name]
+                             [= [slot-value 'public-load-balancer 'stack-name] stack-name]]]
+	       [select "container-image" [resource-serial]
+	         :from [container-image]
+		 :where [and [= [slot-value 'container-image 'tenant-name] tenant-name]
+                             [= [slot-value 'container-image 'project-name] project-name]
+                             [= [slot-value 'container-image 'stack-name] stack-name]]]
+
+]))
+
+	      
+  
+(defun load-infrastructure-stack-resources (tenant-name project-name stack-name)
+  (flet ((load-resources-with-class (resource-class)
+	   (clsql:select resource-class
+			 :where [and [= [slot-value resource-class 'tenant-name] tenant-name]
+                                     [= [slot-value resource-class 'project-name] project-name]
+                                     [= [slot-value resource-class 'stack-name] stack-name]]
+  		         :flatp t))
+	 (list-resource-classes ()
+	   (loop :for class :in cid::*database-application-class-list*
+		 :when (subtypep class 'cid:resource)
+		 :collect class)))
+    (loop :for resource-class :in (list-resource-classes)
+	  :append (load-resources-with-class resource-class))))
 
 (defun make-delivery-stack (&key (tag *tag*) (cloud-vendor *cloud-vendor*))
   (let* ((private-network
 	   (make-private-network
 	    :cloud-vendor cloud-vendor))
 	 (image-registry
-	   (make-cloud-container-image-registry
+	   (make-container-image-registry
 	    :cloud-vendor cloud-vendor))
 	 (cluster
 	   (make-container-cluster
@@ -384,6 +504,10 @@ defined, provisioned and modified as a unit."))
 	    :cloud-vendor cloud-vendor
 	    :services (list trac-service jenkins-service gitserver-service)
 	    :private-network private-network)))
-    (make-infrastructure-stack :resources (list loadbalancer))))
+    (make-infrastructure-stack
+     :name "delivery"
+     :displayname "Delivery Stack"
+     :description "A typical infrastructure stack for software delivery."
+     :resources (list loadbalancer))))
 
 ;;;; End of file `poc.lisp'

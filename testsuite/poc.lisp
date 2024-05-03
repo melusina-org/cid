@@ -78,7 +78,7 @@ the update of the stack."
 
 (define-testcase demonstrate-that-infrastructure-stacks-cannot-be-misadvertently-duplicated ()
   "When we are about to recreate a stack that has already been created,
-this is detected early and the condition can be restarted in an appropriate way."
+this is detected early and the condition can be restarted in an appropriate way"
   (assert-t nil))
 
 (define-testcase demonstrate-that-infrastructure-stacks-modification-can-be-reviewed-before-being-committed ()

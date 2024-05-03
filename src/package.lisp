@@ -30,12 +30,14 @@
    ;; Tenant
    #:*tenant*
    #:tenant
+   #:tenant-name
    #:list-tenants
    #:make-tenant
    #:find-tenant
    ;; Project
    #:*project*
    #:project
+   #:project-name
    #:list-projects
    #:make-project
    #:find-project
@@ -67,6 +69,9 @@
    #:list-resource-identifiers
    #:examine-differences-between-instance-and-resource
    #:resource-prerequisites
+   #:resource-serial
+   ;; Infrastructure Stacks
+   #:stack-name
    ;; Simulators and Simulations
    #:simulator
    #:make-simulator

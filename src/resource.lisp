@@ -28,7 +28,11 @@
    (resource-serial
     :type integer
     :db-kind :key
-    :db-constraints (:primary-key))
+    :reader resource-serial)
+   (stack-name
+    :type string
+    :initform nil
+    :documentation "The infrastructure stack this resource belongs to, if any.")
    (displayname
     :accessor displayname
     :type string
@@ -106,12 +110,13 @@ resources. For a given STEWARD, any resource is uniquely identified by its IDENT
 	       (setf (slot-value instance 'steward-name)
 		     (name steward)))))
 	 (check-that-steward-and-steward-class-match ()
-	   (with-slots (steward steward-class) instance
-	     (unless (typep steward steward-class)
-	       (error "Steward mismatch.
+	   (when (slot-boundp instance 'steward)
+	     (with-slots (steward steward-class) instance
+	       (unless (typep steward steward-class)
+		 (error "Steward mismatch.
 A resource of type ~A requires a ~A steward. However, the steward used
 to initialise this resource was a ~A."
-		      (type-of instance) steward-class (type-of steward))))))
+			(type-of instance) steward-class (type-of steward)))))))
     (initialize-project-slot-from-steward-slot)
     (initialize-tenant-slot-from-steward-slot)
     (finalize-steward-slot)
