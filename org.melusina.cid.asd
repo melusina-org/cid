@@ -11,32 +11,18 @@
 ;;;; you should have received as part of this distribution. The terms
 ;;;; are also available at https://opensource.org/licenses/MIT
 
-(asdf:defsystem #:org.melusina.cid/clsql-extension
-  :description "CLSQL Extensions for El Cid"
-  :author "Michaël Le Barbier"
-  :license "MIT License"
-  :depends-on (#:clsql)
-  :components
-  ((:module "src"
-    :components
-    ((:file "clsql-extension")))))
-
 (asdf:defsystem #:org.melusina.cid
   :description "Continuous Integration and Delivery"
   :author "Michaël Le Barbier"
   :license "MIT License"
   :depends-on (#:alexandria
 	       #:cl-ppcre
-	       #:clsql
-	       #:clsql-sqlite3
 	       #:ironclad
-	       #:yason
-	       #:org.melusina.cid/clsql-extension)
+	       #:yason)
   :components
   ((:module "src"
     :components ((:file "package")
 		 (:file "utilities")
-		 (:file "database")
 		 (:module "traits"
 		  :components ((:file "named")))
 		 (:file "tenant")
@@ -142,7 +128,6 @@
   ((:module "testsuite"
     :components ((:file "package")
 		 (:file "utilities")
-		 (:file "database")
 		 (:file "tenant")
 		 (:file "project")
 		 (:file "steward")

@@ -14,15 +14,13 @@
 (in-package #:org.melusina.cid/testsuite)
 
 (define-testcase simulator-unit-test ()
-  (with-test-database
+  (with-test-environment 
     (populate-tenant-table)
     (populate-project-table)
-    (populate-steward-tables)
     (let ((simulator
-	    (cid:find-steward "simulator"
-			      :tenant "testsuite"
-			      :project "testproject"
-			      :steward-class 'cid:simulator)))
+	    (cid:make-simulator :tenant "testsuite"
+				:project "testproject"
+				:name "simulator")))
       (flet ((make-simulation ()
 	       (cid:make-simulation :simulator simulator
 				    :displayname "Simulation Resource #1"

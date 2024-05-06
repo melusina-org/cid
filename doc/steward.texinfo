@@ -21,4 +21,3 @@ project.
 
 @include include/class-org.melusina.cid-steward.texinfo
 @include include/fun-org.melusina.cid-configure-steward.texinfo
-@include include/fun-org.melusina.cid-find-steward.texinfo

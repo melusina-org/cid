@@ -29,11 +29,10 @@
 (defun populate-tenant-table ()
   "Populate the TENANT table with some test data."
   (loop :for example :in *example-tenant-definitions*
-	:for tenant = (apply #'cid:make-tenant example)
-	:do (clsql:update-records-from-instance tenant)))
+	:do (apply #'cid:make-tenant example)))
 
 (define-testcase tenant-unit-test ()
-  (with-test-database
+  (with-test-environment
     (populate-tenant-table)
     (flet ((ensure-that-find-tenant-returns-tenant-for-known-name ()
 	     (assert-string=
@@ -44,9 +43,8 @@
 	      (cid:find-tenant "This is not an actual tenant name")))
 	   (ensure-that-make-tenant-with-taken-name-fails ()
 	     (assert-condition
-		 (clsql:update-records-from-instance
-		  (cid:make-tenant :name "testsuite"
-				   :displayname "Alternative Display Name"))
+		 (cid:make-tenant :name "testsuite"
+				  :displayname "Alternative Display Name")
 		 error))
 	   (ensure-that-describe-tenant-follows-the-expected-format ()
 	     (assert-string-match

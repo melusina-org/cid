@@ -13,42 +13,82 @@
 
 (in-package #:org.melusina.cid)
 
-(clsql:file-enable-sql-reader-syntax)
+(defvar *project* nil
+  "The current `PROJECT' used when creating stewards and resources.")
 
-(clsql:def-view-class project (named-trait tenant-trait)
-  ((tenant-name
-    :type string
-    :db-kind :key
-    :reader tenant-name))
-  (:base-table project)
-  (:documentation "The class representing a PROJECT.
-When a CLSQL database is connected, projects can be persisted on this database.
-The contents of such a database can be examined with LIST-PROJECTS
-and FIND-PROJECT."))
+(defvar *project-directory* (make-hash-table :test #'equal)
+  "The directory of known projects.")
+
+(defun project-directory-key (project)
+  "The key used in `*PROJECT-DIRECTORY*' to store tenant."
+  (list (name (tenant project)) (name project)))
+
+(defclass project (named-trait)
+  ((tenant
+    :initarg :tenant
+    :initform *tenant*
+    :reader tenant
+    :type tenant))
+  (:documentation "The class representing a PROJECT."))
+
+(defmethod initialize-instance :after ((instance project) &rest initargs &key &allow-other-keys)
+  (declare (ignore initargs))
+  (flet ((support-initialize-tenant-slot-with-designator ()
+	   (cond
+	     ((typep (slot-value instance 'tenant) 'string)
+	      (with-slots (tenant) instance
+		(setf tenant (or (find-tenant tenant)
+				 (error "Cannot find tenant ~S." tenant))))))))
+    (support-initialize-tenant-slot-with-designator)))
 
 (defun make-project (&rest initargs &key name displayname tenant)
-  "Make a PROJECT with the given attributes."
+  "Make a PROJECT with the given attributes.
+Unless the `*PROJECT-DIRECTORY*' is NIL, the project is also
+added to the directory of known projects and can be looked
+up using `FIND-PROJECT'."
   (declare (ignore name displayname tenant))
-  (apply #'make-instance 'project initargs))
+  (flet ((fail-when-name-is-taken (project)
+	   (when (and *project-directory*
+		      (gethash (project-directory-key project) *project-directory*))
+	     (error "A project named ~A already exists for tenant ~A."
+		    (name project) (name (tenant project)))))
+	 (maybe-add-to-directory (project)
+	   (when *project-directory*
+	     (setf (gethash (project-directory-key project) *project-directory*) project))))
+    (let ((project
+	    (apply #'make-instance 'project initargs)))
+      (fail-when-name-is-taken project)
+      (maybe-add-to-directory project)
+      (values project))))
 
-(defmethod address-components ((instance project))
-  '(tenant-name))
+(defmethod print-object ((instance project) stream)
+  (flet ((print-readably ()
+	   (print-readable-object instance stream 'make-project
+				  '((:tenant tenant)
+				    (:name name)
+				    (:displayname displayname))))
+	 (print-unreadably ()
+	   (with-slots (tenant name displayname) instance
+	     (print-unreadable-object (instance stream :type t :identity t)
+	       (format stream "~A:~A ~A" (name tenant) name displayname)))))
+    (if *print-readably*
+	(print-readably)
+	(print-unreadably))))
 
 (defun list-projects (&key (tenant *tenant*))
-  "List existing projects.
-When a CLSQL database is connected, the list of projects existing
-in the database is returned."
+  "List existing projects."
   (flet ((return-early-if-tenant-does-not-exist ()
 	   (setf tenant (find-tenant tenant))
 	   (unless tenant
 	     (return-from list-projects nil)))
 	 (list-for-tenant (tenant-name)
-	   (clsql:select
-	    'project
-	    :where [= [slot-value 'project 'tenant-name] tenant-name]
-	    :flatp t))
+	   (loop :for key :being :the :hash-key
+		 :of *project-directory*
+		 :using (hash-value project)
+		 :when (equal (first key) tenant-name)
+		 :collect project))
 	 (list-every-project ()
-	   (clsql:select 'project :flatp t)))
+	   (alexandria:hash-table-values *project-directory*)))
     (cond
       (tenant
        (return-early-if-tenant-does-not-exist)
@@ -63,11 +103,7 @@ in the database is returned."
 	   (unless tenant
 	     (return-from find-project nil)))
 	 (find-by-name (tenant-name name)
-	   (caar
-	    (clsql:select
-	     'project
-	     :where [and [= [slot-value 'project 'name] name]
-                         [= [slot-value 'project 'tenant-name] tenant-name]]))))
+	   (gethash (list tenant-name name) *project-directory*)))
     (etypecase designator
       (project
        designator)
@@ -76,53 +112,5 @@ in the database is returned."
        (find-by-name (name tenant) designator))
       (null
        nil))))
-
-(defparameter *project* nil
-  "The current PROJECT used when creating stewards and resources.")
-
-(clsql:def-view-class project-trait nil
-  ((project-name
-    :type string
-    :reader project-name)
-   (project
-    :db-kind :join
-    :db-info (:join-class project
-	      :home-key project-name
-	      :foreign-key name
-	      :set nil)
-    :initarg :project
-    :reader project))
-  (:documentation "A trait for instances specific to a project.
-The trait provides initialisation for the PROJECT-NAME and PROJECT slots
-based on provided values."))
-
-(defmethod initialize-instance :after ((instance project-trait) &rest initargs &key &allow-other-keys)
-  (declare (ignore initargs))
-  (flet ((finalize-project-slot ()
-	   (cond
-	     ((and (slot-boundp instance 'project)
-		   (slot-boundp instance 'tenant)
-		   (not (typep (slot-value instance 'project) 'project)))
-	      (with-slots (tenant project) instance
-		(setf project (or (find-project project :tenant tenant)
-				  (error "Cannot find project ~S for tenant ~A." project tenant)))))
-	     ((and (not (slot-boundp instance 'project))
-		   (not (slot-boundp instance 'project-name))
-		   *project*)
-	      (setf (slot-value instance 'project) *project*))))
-	 (finalize-project-name-slot ()
-	   (when (and (slot-boundp instance 'project)
-		      (typep (slot-value instance 'project) 'project)
-		      (not (slot-boundp instance 'project-name)))
-	     (setf (slot-value instance 'project-name) (name (slot-value instance 'project)))))
-	 (initialize-tenant-slot-from-project-slot ()
-	   (when (and (not (slot-boundp instance 'tenant))
-		      (slot-boundp instance 'project)
-		      (typep (slot-value instance 'project) 'project))
-	     (with-slots (project) instance
-	       (setf (slot-value instance 'tenant) (tenant project))))))
-    (initialize-tenant-slot-from-project-slot)
-    (finalize-project-slot)
-    (finalize-project-name-slot)))
 
 ;;;; End of file `project.lisp'

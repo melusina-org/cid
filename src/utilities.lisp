@@ -81,6 +81,35 @@
 
 
 ;;;;
+;;;; Print Readably
+;;;;
+
+(defun print-readable-object (object stream constructor slot-specs)
+  "Readably print OBJECT on STREAM."
+  (let ((*standard-output*
+	  stream))
+    (pprint-logical-block (nil nil :prefix "(" :suffix ")")
+      (write constructor)
+      (write-char #\Space)
+      (pprint-newline :miser)
+      (pprint-indent :current 0)
+      (loop :for slot-spec-iterator :on slot-specs
+	    :for slot-spec = (first slot-spec-iterator)
+	    :for lastp = (not (rest slot-spec-iterator))
+	    :do (destructuring-bind (initarg slot-name &optional sensitive-p) slot-spec
+		  (declare (ignore sensitive-p))
+		  (when (slot-boundp object slot-name)
+		    (pprint-logical-block (nil nil)
+		      (write initarg)
+		      (write-char #\Space)
+		      (pprint-newline :linear)
+		      (write (slot-value object slot-name)))
+		    (unless lastp
+		      (write-char #\Space)
+		      (pprint-newline :linear))))))))
+
+
+;;;;
 ;;;; File Checksum
 ;;;;
 
@@ -157,7 +186,6 @@ list with the following entries:
 	  :for field :in fields
 	  :nconc (apply #'extract-json-field object field))))
 
-
 
 ;;;;
 ;;;; Random String
@@ -191,6 +219,5 @@ This uses a very weak method that does not try to avoid collisions.x"
           :do (setf (aref id i)
                     (aref actual-alphabet (random alphabet-length)))
           :finally (return id))))
-
 
 ;;;; End of file `utilities.lisp'

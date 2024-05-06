@@ -13,7 +13,7 @@
 
 (in-package #:org.melusina.cid)
 
-(clsql:def-view-class named-trait ()
+(defclass named-trait ()
   ((name
     :type string
     :initarg :name
@@ -28,9 +28,6 @@ It must consist of characters in the portable filename character set.")
   (:documentation "The NAMED-TRAIT provides methods and attributes for identifying
 and describing an instance."))
 
-(defgeneric address-components (object)
-  (:documentation "The list of slots used as address components to denote the named instance."))
-
 (defmethod initialize-instance :after ((instance named-trait) &rest initargs &key &allow-other-keys)
   (declare (ignore initargs))
   (flet ((finalize-name-slot ()
@@ -38,22 +35,5 @@ and describing an instance."))
 	     (with-slots (name) instance
 	       (check-that-string-is-in-the-portable-filename-character-set name)))))
     (finalize-name-slot)))
-
-(defmethod print-object ((instance named-trait) stream)
-  (flet ((name-slots-boundp ()
-	   (and (slot-boundp instance 'name)
-		(slot-boundp instance 'displayname)))
-	 (print-name-slots ()
-	   (with-slots (name displayname) instance
-	     (flet ((address-slot-value (slot-name)
-		      (when (slot-boundp instance slot-name)
-			(slot-value instance slot-name))))
-	       (format stream "~{~@[~A~]:~}~A" (mapcar #'address-slot-value (address-components instance)) name))
-	     (when displayname
-	       (format stream " ~A" displayname))))
-	 (print-unavailable-name ()
-	   (write-string "No name available" stream)))
-    (print-unreadable-object (instance stream :type t :identity t)
-      (if (name-slots-boundp) (print-name-slots) (print-unavailable-name)))))
 
 ;;;; End of file `named.lisp'

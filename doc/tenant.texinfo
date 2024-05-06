@@ -18,3 +18,4 @@ teams, and so on.
 @include include/fun-org.melusina.cid-find-tenant.texinfo
 @include include/fun-org.melusina.cid-list-tenants.texinfo
 @include include/var-org.melusina.cid-star-tenant-star.texinfo
+@include include/var-org.melusina.cid-star-tenant-directory-star.texinfo

@@ -18,14 +18,12 @@
 ;;;; Simulator
 ;;;;
 
-(clsql:def-view-class simulator (steward)
+(defclass simulator (steward)
   ((description
-    :db-kind :virtual
     :allocation :class
     :initform "A steward that does not administrate actual resources."
     :type string)
    (resource-identifiers
-    :db-kind :virtual
     :initarg :resource-identifiers
     :initform nil
     :documentation "The list of resource identifiers that have been created."))
@@ -47,9 +45,8 @@ new resources."))
 ;;;; Simulation
 ;;;;
 
-(clsql:def-view-class simulation (resource)
+(defclass simulation (resource)
   ((steward-class
-    :db-kind :virtual
     :type :symbol
     :initform 'simulator
     :allocation :class))

@@ -17,9 +17,8 @@
    (#:cid #:org.melusina.cid))
   (:import-from
    #:org.melusina.cid
-   #:tenant-name
-   #:project-name
-   #:stack-name
+   #:tenant
+   #:project
    #:name)
   (:export
    #:cloud-vendor
@@ -44,14 +43,12 @@
 
 (in-package #:org.melusina.cid/poc)
 
-(clsql:file-enable-sql-reader-syntax)
-
 
 ;;;;
 ;;;; Cloud Vendor
 ;;;;
 
-(clsql:def-view-class cloud-vendor (cid:simulator)
+(defclass cloud-vendor (cid:simulator)
   ((credential
     :initarg :credential
     :documentation "The credentials used to access the public API."))
@@ -108,9 +105,8 @@ This sets CID:*TENANT* and CID:*PROJECT* to work on the POC."
 ;;;; Cloud Private Network
 ;;;;
 
-(clsql:def-view-class private-network (cid:simulation)
+(defclass private-network (cid:simulation)
   ((steward-class
-    :db-kind :virtual
     :type :symbol
     :initform 'cloud-vendor
     :allocation :class))
@@ -128,9 +124,8 @@ This sets CID:*TENANT* and CID:*PROJECT* to work on the POC."
 ;;;; Container Image
 ;;;;
 
-(clsql:def-view-class container-image (cid:simulation)
+(defclass container-image (cid:simulation)
   ((steward-class
-    :db-kind :virtual
     :type :symbol
     :initform 'cloud-vendor
     :allocation :class)
@@ -154,9 +149,8 @@ This sets CID:*TENANT* and CID:*PROJECT* to work on the POC."
 ;;;; Cloud Container Image Registry
 ;;;;
 
-(clsql:def-view-class container-image-registry (cid:simulation)
+(defclass container-image-registry (cid:simulation)
   ((steward-class
-    :db-kind :virtual
     :type :symbol
     :initform 'cloud-vendor
     :allocation :class))
@@ -180,20 +174,14 @@ This sets CID:*TENANT* and CID:*PROJECT* to work on the POC."
 ;;;; Cloud Container Cluster
 ;;;;
 
-(clsql:def-view-class container-cluster (cid:simulation)
+(defclass container-cluster (cid:simulation)
   ((steward-class
-    :db-kind :virtual
     :type :symbol
     :initform 'cloud-vendor
     :allocation :class)
    (private-network
     :initarg :private-network
-    :reader private-network
-    :db-kind :join
-    :db-info (:join-class private-network
-	      :home-key private-network-serial
-	      :foreign-key resource-serial
-	      :set nil))
+    :reader private-network)
    (private-network-serial
     :type integer))
   (:documentation "A cluster providing computational resources to services."))
@@ -214,32 +202,17 @@ This sets CID:*TENANT* and CID:*PROJECT* to work on the POC."
 ;;;; Cloud Container Service
 ;;;;
 
-(clsql:def-view-class container-service (cid:simulation)
+(defclass container-service (cid:simulation)
   ((steward-class
-    :db-kind :virtual
     :type :symbol
     :initform 'cloud-vendor
     :allocation :class)
    (cluster
     :initarg :cluster
-    :reader cluster
-    :db-kind :join
-    :db-info (:join-class container-cluster
-	      :home-key cluster-serial
-	      :foreign-key resource-serial
-	      :set nil))
-   (cluster-serial
-    :type integer)
+    :reader cluster)
    (image
     :initarg :image
-    :reader image
-    :db-kind :join
-    :db-info (:join-class container-image
-	      :home-key image-serial
-	      :foreign-key resource-serial
-	      :set nil))
-   (image-serial
-    :type integer)
+    :reader image)
    (protocol
     :type keyword
     :initarg :protocol
@@ -269,30 +242,17 @@ Allowed values are one of :HTTP, :HTTPS, :TCP.")
 ;;;; Cloud Public Load Balancer
 ;;;;
 
-(clsql:def-view-class public-load-balancer (cid:simulation)
+(defclass public-load-balancer (cid:simulation)
   ((steward-class
-    :db-kind :virtual
     :type :symbol
     :initform 'cloud-vendor
     :allocation :class)
    (private-network
     :initarg :private-network
-    :reader private-network
-    :db-kind :join
-    :db-info (:join-class private-network
-	      :home-key private-network-serial
-	      :foreign-key resource-serial
-	      :set nil))
-   (private-network-serial
-    :type integer)
+    :reader private-network)
    (services
     :initarg :services
-    :reader services
-    :db-kind :join
-    :db-info (:join-class container-service
-	      :home-key (tenant-name project-name steward-name identifier)
-	      :foreign-key (tenant-name project-name steward-name load-balancer-identifier)
-	      :set t)))
+    :reader services))
   (:documentation "This class represents a public load balancer."))
 
 (defmethod initialize-instance :after ((instance public-load-balancer)
@@ -308,18 +268,7 @@ Allowed values are one of :HTTP, :HTTPS, :TCP.")
 	       (setf (slot-value instance 'private-network-serial)
 		     (cid:resource-serial private-network))))))
     (finalize-private-network-slot)))
-
-(defmethod clsql:update-records-from-instance :before ((instance public-load-balancer) &key (database clsql:*default-database*))
-  (declare (ignore database))
-  (flet ((finalize-private-network-slot ()
-	   (when (and (slot-boundp instance 'private-network)
-		      (not (slot-boundp instance 'private-network-serial))
-		      (slot-boundp (slot-value instance 'private-network)
-				   'cid:resource-serial))
-	     (with-slots (private-network) instance
-	       (setf (slot-value instance 'private-network-serial)
-		     (cid:resource-serial private-network))))))
-    (finalize-private-network-slot)))  
+  
 
 
 (defun make-public-load-balancer (&rest initargs &key cloud-vendor private-network services)
@@ -339,24 +288,15 @@ Allowed values are one of :HTTP, :HTTPS, :TCP.")
 ;;;; Software Deployment Stack
 ;;;;
 
-(clsql:def-view-class infrastructure-stack (cid::named-trait cid::tenant-trait cid::project-trait)
-  ((tenant-name
-    :db-kind :key
+(defclass infrastructure-stack (cid::named-trait)
+  ((tenant
+    :type tenant
+    :initarg :tenant
+    :reader tenant)
+   (project
     :type string
-    :initarg :tenant-name
-    :reader tenant-name)
-   (project-name
-    :db-kind :key
-    :type string
-    :initarg :project-name
-    :reader project-name)
-   (name
-    :db-kind :key
-    :type string
-    :initarg :name
-    :reader name
-    :documentation "The NAME of the instance.
-It must consist of characters in the portable filename character set.")
+    :initarg :project
+    :reader project)
    (description
     :accessor description
     :type string
@@ -364,7 +304,6 @@ It must consist of characters in the portable filename character set.")
     :documentation "The DESCRIPTION is used in informational screens
 to describe the infrastructure stack.")
    (resources
-    :db-kind :virtual
     :initarg :resources
     :initform nil))
   (:documentation "This class represents a software stack deployment.
@@ -417,40 +356,8 @@ defined, provisioned and modified as a unit."))
 (defun save-infrastructure-stack (stack)
   (with-slots (resources) stack
     (loop :for resource :in resources
-	  :do (clsql:update-records-from-instance resource)))
-  (clsql:update-records-from-instance stack)
+	  :do (error "Not implemented")))
   (values stack))
-
-(defun make-sql (tenant-name project-name stack-name)
-  (clsql:sql [union
-	       [select "public-load-balancer" [resource-serial]
-	         :from [public-load-balancer]
-		 :where [and [= [slot-value 'public-load-balancer 'tenant-name] tenant-name]
-                             [= [slot-value 'public-load-balancer 'project-name] project-name]
-                             [= [slot-value 'public-load-balancer 'stack-name] stack-name]]]
-	       [select "container-image" [resource-serial]
-	         :from [container-image]
-		 :where [and [= [slot-value 'container-image 'tenant-name] tenant-name]
-                             [= [slot-value 'container-image 'project-name] project-name]
-                             [= [slot-value 'container-image 'stack-name] stack-name]]]
-
-]))
-
-	      
-  
-(defun load-infrastructure-stack-resources (tenant-name project-name stack-name)
-  (flet ((load-resources-with-class (resource-class)
-	   (clsql:select resource-class
-			 :where [and [= [slot-value resource-class 'tenant-name] tenant-name]
-                                     [= [slot-value resource-class 'project-name] project-name]
-                                     [= [slot-value resource-class 'stack-name] stack-name]]
-  		         :flatp t))
-	 (list-resource-classes ()
-	   (loop :for class :in cid::*database-application-class-list*
-		 :when (subtypep class 'cid:resource)
-		 :collect class)))
-    (loop :for resource-class :in (list-resource-classes)
-	  :append (load-resources-with-class resource-class))))
 
 (defun make-delivery-stack (&key (tag *tag*) (cloud-vendor *cloud-vendor*))
   (let* ((private-network

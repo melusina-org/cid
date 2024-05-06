@@ -17,30 +17,38 @@
 ;;;; Resource Class
 ;;;;
 
-(clsql:def-view-class resource (tenant-trait project-trait)
-  ((steward-name
-    :type string
-    :db-constraints :not-null
-    :reader steward-name)
+(defclass resource ()
+  ((project
+    :initarg :project
+    :initform *project*
+    :reader project
+    :type project)
+   (tenant
+    :initarg :tenant
+    :initform *tenant*
+    :reader tenant
+    :type tenant)
+   (steward
+    :type steward
+    :reader steward
+    :initarg :steward)
    (steward-class
     :type symbol
     :allocation :class)
-   (resource-serial
-    :type integer
-    :db-kind :key
-    :reader resource-serial)
-   (stack-name
-    :type string
+   (name
+    :accessor name
+    :type (or string null)
     :initform nil
-    :documentation "The infrastructure stack this resource belongs to, if any.")
+    :initarg :name
+    :documentation "The NAME is used in technical context to denote the resource instance.")
    (displayname
     :accessor displayname
-    :type string
+    :type (or string null)
     :initform nil
     :initarg :displayname
     :documentation "The DISPLAYNAME is used in informational screens to denote the resource instance.")
    (description
-    :type string
+    :type (or string null)
     :initarg :description
     :reader description
     :initform nil
@@ -52,16 +60,8 @@
     :documentation "The state of the resource.
 Allowed values are NIL, meaning the resource is not ready or maybe does not exist yet,
 T meaning the resource exists and is ready or some resource lifecycle specific keyword.")
-   (steward
-    :initarg :steward
-    :reader steward
-    :db-kind :join
-    :db-info (:join-class steward
-	      :home-key (tenant-name project-name steward-name)
-	      :foreign-key (tenant-name project-name name)
-	      :set nil))
    (identifier
-    :type string
+    :type (or string null)
     :initarg :identifier
     :reader resource-identifier
     :initform nil
@@ -74,55 +74,53 @@ the underlying resource has not been created, the IDENTIFIER is NIL."))
 These resources can be created, read, updated and deleted. Resources can depend on other
 resources. For a given STEWARD, any resource is uniquely identified by its IDENTIFIER slot."))
 
-(defmethod address-components ((instance resource))
-  '(tenant-name project-name steward-name))
-
-(defmethod initialize-instance :after ((instance resource)
-				       &rest initargs &key &allow-other-keys)
+(defmethod initialize-instance :after ((instance resource) &rest initargs &key &allow-other-keys)
   (declare (ignore initargs))
-  (flet ((initialize-project-slot-from-steward-slot ()
-	   (when (and (not (slot-boundp instance 'project))
-		      (slot-boundp instance 'steward)
-		      (typep (slot-value instance 'steward) 'steward))
-	     (setf (slot-value instance 'project)
-		   (project (slot-value instance 'steward))
-		   (slot-value instance 'project-name)
-		   (name (project (slot-value instance 'steward))))))
-	 (initialize-tenant-slot-from-steward-slot ()
-	   (when (and (not (slot-boundp instance 'tenant))
-		      (slot-boundp instance 'steward)
-		      (typep (slot-value instance 'steward) 'steward))
-	     (with-slots (steward) instance
-	       (setf (slot-value instance 'tenant)
-		     (tenant steward)
-		     (slot-value instance 'tenant-name)
-		     (name (tenant (slot-value instance 'steward)))))))
-	 (finalize-steward-slot ()
-	   (when (slot-boundp instance 'steward)
-	     (with-slots (steward) instance
-	       (unless (typep steward 'steward)
-		 (setf steward (find-steward steward))))))
-	 (finalize-steward-name-slot ()
-	   (when (and (slot-boundp instance 'steward)
-		      (slot-value instance 'steward)
-		      (not (slot-boundp instance 'steward-name)))
-	     (with-slots (steward) instance
-	       (setf (slot-value instance 'steward-name)
-		     (name steward)))))
-	 (check-that-steward-and-steward-class-match ()
-	   (when (slot-boundp instance 'steward)
-	     (with-slots (steward steward-class) instance
-	       (unless (typep steward steward-class)
-		 (error "Steward mismatch.
-A resource of type ~A requires a ~A steward. However, the steward used
-to initialise this resource was a ~A."
-			(type-of instance) steward-class (type-of steward)))))))
-    (initialize-project-slot-from-steward-slot)
-    (initialize-tenant-slot-from-steward-slot)
-    (finalize-steward-slot)
-    (finalize-steward-name-slot)
-    (check-that-steward-and-steward-class-match)
-    (values)))
+  (flet ((support-initialize-tenant-slot-with-designator ()
+	   (cond
+	     ((typep (slot-value instance 'tenant) 'string)
+	      (with-slots (tenant) instance
+		(setf tenant (or (find-tenant tenant)
+				 (error "Cannot find tenant ~S." tenant)))))))
+	 (support-initialize-project-slot-with-designator ()
+	   (cond
+	     ((typep (slot-value instance 'project) 'string)
+	      (with-slots (tenant project) instance
+		(setf project (or (find-project project :tenant tenant )
+				  (error "Cannot find project ~S for tenant ~S."
+					 project (name tenant))))))))
+	 (support-initialize-tenant-and-project-slots-from-steward ()
+	   (with-slots (tenant project steward) instance
+	     (unless steward
+	       (return-from support-initialize-tenant-and-project-slots-from-steward))
+	     (unless tenant
+	       (setf tenant (tenant steward)))
+	     (unless project
+	       (setf project (project steward)))))
+	 (check-that-tenant-scope-is-properly-defined ()
+	   (with-slots (tenant) instance
+	     (unless tenant
+	       (error "The TENANT slot is not set."))))
+	 (check-that-project-scope-is-properly-defined ()
+	   (with-slots (tenant project) instance
+	     (unless project
+	       (error "The PROJECT slot is not set."))
+	     (unless (eq tenant (tenant project))
+	       (error "The PROJECT and TENANT slots are not consistently set."))))
+	 (check-that-steward-is-consistently-set ()
+	   (with-slots (tenant project steward) instance
+	     (unless steward
+	       (error "The STEWARD slot is not set."))
+	     (unless (eq project (project steward))
+	       (error "The PROJECT and STEWARD slots are not consistently sey."))
+	     (unless (eq tenant (tenant steward))
+	       (error "The TENANT and STEWARD slots are not consistently sey.")))))
+    (support-initialize-tenant-slot-with-designator)
+    (support-initialize-project-slot-with-designator)
+    (support-initialize-tenant-and-project-slots-from-steward)
+    (check-that-tenant-scope-is-properly-defined)
+    (check-that-project-scope-is-properly-defined)
+    (check-that-steward-is-consistently-set)))
 
 
 ;;;;
@@ -329,21 +327,6 @@ before its prerequisites."))
 	:for deep-prerequisites = (resource-prerequisites prerequisite)
 	:append (cons prerequisite deep-prerequisites) :into prerequisites
 	:finally (return (remove-duplicates prerequisites :test #'eq))))
-
-
-;;;;
-;;;; CLSQL Persistence of Resources with Prerequisites
-;;;;
-
-(defmethod clsql:update-records-from-instance :before ((instance resource) &key (database clsql:*default-database*))
-  "Update records for INSTANCE prerequisites before INSTANCE records themselves."
-  (loop :for prerequisite :in (reverse (resource-prerequisites instance))
-	:do (clsql:update-records-from-instance prerequisite :database database)))
-
-(defmethod clsql:update-instance-from-records :before ((instance resource) &key (database clsql:*default-database*))
-  "Update INSTANCE prerequisites from their records before INSTANCE itself."
-  (loop :for prerequisite :in (reverse (resource-prerequisites instance))
-	:do (clsql:update-instance-from-records prerequisite :database database)))
 
 
 ;;;;

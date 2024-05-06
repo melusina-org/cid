@@ -15,3 +15,4 @@ lifetime, common users and stakeholders.
 @include include/fun-org.melusina.cid-find-project.texinfo
 @include include/fun-org.melusina.cid-list-projects.texinfo
 @include include/var-org.melusina.cid-star-project-star.texinfo
+@include include/var-org.melusina.cid-star-project-directory-star.texinfo

@@ -15,13 +15,8 @@
   (:use #:common-lisp)
   (:export
    
-   ;; Database
-   #:*database-type*
-   #:*database-connection-spec*
+   ;; Utilities
    #:user-data-relative-pathname
-   #:connect-database
-   #:disconnect-database
-   #:with-database
    ;; Common Accessors
    #:description
    ;; Named Trait
@@ -29,6 +24,7 @@
    #:displayname
    ;; Tenant
    #:*tenant*
+   #:*tenant-directory*
    #:tenant
    #:tenant-name
    #:list-tenants
@@ -36,6 +32,7 @@
    #:find-tenant
    ;; Project
    #:*project*
+   #:*project-directory*
    #:project
    #:project-name
    #:list-projects

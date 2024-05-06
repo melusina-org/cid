@@ -22,9 +22,7 @@
    #:lint
    #+quicklisp
    #:reload
-   #:build
-   #:browse-database
-   #:recreate-database))
+   #:build))
 
 (in-package #:org.melusina.cid/development)
 
@@ -84,32 +82,6 @@
 	    (build:find-image (uiop:strcat "cid/" image-name))))
       (setf (build:image-tag image) tag)
       (build:build-image image :cache cache))))
-
-(defvar *database-browser* nil
-  "The launched program browsing the database.")
-
-(defun browse-database ()
-  "Browse the currently connected database."
-  (when (and *database-browser* (uiop:process-alive-p *database-browser*))
-    (error "A database browser has already been spawned."))
-  (when (and clsql:*default-database*
-	     (eq (clsql:database-type clsql:*default-database*)
-		 :sqlite3))
-    (let ((pathname
-	    (first (clsql-sys:connection-spec clsql:*default-database*))))
-      (setf *database-browser*
-	    (uiop:launch-program 
-	     (list "sqlitebrowser" (namestring pathname)))))))
-
-(defun recreate-database ()
-  (when (and clsql:*default-database*
-	     (eq (clsql:database-type clsql:*default-database*)
-		 :sqlite3))
-    (let ((pathname
-	    (first (clsql-sys:connection-spec clsql:*default-database*))))
-      (cid:disconnect-database)
-      (delete-file pathname)
-      (cid:connect-database))))
 
 
 ;;;;

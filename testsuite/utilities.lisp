@@ -33,49 +33,17 @@
 	:collect (docker:make-volume
 		  :name (concatenate 'string "cid-" project "-" system))))
 
-(defun testsuite-database-name (&optional(testsuite-id *testsuite-id*))
-  "The name of the testsuite database file."
-  (cid:user-data-relative-pathname
-   "testsuite"
-   (make-pathname :name (or testsuite-id "testsuite") :type "sqlite")))
-
-(defun connect-database ()
-  "Connect to a testsuite database.
-This alters CID:*DATABASE-TYPE* and CID:*DATABASE-CONNECTION-SPEC*
-to reflect the database being used."
-  (setf cid:*database-type* :sqlite3
-	cid:*database-connection-spec*
-	(list (namestring (testsuite-database-name))))
-  (ensure-directories-exist (testsuite-database-name))
-  (cid:connect-database))
-
-(defun disconnect-database (&key (destroy-database t))
-  "Disconnect the testsuite database.
-Unless DESTROY-DATABASE is set to NIL, the test database
-is also destroyed.
-
-This alters CID:*DATABASE-TYPE* and CID:*DATABASE-CONNECTION-SPEC*
-to reflect that the testsuite database should not be used anymore.
-It can be reconnected to with CONNECT-DATABASE."
-  (cid:disconnect-database)
-  (when destroy-database
-    (clsql:destroy-database cid:*database-connection-spec*
-			    :database-type cid:*database-type*))
-  (setf cid:*database-type* nil
-	cid:*database-connection-spec* nil))
-
-(defmacro with-test-database (&body body)
-  "Run BODY with a connected testsuite database.
-The database is reclaimed and destroyed after BODY completes."
-  `(let ((cid:*database-type* nil)
-	 (cid:*database-connection-spec* nil)
-	 (clsql:*default-database* nil))
-     (unwind-protect
-	  (progn
-	    (connect-database)
-	    ,@body)
-       (disconnect-database))))
-
+(defmacro with-test-environment (&body body)
+  "Run BODY with an appropriate test environment."
+  `(let ((cid:*tenant*
+	   nil)
+	 (cid:*project*
+	   nil)
+	 (cid::*tenant-directory*
+	   (make-hash-table :test #'equal))
+	 (cid::*project-directory*
+	   (make-hash-table :test #'equal)))
+     ,@body))
 
 
 ;;;

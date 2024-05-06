@@ -13,19 +13,19 @@
 
 (in-package #:org.melusina.cid)
 
-(clsql:file-enable-sql-reader-syntax)
-
-(clsql:def-view-class steward (named-trait tenant-trait project-trait)
-  ((tenant-name
-    :type string
-    :db-kind :key
-    :reader tenant-name)
-   (project-name
-    :type string
-    :db-kind :key
-    :reader project-name)
+(defclass steward (named-trait)
+  ((tenant
+    :type tenant
+    :reader tenant
+    :initarg :tenant
+    :initform *tenant*)
+   (project
+    :type project
+    :reader project
+    :initarg :project
+    :initform *project*)
    (description
-    :type string
+    :type (or string null)
     :initarg :description
     :reader description
     :initform nil
@@ -37,52 +37,23 @@ Some examples of STEWARDS are the localhost, a configured docker engine,
 a remote host accesible over SSH, a kubernetes cluster hosted in
 a public cloud, among many other possibilities."))
 
-(defmethod address-components ((instance steward))
-  '(tenant-name project-name))
-
-(defun find-steward (designator &key tenant project steward-class)
-  "The steward designated by DESIGNATOR.
-When DESIGNATOR is a STEWARD, it is immediately returned. When DESIGNATOR
-is a string, it is interpreted as a name to search stewards in the given
-project. When DESIGNATOR is NIL, the returned value is also NIL."
-  (flet ((check-tenant ()
-	   (unless tenant
-	     (error "A TENANT is required to find a steward.")))
-	 (check-project ()
-	   (unless project
-	     (error "A PROJECT is required to find a steward.")))
-	 (check-steward-class ()
-	     (unless steward-class
-	       (error "A STEWARD-CLASS is required to find a steward.")))
-	 (return-early-if-tenant-does-not-exist ()
-	   (when tenant
-	     (setf tenant (find-tenant tenant)))
-	   (unless tenant
-	     (return-from find-steward nil)))
-	 (return-early-if-project-does-not-exist ()
-	   (when project
-	     (setf project (find-project project :tenant tenant)))
-	   (unless project
-	     (return-from find-steward nil)))
-	 (find-by-name (name)
-	   (caar
-	    (clsql:select
-	     steward-class
- 	     :where [and [= [tenant-name] (name tenant)]
-                         [= [project-name] (name project)]
-                         [= [name] name]]))))
-    (etypecase designator
-      (steward
-       designator)
-      (string
-       (check-tenant)
-       (check-project)
-       (check-steward-class)
-       (return-early-if-tenant-does-not-exist)
-       (return-early-if-project-does-not-exist)
-       (find-by-name designator))
-      (null
-       nil))))
+(defmethod initialize-instance :after ((instance steward) &rest initargs &key &allow-other-keys)
+  (declare (ignore initargs))
+  (flet ((support-initialize-tenant-slot-with-designator ()
+	   (cond
+	     ((typep (slot-value instance 'tenant) 'string)
+	      (with-slots (tenant) instance
+		(setf tenant (or (find-tenant tenant)
+				 (error "Cannot find tenant ~S." tenant)))))))
+	 (support-initialize-project-slot-with-designator ()
+	   (cond
+	     ((typep (slot-value instance 'project) 'string)
+	      (with-slots (tenant project) instance
+		(setf project (or (find-project project :tenant tenant )
+				  (error "Cannot find project ~S for tenant ~S."
+					 project (name tenant)))))))))
+    (support-initialize-tenant-slot-with-designator)
+    (support-initialize-project-slot-with-designator)))
 
 
 ;;;;

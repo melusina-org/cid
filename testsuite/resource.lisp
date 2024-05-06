@@ -18,29 +18,17 @@
 	   (assert-t* (cid:tenant resource))
 	   (assert-t* (cid:project resource))
 	   (assert-t* (cid:steward resource)))
-	 (verify-that-steward-joined-slot-is-consistently-set (steward)
-	   (assert-string=
-	    (cid:name (cid:steward resource))
-	    (cid::steward-name resource))
-	   (assert-type steward (slot-value resource 'cid::steward-class)))
 	 (verify-that-resource-and-steward-share-the-same-tenant (steward)
-	   (assert-string=
-	    (cid:name (cid:tenant steward))
-	    (cid:name (cid:tenant resource)))
-	   (assert-string=
-	    (cid::tenant-name (cid:project steward))
-	    (cid:name (cid:tenant resource))))
+	   (assert-eq
+	    (cid:tenant steward)
+	    (cid:tenant resource)))
 	 (verify-that-resource-and-steward-share-the-same-project (steward)
-	   (assert-string=
-	    (cid::tenant-name (cid:project steward))
-	    (cid::tenant-name (cid:project resource)))
-	   (assert-string=
-	    (cid:name (cid:project steward))
-	    (cid:name (cid:project resource)))))
+	   (assert-eq
+	    (cid:project steward)
+	    (cid:project resource))))
     (verify-that-resource-scope-is-defined)
     (with-slots ((steward cid:steward)) resource
       (assert-type steward 'cid:steward)
-      (verify-that-steward-joined-slot-is-consistently-set steward)
       (verify-that-resource-and-steward-share-the-same-tenant steward)
       (verify-that-resource-and-steward-share-the-same-project steward))))
 

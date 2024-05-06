@@ -29,11 +29,10 @@
 (defun populate-project-table ()
   "Populate the PROJECT table with some test data."
   (loop :for example :in *example-project-definitions*
-	:for project = (apply #'cid:make-project example)
-	:do (clsql:update-records-from-instance project)))
+	:do (apply #'cid:make-project example)))
 
 (define-testcase project-unit-test ()
-  (with-test-database
+  (with-test-environment
     (populate-tenant-table)
     (populate-project-table)
     (assert-string= "Test Project"
@@ -50,11 +49,10 @@
     (assert-eq (example-project)
 	       (cid:find-project (example-project) :tenant nil))
     (assert-condition
-	(clsql:update-records-from-instance
-	 (cid:make-project
-	  :name "testproject"
-	  :displayname "Test Project 2"
-	  :tenant "testsuite"))
+	(cid:make-project
+	 :name "testproject"
+	 :displayname "Test Project 2"
+	 :tenant "testsuite")
 	error)))
 
 ;;;; End of file `project.lisp'

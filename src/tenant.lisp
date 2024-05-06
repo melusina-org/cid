@@ -13,36 +13,57 @@
 
 (in-package #:org.melusina.cid)
 
-(clsql:file-enable-sql-reader-syntax)
+(defvar *tenant* nil
+  "The current `TENANT' used when creating projects, stewards and resources.")
 
-(clsql:def-view-class tenant (named-trait)
+(defvar *tenant-directory* (make-hash-table :test #'equal)
+  "The directory of known tenants.")
+
+(defclass tenant (named-trait)
   nil
-  (:base-table tenant)
-  (:documentation "The class representing a TENANT.
-When a CLSQL database is connected, tenants can be persisted on this database.
-The contents of such a database can be examined with LIST-TENANTS
-and FIND-TENANT."))
+  (:documentation "The class representing a TENANT."))
 
 (defun make-tenant (&rest initargs &key name displayname)
-  "Make a TENANT with the given attributes."
+  "Make a TENANT with the given attributes.
+Unless the `*TENANT-DIRECTORY*' is NIL, the tenant is also
+added to the directory of known tenants and can be looked
+up using `FIND-TENANT'."
   (declare (ignore name displayname))
-  (apply #'make-instance 'tenant initargs))
+  (flet ((fail-when-name-is-taken (tenant)
+	   (when (and *tenant-directory* (gethash (name tenant) *tenant-directory*))
+	     (error "A tenant named ~A already exists." (name tenant))))
+	 (maybe-add-to-directory (tenant)
+	   (when *tenant-directory*
+	     (setf (gethash (name tenant) *tenant-directory*) tenant))))
+    (let ((tenant
+	    (apply #'make-instance 'tenant initargs)))
+      (fail-when-name-is-taken tenant)
+      (maybe-add-to-directory tenant)
+      (values tenant))))
 
-(defmethod address-components ((instance tenant))
-  '())
+(defmethod print-object ((instance tenant) stream)
+  (flet ((print-readably ()
+	   (print-readable-object instance stream 'make-tenant
+				  '((:name name)
+				    (:displayname displayname))))
+	 (print-unreadably ()
+	   (with-slots (name displayname) instance
+	     (print-unreadable-object (instance stream :type t :identity t)
+	       (format stream "~A ~A" name displayname)))))
+    (if *print-readably*
+	(print-readably)
+	(print-unreadably))))
 
 (defun list-tenants ()
-  "List existing tenants.
-When a CLSQL database is connected, the list of tenants existing
-in the database is returned."
-  (clsql:select 'tenant :flatp t))
+  "List existing tenants."
+  (alexandria:hash-table-values *tenant-directory*))
 
 (defun find-tenant (designator)
   "Find the tenant associated to DESIGNATOR.
 When DESIGNATOR is a string, it is used as a primary key to search
-the table of persisted tenants in a connected CLSQL database."
+the table of known tenants."
   (flet ((find-tenant-by-name (name)
-	   (caar (clsql:select 'tenant :where [= [slot-value 'tenant 'name] name]))))
+	   (gethash name *tenant-directory*)))
     (etypecase designator
       (tenant
        designator)
@@ -50,50 +71,5 @@ the table of persisted tenants in a connected CLSQL database."
        (find-tenant-by-name designator))
       (null
        nil))))
-
-
-;;;;
-;;;; Tenant Trait
-;;;;
-
-(defparameter *tenant* nil
-  "The current TENANT used when creating projects, stewards and resources.")
-
-(clsql:def-view-class tenant-trait nil
-  ((tenant-name
-    :type string
-    :reader tenant-name)
-   (tenant
-    :db-kind :join
-    :db-info (:join-class tenant
-	      :home-key tenant-name
-	      :foreign-key name
-	      :set nil)
-    :initarg :tenant
-    :reader tenant))
-  (:documentation "A trait for instances specific to a tenant.
-The trait provides initialisation for the TENANT-NAME and TENANT slots
-based on provided values."))
-
-(defmethod initialize-instance :after ((instance tenant-trait) &rest initargs &key &allow-other-keys)
-  (declare (ignore initargs))
-  (flet ((finalize-tenant-slot ()
-	   (cond
-	     ((and *tenant*
-		   (not (slot-boundp instance 'tenant))
-		   (not (slot-boundp instance 'tenant-name)))
-	      (setf (slot-value instance 'tenant) *tenant*))
-	     ((and (slot-boundp instance 'tenant)
-		   (typep (slot-value instance 'tenant) 'string))
-	      (with-slots (tenant) instance
-		(setf tenant (or (find-tenant tenant)
-				 (error "Cannot find tenant ~S." tenant)))))))
-	 (finalize-tenant-name-slot ()
-	   (when (and (slot-boundp instance 'tenant)
-		      (not (slot-boundp instance 'tenant-name)))
-	     (setf (slot-value instance 'tenant-name)
-		   (name (slot-value instance 'tenant))))))
-    (finalize-tenant-slot)
-    (finalize-tenant-name-slot)))
 
 ;;;; End of file `tenant.lisp'
