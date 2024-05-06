@@ -40,6 +40,12 @@ new resources."))
   (declare (ignore tenant project name displayname pathname resource-identifiers))
   (apply #'make-instance 'simulator initargs))
 
+(defmethod readable-constructor ((instance simulator))
+  'make-simulator)
+
+(defmethod readable-slots append ((instance simulator))
+  '((:resource-identifiers resource-identifiers)))
+
 
 ;;;;
 ;;;; Simulation
@@ -59,6 +65,9 @@ new resources."))
   (apply #'make-instance 'simulation
 	 :steward simulator
 	 (remove-property initargs :simulator)))
+
+(defmethod readable-constructor ((instance simulation))
+  'make-simulation)
 
 (defmethod create-resource ((instance simulation))
   (with-slots (steward identifier state) instance

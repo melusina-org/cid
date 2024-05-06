@@ -55,6 +55,21 @@ a public cloud, among many other possibilities."))
     (support-initialize-tenant-slot-with-designator)
     (support-initialize-project-slot-with-designator)))
 
+(defmethod readable-slots append ((instance steward))
+  '((:tenant tenant)
+    (:project project)
+    (:description description)))
+
+(defmethod print-object ((instance steward) stream)
+  (flet ((print-readably ()
+	   (print-readable-object instance stream))
+	 (print-unreadably ()
+	   (with-slots (tenant project name displayname) instance
+	     (print-unreadable-object (instance stream :type t :identity t)
+	       (format stream "~A:~A:~A ~A" (name tenant) (name project) name displayname)))))
+    (if *print-readably*
+	(print-readably)
+	(print-unreadably))))
 
 ;;;;
 ;;;; Configure

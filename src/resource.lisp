@@ -122,6 +122,27 @@ resources. For a given STEWARD, any resource is uniquely identified by its IDENT
     (check-that-project-scope-is-properly-defined)
     (check-that-steward-is-consistently-set)))
 
+(defmethod readable-slots append ((instance resource))
+  '((:tenant tenant)
+    (:project project)
+    (:steward steward)
+    (:name name)
+    (:displayname displayname)
+    (:description description)
+    (:state state)
+    (:identifier identifier)))
+
+(defmethod print-object ((instance resource) stream)
+  (flet ((print-readably ()
+	   (print-readable-object instance stream))
+	 (print-unreadably ()
+	   (with-slots (project tenant name displayname) instance
+	     (print-unreadable-object (instance stream :type t :identity t)
+	       (format stream "~A:~A:~A ~A" (name tenant) (name project) name displayname)))))
+    (if *print-readably*
+	(print-readably)
+	(print-unreadably))))
+
 
 ;;;;
 ;;;; Resource Error
@@ -164,7 +185,7 @@ the resource, so that it is usually unsafe to publish this EXPLANATION."))
 The steward ~A trying to ~A the resource ~A met an error condition.
 ~A" 
 	      name
-	      (slot-value (find-steward steward) 'name)
+	      (slot-value steward 'name)
 	      (resource-error-operation condition) name
 	      (resource-error-description condition))
       (with-slots (explanation) condition
@@ -201,7 +222,7 @@ The steward ~A trying to ~A the resource ~A realised that the actual
 resource no longer exists.
 ~A" 
 	      name
-	      (slot-value (find-steward steward) 'name)
+	      (slot-value steward 'name)
 	      (resource-error-operation condition) name
 	      (resource-error-description condition))
       (with-slots (explanation) condition
@@ -256,7 +277,7 @@ the resource, so that it is usually unsafe to publish this EXPLANATION."))
 The steward ~A is trying to ~A the resource ~A and requires confirmation to proceed.
 ~A" 
 		 name
-		 (slot-value (find-steward steward) 'name)
+		 (slot-value steward 'name)
 		 (resource-confirmation-operation condition) name
 		 (resource-confirmation-description condition))
 	 (with-slots (explanation) condition

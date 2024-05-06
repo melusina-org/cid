@@ -19,8 +19,10 @@
    #:org.melusina.cid
    #:tenant
    #:project
-   #:name)
+   #:name
+   #:displayname)
   (:export
+   #:configure-laboratory
    #:cloud-vendor
    #:make-cloud-vendor
    #:private-network
@@ -59,6 +61,13 @@
   (declare (ignore tenant project name displayname credential))
   (apply #'make-instance 'cloud-vendor initargs))
 
+(defmethod cid::readable-constructor ((instance cloud-vendor))
+  'make-cloud-vendor)
+
+(defmethod cid::readable-slots append ((instance cloud-vendor))
+  '((:credential credential)))
+
+
 
 ;;;;
 ;;;; POC Laboratory
@@ -89,16 +98,7 @@ This sets CID:*TENANT* and CID:*PROJECT* to work on the POC."
     :project cid:*project*
     :name "sws"
     :displayname "Simulated Web Services"
-    :credential "ThisIsNotARealSecret"))
-  (loop :for class
-	:in '(private-network
-	      container-image
-	      container-image-registry
-	      container-cluster
-	      container-service
-	      public-load-balancer
-	      infrastructure-stack)
-	:do (pushnew class cid::*database-application-class-list*)))
+    :credential "ThisIsNotARealSecret")))
 
 
 ;;;;
@@ -118,6 +118,9 @@ This sets CID:*TENANT* and CID:*PROJECT* to work on the POC."
   (apply #'make-instance 'private-network
 	 :steward cloud-vendor
 	 (cid::remove-property initargs :cloud-vendor)))
+
+(defmethod cid::readable-constructor ((instance private-network))
+  'make-private-network)
 
 
 ;;;;
@@ -144,6 +147,14 @@ This sets CID:*TENANT* and CID:*PROJECT* to work on the POC."
 	 :steward cloud-vendor
 	 (cid::remove-property initargs :cloud-vendor)))
 
+(defmethod cid::readable-constructor ((instance container-image))
+  'make-container-image)
+
+(defmethod cid::readable-slots append ((instance container-image))
+  '((:repository repository)
+    (:tag tag)))
+
+
 
 ;;;;
 ;;;; Cloud Container Image Registry
@@ -162,6 +173,9 @@ This sets CID:*TENANT* and CID:*PROJECT* to work on the POC."
   (apply #'make-instance 'container-image-registry
 	 :steward cloud-vendor
 	 (cid::remove-property initargs :cloud-vendor)))
+
+(defmethod cid::readable-constructor ((instance container-image-registry))
+  'make-container-image-registry)
 
 (defun find-container-image (&key image-registry repository tag)
   "Find a container image in IMAGE-REGISTRY with the given properties."
@@ -192,6 +206,13 @@ This sets CID:*TENANT* and CID:*PROJECT* to work on the POC."
   (apply #'make-instance 'container-cluster
 	 :steward cloud-vendor
 	 (cid::remove-property initargs :cloud-vendor)))
+
+
+(defmethod cid::readable-constructor ((instance container-cluster))
+  'make-container-cluster)
+
+(defmethod cid::readable-slots append ((instance container-cluster))
+  '((:private-network private-network)))
 
 (defmethod cid:resource-prerequisites append ((instance container-cluster))
   (with-slots (private-network) instance
@@ -233,6 +254,15 @@ Allowed values are one of :HTTP, :HTTPS, :TCP.")
 	 :steward cloud-vendor
 	 (cid::remove-property initargs :cloud-vendor)))
 
+
+(defmethod cid::readable-constructor ((instance container-service))
+  'make-container-service)
+
+(defmethod cid::readable-slots append ((instance container-service))
+  '((:cluster cluster)
+    (:image image)
+    (:protocol protocol)))
+
 (defmethod cid:resource-prerequisites append ((instance container-service))
   (with-slots (cluster image) instance
     (list cluster image)))
@@ -255,28 +285,20 @@ Allowed values are one of :HTTP, :HTTPS, :TCP.")
     :reader services))
   (:documentation "This class represents a public load balancer."))
 
-(defmethod initialize-instance :after ((instance public-load-balancer)
-				       &rest initargs
-				       &key &allow-other-keys)
-  (declare (ignore initargs))
-  (flet ((finalize-private-network-slot ()
-	   (when (and (slot-boundp instance 'private-network)
-		      (not (slot-boundp instance 'private-network-serial))
-		      (slot-boundp (slot-value instance 'private-network)
-				   'cid:resource-serial))
-	     (with-slots (private-network) instance
-	       (setf (slot-value instance 'private-network-serial)
-		     (cid:resource-serial private-network))))))
-    (finalize-private-network-slot)))
-  
-
-
 (defun make-public-load-balancer (&rest initargs &key cloud-vendor private-network services)
   "Make a CLOUD-PUBLIC-LOADBALANCER."
   (declare (ignore private-network services))
   (apply #'make-instance 'public-load-balancer
 	 :steward cloud-vendor
 	 (cid::remove-property initargs :cloud-vendor)))
+
+
+(defmethod cid::readable-constructor ((instance public-load-balancer))
+  'make-public-load-balancer)
+
+(defmethod cid::readable-slots append ((instance public-load-balancer))
+  '((:private-network private-network)
+    (:services services)))
 
 (defmethod cid:resource-prerequisites append ((instance public-load-balancer))
   (with-slots (private-network services) instance
@@ -292,10 +314,12 @@ Allowed values are one of :HTTP, :HTTPS, :TCP.")
   ((tenant
     :type tenant
     :initarg :tenant
+    :initform cid:*tenant*
     :reader tenant)
    (project
     :type string
     :initarg :project
+    :initform cid:*project*
     :reader project)
    (description
     :accessor description
@@ -319,16 +343,8 @@ defined, provisioned and modified as a unit."))
 		 (loop :for prerequisite :in (slot-value instance 'resources)
 		       :for deep-prerequisites = (cid:resource-prerequisites prerequisite)
 		       :append (cons prerequisite deep-prerequisites) :into prerequisites
-		       :finally (return (remove-duplicates prerequisites :test #'eq)))))
-	 (claim-ownership-on-resources ()
-	   (dolist (resource (slot-value instance 'resources))
-	     (with-slots (stack-name) resource
-	       (when stack-name
-		 (error "The resource ~A is already owned by the stack ~A"
-			resource stack-name))
-	       (setf stack-name (slot-value instance 'name))))))
-    (finalize-resource-list)
-    (claim-ownership-on-resources)))
+		       :finally (return (remove-duplicates prerequisites :test #'eq))))))
+    (finalize-resource-list)))
 	 
 
 (defun make-infrastructure-stack (&rest initargs &key tenant project 
@@ -339,9 +355,27 @@ defined, provisioned and modified as a unit."))
   (declare (ignore tenant project name displayname description resources))
   (apply #'make-instance 'infrastructure-stack initargs))
 
+(defmethod cid::readable-constructor ((instance infrastructure-stack))
+  'make-infrastructure-stack)
 
-(defmethod cid::address-components ((instance infrastructure-stack))
-  '(cid:tenant-name cid:project-name))
+(defmethod cid::readable-slots append ((instance infrastructure-stack))
+  '((:tenant tenant)
+    (:project project)
+    (:name name)
+    (:displayname displayname)
+    (:description description)
+    (:resources resources)))
+
+(defmethod print-object ((instance infrastructure-stack) stream)
+  (flet ((print-readably ()
+	   (cid::print-readable-object instance stream))
+	 (print-unreadably ()
+	   (with-slots (project tenant name displayname) instance
+	     (print-unreadable-object (instance stream :type t :identity t)
+	       (format stream "~A:~A:~A ~A" (name tenant) (name project) name displayname)))))
+    (if *print-readably*
+	(print-readably)
+	(print-unreadably))))
 
 (defmethod cid:create-resource ((instance infrastructure-stack))
   (with-slots (resources) instance

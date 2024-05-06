@@ -84,14 +84,25 @@
 ;;;; Print Readably
 ;;;;
 
-(defun print-readable-object (object stream constructor slot-specs)
+(defgeneric readable-constructor (object)
+  (:documentation "The constructor symbol to use when readably printing OBJECT."))
+
+(defgeneric readable-slots (object)
+  (:method-combination append)
+  (:documentation "The slot specifications to use when readably printing OBJECT."))
+
+(defun print-readable-object (object stream &optional constructor slot-specs)
   "Readably print OBJECT on STREAM."
   (let ((*standard-output*
-	  stream))
+	  stream)
+	(constructor
+	  (or constructor (readable-constructor object)))
+	(slot-specs
+	  (or slot-specs (readable-slots object))))
     (pprint-logical-block (nil nil :prefix "(" :suffix ")")
       (write constructor)
       (write-char #\Space)
-      (pprint-newline :miser)
+      (pprint-newline :linear)
       (pprint-indent :current 0)
       (loop :for slot-spec-iterator :on slot-specs
 	    :for slot-spec = (first slot-spec-iterator)
