@@ -20,7 +20,6 @@
 
 (defclass simulator (steward)
   ((description
-    :allocation :class
     :initform "A steward that does not administrate actual resources."
     :type string)
    (resource-identifiers
@@ -35,15 +34,15 @@ resource supports.  It is possible to use a SIMULATOR and SIMULATION resources
 to test lifecycles and invariants, and as a draft when implementing
 new resources."))
 
-(defun make-simulator (&rest initargs &key tenant project name displayname pathname resource-identifiers)
+(defun make-simulator (&rest initargs &key tenant project name displayname description resource-identifiers)
   "Make a SIMULATOR with the given parameters."
-  (declare (ignore tenant project name displayname pathname resource-identifiers))
+  (declare (ignore tenant project name displayname description resource-identifiers))
   (apply #'make-instance 'simulator initargs))
 
-(defmethod readable-constructor ((instance simulator))
+(defmethod persistent-constructor ((class (eql 'simulator)))
   'make-simulator)
 
-(defmethod readable-slots append ((instance simulator))
+(defmethod persistent-slots append ((instance simulator))
   '((:resource-identifiers resource-identifiers)))
 
 
@@ -66,7 +65,7 @@ new resources."))
 	 :steward simulator
 	 (remove-property initargs :simulator)))
 
-(defmethod readable-constructor ((instance simulation))
+(defmethod persistent-constructor ((class (eql 'simulation)))
   'make-simulation)
 
 (defmethod create-resource ((instance simulation))

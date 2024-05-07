@@ -18,17 +18,7 @@
 ;;;;
 
 (defclass resource ()
-  ((project
-    :initarg :project
-    :initform *project*
-    :reader project
-    :type project)
-   (tenant
-    :initarg :tenant
-    :initform *tenant*
-    :reader tenant
-    :type tenant)
-   (steward
+  ((steward
     :type steward
     :reader steward
     :initarg :steward)
@@ -74,59 +64,14 @@ the underlying resource has not been created, the IDENTIFIER is NIL."))
 These resources can be created, read, updated and deleted. Resources can depend on other
 resources. For a given STEWARD, any resource is uniquely identified by its IDENTIFIER slot."))
 
-(defmethod initialize-instance :after ((instance resource) &rest initargs &key &allow-other-keys)
-  (declare (ignore initargs))
-  (flet ((support-initialize-tenant-slot-with-designator ()
-	   (cond
-	     ((typep (slot-value instance 'tenant) 'string)
-	      (with-slots (tenant) instance
-		(setf tenant (or (find-tenant tenant)
-				 (error "Cannot find tenant ~S." tenant)))))))
-	 (support-initialize-project-slot-with-designator ()
-	   (cond
-	     ((typep (slot-value instance 'project) 'string)
-	      (with-slots (tenant project) instance
-		(setf project (or (find-project project :tenant tenant )
-				  (error "Cannot find project ~S for tenant ~S."
-					 project (name tenant))))))))
-	 (support-initialize-tenant-and-project-slots-from-steward ()
-	   (with-slots (tenant project steward) instance
-	     (unless steward
-	       (return-from support-initialize-tenant-and-project-slots-from-steward))
-	     (unless tenant
-	       (setf tenant (tenant steward)))
-	     (unless project
-	       (setf project (project steward)))))
-	 (check-that-tenant-scope-is-properly-defined ()
-	   (with-slots (tenant) instance
-	     (unless tenant
-	       (error "The TENANT slot is not set."))))
-	 (check-that-project-scope-is-properly-defined ()
-	   (with-slots (tenant project) instance
-	     (unless project
-	       (error "The PROJECT slot is not set."))
-	     (unless (eq tenant (tenant project))
-	       (error "The PROJECT and TENANT slots are not consistently set."))))
-	 (check-that-steward-is-consistently-set ()
-	   (with-slots (tenant project steward) instance
-	     (unless steward
-	       (error "The STEWARD slot is not set."))
-	     (unless (eq project (project steward))
-	       (error "The PROJECT and STEWARD slots are not consistently sey."))
-	     (unless (eq tenant (tenant steward))
-	       (error "The TENANT and STEWARD slots are not consistently sey.")))))
-    (support-initialize-tenant-slot-with-designator)
-    (support-initialize-project-slot-with-designator)
-    (support-initialize-tenant-and-project-slots-from-steward)
-    (check-that-tenant-scope-is-properly-defined)
-    (check-that-project-scope-is-properly-defined)
-    (check-that-steward-is-consistently-set)))
+(defmethod tenant ((instance resource))
+  (tenant (steward instance)))
 
-(defmethod readable-slots append ((instance resource))
-  '((:tenant tenant)
-    (:project project)
-    (:steward steward)
-    (:name name)
+(defmethod project ((instance resource))
+  (project (steward instance)))
+
+(defmethod persistent-slots append ((instance resource))
+  '((:name name)
     (:displayname displayname)
     (:description description)
     (:state state)
@@ -134,11 +79,20 @@ resources. For a given STEWARD, any resource is uniquely identified by its IDENT
 
 (defmethod print-object ((instance resource) stream)
   (flet ((print-readably ()
-	   (print-readable-object instance stream))
+	   (write-persistent-object instance stream))
 	 (print-unreadably ()
-	   (with-slots (project tenant name displayname) instance
-	     (print-unreadable-object (instance stream :type t :identity t)
-	       (format stream "~A:~A:~A ~A" (name tenant) (name project) name displayname)))))
+	   (with-slots (name displayname) instance
+	     (cond ((and name displayname)
+		    (print-unreadable-object (instance stream :type t :identity t)
+		      (format stream "~A:~A:~A ~A"
+			      (name (tenant instance))
+			      (name (project instance))
+			      name displayname)))
+		   (t
+		    (print-unreadable-object (instance stream :type t :identity t)
+		      (format stream "~A:~A Anonymous"
+			      (name (tenant instance))
+			      (name (project instance)))))))))
     (if *print-readably*
 	(print-readably)
 	(print-unreadably))))
@@ -480,8 +434,6 @@ This assumes a resource has been created in STEWARD by a third party and
 imports it into the current system by creating a resource for it."
   (let ((instance
 	  (make-instance resource-class
-			 :tenant (tenant steward)
-			 :project (project steward)
 			 :steward steward
 			 :displayname displayname
 			 :description description

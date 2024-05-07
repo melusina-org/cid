@@ -35,14 +35,15 @@
 
 (defmacro with-test-environment (&body body)
   "Run BODY with an appropriate test environment."
-  `(let ((cid:*tenant*
-	   nil)
-	 (cid:*project*
-	   nil)
-	 (cid::*tenant-directory*
-	   (make-hash-table :test #'equal))
-	 (cid::*project-directory*
-	   (make-hash-table :test #'equal)))
+  `(let* ((cid::*tenant-directory*
+	    (make-hash-table :test #'equal))
+	  (cid::*project-directory*
+	    (make-hash-table :test #'equal))
+	  (cid:*tenant*
+	    (cid:make-tenant :name "testsuite" :displayname "Test Tenant"))
+	  (cid:*project*
+	    (cid:make-project :name *testsuite-id*
+			      :displayname (concatenate 'string "Projet " *testsuite-id*))))
      ,@body))
 
 

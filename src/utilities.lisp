@@ -81,43 +81,59 @@
 
 
 ;;;;
-;;;; Print Readably
+;;;; Write and read persistent Object
 ;;;;
 
-(defgeneric readable-constructor (object)
+(defgeneric persistent-constructor (class)
   (:documentation "The constructor symbol to use when readably printing OBJECT."))
 
-(defgeneric readable-slots (object)
+(defgeneric persistent-slots (object)
   (:method-combination append)
   (:documentation "The slot specifications to use when readably printing OBJECT."))
 
-(defun print-readable-object (object stream &optional constructor slot-specs)
+(defun write-persistent-object (object stream &optional constructor slot-specs)
   "Readably print OBJECT on STREAM."
-  (let ((*standard-output*
-	  stream)
-	(constructor
-	  (or constructor (readable-constructor object)))
+  (let ((constructor
+	  (or constructor (type-of object)))
 	(slot-specs
-	  (or slot-specs (readable-slots object))))
-    (pprint-logical-block (nil nil :prefix "(" :suffix ")")
-      (write constructor)
-      (write-char #\Space)
-      (pprint-newline :linear)
-      (pprint-indent :current 0)
+	  (or slot-specs (persistent-slots object))))
+    (pprint-logical-block (stream nil :prefix "[" :suffix "]")
+      (pprint constructor stream)
+      (write-char #\Space stream)
+      (pprint-newline :linear stream)
+      (pprint-indent :current 0 stream)
       (loop :for slot-spec-iterator :on slot-specs
 	    :for slot-spec = (first slot-spec-iterator)
 	    :for lastp = (not (rest slot-spec-iterator))
 	    :do (destructuring-bind (initarg slot-name &optional sensitive-p) slot-spec
 		  (declare (ignore sensitive-p))
 		  (when (slot-boundp object slot-name)
-		    (pprint-logical-block (nil nil)
-		      (write initarg)
-		      (write-char #\Space)
-		      (pprint-newline :linear)
-		      (write (slot-value object slot-name)))
+		    (pprint-logical-block (stream nil)
+		      (pprint initarg stream)
+		      (write-char #\Space stream)
+		      (pprint-newline :linear stream)
+		      (pprint (slot-value object slot-name) stream))
 		    (unless lastp
-		      (write-char #\Space)
-		      (pprint-newline :linear))))))))
+		      (write-char #\Space stream)
+		      (pprint-newline :linear stream))))))))
+
+(defun read-persistent-object (stream)
+  "Read an object from STREAM."
+  (flet ((read-persisted-object (stream char)
+	   (declare (ignore char))
+	   (let* ((delimited-list
+		    (read-delimited-list #\] stream t))
+		  (class
+		    (first delimited-list))
+		  (initargs
+		    (rest delimited-list)))
+	     (apply (persistent-constructor class) initargs))))
+    (let ((readable-readtable (copy-readtable)))
+      (set-macro-character #\[ #'read-persisted-object nil readable-readtable)
+      (set-syntax-from-char #\] #\) readable-readtable)
+      (let ((*readtable* readable-readtable)
+	    (*read-eval* nil))
+	(read stream)))))
 
 
 ;;;;

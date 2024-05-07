@@ -47,7 +47,22 @@ Unless the `*PROJECT-DIRECTORY*' is NIL, the project is also
 added to the directory of known projects and can be looked
 up using `FIND-PROJECT'."
   (declare (ignore name displayname tenant))
-  (flet ((fail-when-name-is-taken (project)
+  (flet ((return-existing-project-when-available (project)
+	   (let ((existing-project
+		   (and *project-directory*
+			(gethash (project-directory-key project) *project-directory*))))
+	     (when (and existing-project
+			(eq
+			 (tenant project)
+			 (tenant existing-project))
+			(string=
+			 (name project)
+			 (name existing-project))
+			(string=
+			 (displayname project)
+			 (displayname existing-project)))
+	       (return-from make-project existing-project))))
+	 (fail-when-name-is-taken (project)
 	   (when (and *project-directory*
 		      (gethash (project-directory-key project) *project-directory*))
 	     (error "A project named ~A already exists for tenant ~A."
@@ -57,16 +72,17 @@ up using `FIND-PROJECT'."
 	     (setf (gethash (project-directory-key project) *project-directory*) project))))
     (let ((project
 	    (apply #'make-instance 'project initargs)))
+      (return-existing-project-when-available project)
       (fail-when-name-is-taken project)
       (maybe-add-to-directory project)
       (values project))))
 
 (defmethod print-object ((instance project) stream)
   (flet ((print-readably ()
-	   (print-readable-object instance stream 'make-project
-				  '((:tenant tenant)
-				    (:name name)
-				    (:displayname displayname))))
+	   (write-persistent-object instance stream 'project
+				    '((:tenant tenant)
+				      (:name name)
+				      (:displayname displayname))))
 	 (print-unreadably ()
 	   (with-slots (tenant name displayname) instance
 	     (print-unreadable-object (instance stream :type t :identity t)
@@ -74,6 +90,9 @@ up using `FIND-PROJECT'."
     (if *print-readably*
 	(print-readably)
 	(print-unreadably))))
+
+(defmethod persistent-constructor ((class (eql 'project)))
+  #'make-project)
 
 (defun list-projects (&key (tenant *tenant*))
   "List existing projects."

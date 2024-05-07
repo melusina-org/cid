@@ -29,23 +29,37 @@ Unless the `*TENANT-DIRECTORY*' is NIL, the tenant is also
 added to the directory of known tenants and can be looked
 up using `FIND-TENANT'."
   (declare (ignore name displayname))
-  (flet ((fail-when-name-is-taken (tenant)
-	   (when (and *tenant-directory* (gethash (name tenant) *tenant-directory*))
+  (flet ((return-existing-tenant-when-available (tenant)
+	   (let ((existing-tenant
+		   (and *tenant-directory*
+			(gethash (name tenant) *tenant-directory*))))
+	     (when (and existing-tenant
+			(string=
+			 (name tenant)
+			 (name existing-tenant))
+			(string=
+			 (displayname tenant)
+			 (displayname existing-tenant)))
+	       (return-from make-tenant existing-tenant))))
+	 (fail-when-name-is-taken (tenant)
+	   (when (and *tenant-directory*
+		      (gethash (name tenant) *tenant-directory*))
 	     (error "A tenant named ~A already exists." (name tenant))))
 	 (maybe-add-to-directory (tenant)
 	   (when *tenant-directory*
 	     (setf (gethash (name tenant) *tenant-directory*) tenant))))
     (let ((tenant
 	    (apply #'make-instance 'tenant initargs)))
+      (return-existing-tenant-when-available tenant)
       (fail-when-name-is-taken tenant)
       (maybe-add-to-directory tenant)
       (values tenant))))
 
 (defmethod print-object ((instance tenant) stream)
   (flet ((print-readably ()
-	   (print-readable-object instance stream 'make-tenant
-				  '((:name name)
-				    (:displayname displayname))))
+	   (write-persistent-object instance stream 'tenant
+				    '((:name name)
+				      (:displayname displayname))))
 	 (print-unreadably ()
 	   (with-slots (name displayname) instance
 	     (print-unreadable-object (instance stream :type t :identity t)
@@ -53,6 +67,9 @@ up using `FIND-TENANT'."
     (if *print-readably*
 	(print-readably)
 	(print-unreadably))))
+
+(defmethod persistent-constructor ((class (eql 'tenant)))
+  #'make-tenant)
 
 (defun list-tenants ()
   "List existing tenants."

@@ -19,24 +19,29 @@ This testcase prepares an infrastructure stack value, then creates
 the corresponding resources and deletes them.
 
 This is the smallest possible testcase for an infrastructure stack."
-  (flet ((check-that-resources-exist (resources)
-	   (loop :for resource :in resources
-		 :do (assert-t* (cid:resource-exists-p resource))))
-	 (check-that-resources-do-not-exist (resources)
-	   (loop :for resource :in resources
-		 :do (assert-nil (cid:resource-exists-p resource))))
-	 (stack-resources (stack)
-	   (loop :for resource :in (slot-value stack 'poc::resources)
-		 :append (cid:resource-prerequisites resource))))		      
-    (let* ((delivery-stack
-	     (poc:make-delivery-stack :tag *testsuite-id*))
-	   (delivery-resources
-	     (stack-resources delivery-stack)))
-      (cid:create-resource delivery-stack)
-      (check-that-resources-exist delivery-resources)
-      (poc:save-infrastructure-stack delivery-stack)
-      (cid:delete-resource delivery-stack)
-      (check-that-resources-do-not-exist delivery-resources))))
+  (with-test-environment
+    (populate-tenant-table)
+    (populate-project-table)
+    (flet ((check-that-resources-exist (resources)
+	     (loop :for resource :in resources
+		   :do (assert-t* (cid:resource-exists-p resource))))
+	   (check-that-resources-do-not-exist (resources)
+	     (loop :for resource :in resources
+		   :do (assert-nil (cid:resource-exists-p resource))))
+	   (stack-resources (stack)
+	     (loop :for resource :in (slot-value stack 'poc::resources)
+		   :append (cid:resource-prerequisites resource))))		      
+      (let* ((delivery-stack
+	       (poc:make-delivery-stack
+		:cloud-vendor (poc:make-cloud-vendor
+			       :credential "ThisIsNotARealCredential")
+		:tag *testsuite-id*))
+	     (delivery-resources
+	       (stack-resources delivery-stack)))
+	(cid:create-resource delivery-stack)
+	(check-that-resources-exist delivery-resources)
+	(cid:delete-resource delivery-stack)
+	(check-that-resources-do-not-exist delivery-resources)))))
 
 (define-testcase demonstrate-that-infrastructure-stack-can-be-persisted ()
   "Demonstrate that an infrastructure stack can be persisted.
@@ -44,7 +49,60 @@ This testcase prepares an infrastructure stack value, then persist it
 to a file and read it back. This ensures that the state of
 an infrastrcuture stack can be persisted, the lifespan of infrastructure
 resources is usually longer than those of Common Lisp sessions."
-  (assert-t nil))
+  (with-test-environment
+    (populate-tenant-table)
+    (populate-project-table)
+    (labels ((check-structural-equality (object1 object2)
+	       (assert-equal (type-of object1) (type-of object2))
+	       (etypecase object1
+		 (string
+		  (assert-string= object1 object2))
+		 (symbol
+		  (assert-eq object1 object2))
+		 (list
+		  (assert-equal (length object1) (length object2))
+		  (loop :for item1 :in object1
+			:for item2 :in object2
+			:do (check-structural-equality item1 item2)))
+		 ((or cid:tenant cid:project)
+		  ;; TENANT and PROJECT are listed in a directory and must
+		  ;; be physically equal rather than structurally equal.
+		  (assert-eq object1 object2))
+		 ((or poc:infrastructure-stack cid:steward cid:resource)
+		  (assert-eq (cid:persistent-constructor (type-of object1))
+			     (cid:persistent-constructor (type-of object2)))
+		  (loop :for slot-spec :in (cid:persistent-slots object1)
+			:for slot-name = (second slot-spec)
+			:do (check-structural-equality
+			     (slot-value object1 slot-name)
+			     (slot-value object2 slot-name))))))
+	     (write-then-read (object)
+	       (poc::read-infrastructure-stack-from-string
+		(poc::write-infrastructure-stack-to-string object)))
+	     (check-persistence-idempotency (object)
+	       (check-structural-equality object (write-then-read object)))
+	     (stack-resources (stack)
+	       (loop :for resource :in (slot-value stack 'poc::resources)
+		     :append (cid:resource-prerequisites resource))))
+      (let* ((delivery-stack
+	       (poc:make-delivery-stack
+		:cloud-vendor (poc:make-cloud-vendor
+			       :credential "ThisIsNotARealCredential")
+		:tag *testsuite-id*))
+	     (delivery-resources
+	       (stack-resources delivery-stack)))
+	(loop :for resource :in delivery-resources
+	      :do (check-persistence-idempotency resource))
+	(check-persistence-idempotency delivery-stack)
+	(check-structural-equality
+	 delivery-stack
+	 (progn
+	   (poc::save-infrastructure-stack delivery-stack *testsuite-id*)
+	   (poc::load-infrastructure-stack
+	    (cid:name (cid:tenant delivery-stack))
+	    (cid:name (cid:project delivery-stack))
+	    (cid:name delivery-stack)
+	    (list *testsuite-id*))))))))
 
 (define-testcase demonstrate-that-infrastructure-stack-can-be-modified ()
   "Demonstrate that an infrastructure stack can be modified.

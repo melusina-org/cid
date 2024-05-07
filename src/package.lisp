@@ -22,6 +22,11 @@
    ;; Named Trait
    #:name
    #:displayname
+   ;; Persistent Objects
+   #:persistent-constructor
+   #:persistent-slots
+   #:write-persistent-object
+   #:read-persistent-object
    ;; Tenant
    #:*tenant*
    #:*tenant-directory*
@@ -42,6 +47,7 @@
    #:steward
    #:find-steward
    #:configure-steward
+   #:steward-class
    ;; Resource
    #:resource
    #:resource-identifier

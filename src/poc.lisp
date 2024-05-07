@@ -20,7 +20,23 @@
    #:tenant
    #:project
    #:name
-   #:displayname)
+   #:steward
+   #:steward-class
+   #:displayname
+   #:persistent-constructor
+   #:persistent-slots
+   #:*tenant*
+   #:*project*
+   #:make-tenant
+   #:make-project
+   #:find-tenant
+   #:find-project
+   #:simulation
+   #:simulator
+   #:remove-property
+   #:resource-prerequisites
+   #:write-persistent-object
+   #:read-persistent-object)
   (:export
    #:configure-laboratory
    #:cloud-vendor
@@ -40,7 +56,8 @@
    #:make-public-load-balancer
    #:infrastructure-stack
    #:make-infrastructure-stack
-   #:save-infrastructure-stack
+   #:write-infrastructure-stack
+   #:read-infrastructure-stack
    #:make-delivery-stack))
 
 (in-package #:org.melusina.cid/poc)
@@ -50,23 +67,25 @@
 ;;;; Cloud Vendor
 ;;;;
 
-(defclass cloud-vendor (cid:simulator)
+(defclass cloud-vendor (simulator)
   ((credential
     :initarg :credential
     :documentation "The credentials used to access the public API."))
   (:documentation "A cloud vendor providing infrastruture as a service."))
 
-(defun make-cloud-vendor (&rest initargs &key tenant project name displayname credential)
+(defun make-cloud-vendor (&rest initargs &key tenant project name displayname 
+					      description resource-identifiers 
+					      credential)
   "Make a CLOUD-VENDOR with the given parameters."
-  (declare (ignore tenant project name displayname credential))
+  (declare (ignore tenant project name displayname
+		   description resource-identifiers credential))
   (apply #'make-instance 'cloud-vendor initargs))
 
-(defmethod cid::readable-constructor ((instance cloud-vendor))
+(defmethod persistent-constructor ((class (eql 'cloud-vendor)))
   'make-cloud-vendor)
 
-(defmethod cid::readable-slots append ((instance cloud-vendor))
+(defmethod persistent-slots append ((instance cloud-vendor))
   '((:credential credential)))
-
 
 
 ;;;;
@@ -81,21 +100,21 @@
 
 (defun configure-laboratory ()
   "Configure POC laboratory.
-This sets CID:*TENANT* and CID:*PROJECT* to work on the POC."
+This sets *TENANT* and *PROJECT* to work on the POC."
   (setf
-   cid:*tenant*
-   (cid:make-tenant
+   *tenant*
+   (make-tenant
     :name "local"
     :displayname "Local Tenant")
-   cid:*project*
-   (cid:make-project
+   *project*
+   (make-project
     :name "poc"
     :displayname "Proof of Concept"
-    :tenant cid:*tenant*)
+    :tenant *tenant*)
    *cloud-vendor*
    (make-cloud-vendor
-    :tenant cid:*tenant*
-    :project cid:*project*
+    :tenant *tenant*
+    :project *project*
     :name "sws"
     :displayname "Simulated Web Services"
     :credential "ThisIsNotARealSecret")))
@@ -105,29 +124,33 @@ This sets CID:*TENANT* and CID:*PROJECT* to work on the POC."
 ;;;; Cloud Private Network
 ;;;;
 
-(defclass private-network (cid:simulation)
+(defclass private-network (simulation)
   ((steward-class
     :type :symbol
     :initform 'cloud-vendor
     :allocation :class))
   (:documentation "This class represents a private network."))
 
-(defun make-private-network (&rest initargs &key cloud-vendor identifier)
+(defun make-private-network (&rest initargs &key cloud-vendor name displayname
+						 description state identifier)
   "Make a PRIVATE-NETWORK."
-  (declare (ignore identifier))
+  (declare (ignore name displayname description state identifier))
   (apply #'make-instance 'private-network
 	 :steward cloud-vendor
-	 (cid::remove-property initargs :cloud-vendor)))
+	 (remove-property initargs :cloud-vendor)))
 
-(defmethod cid::readable-constructor ((instance private-network))
+(defmethod persistent-constructor ((class (eql 'private-network)))
   'make-private-network)
+
+(defmethod persistent-slots append ((instance private-network))
+  '((:cloud-vendor steward)))
 
 
 ;;;;
 ;;;; Container Image
 ;;;;
 
-(defclass container-image (cid:simulation)
+(defclass container-image (simulation)
   ((steward-class
     :type :symbol
     :initform 'cloud-vendor
@@ -140,46 +163,54 @@ This sets CID:*TENANT* and CID:*PROJECT* to work on the POC."
     :type string))
   (:documentation "This class represents a cloud image."))
 
-(defun make-container-image (&rest initargs &key cloud-vendor identifier repository tag)
+(defun make-container-image (&rest initargs &key cloud-vendor
+						 name displayname
+						 description state identifier
+						 repository tag)
   "Make a PRIVATE-NETWORK."
-  (declare (ignore identifier repository tag))
+  (declare (ignore name displayname description state identifier repository tag))
   (apply #'make-instance 'container-image
 	 :steward cloud-vendor
-	 (cid::remove-property initargs :cloud-vendor)))
+	 (remove-property initargs :cloud-vendor)))
 
-(defmethod cid::readable-constructor ((instance container-image))
+(defmethod persistent-constructor ((class (eql 'container-image)))
   'make-container-image)
 
-(defmethod cid::readable-slots append ((instance container-image))
-  '((:repository repository)
+(defmethod persistent-slots append ((instance container-image))
+  '((:cloud-vendor steward)
+    (:repository repository)
     (:tag tag)))
-
 
 
 ;;;;
 ;;;; Cloud Container Image Registry
 ;;;;
 
-(defclass container-image-registry (cid:simulation)
+(defclass container-image-registry (simulation)
   ((steward-class
     :type :symbol
     :initform 'cloud-vendor
     :allocation :class))
   (:documentation "This class represents a cloud image registry."))
 
-(defun make-container-image-registry (&rest initargs &key cloud-vendor identifier)
+(defun make-container-image-registry (&rest initargs &key cloud-vendor
+							  name displayname
+							  description state identifier)
   "Make a PRIVATE-NETWORK."
-  (declare (ignore identifier))
+  (declare (ignore name displayname description state identifier))
   (apply #'make-instance 'container-image-registry
 	 :steward cloud-vendor
-	 (cid::remove-property initargs :cloud-vendor)))
+	 (remove-property initargs :cloud-vendor)))
 
-(defmethod cid::readable-constructor ((instance container-image-registry))
+(defmethod persistent-constructor ((class (eql 'container-image-registry)))
   'make-container-image-registry)
+
+(defmethod persistent-slots append ((instance container-image-registry))
+  '((:cloud-vendor steward)))
 
 (defun find-container-image (&key image-registry repository tag)
   "Find a container image in IMAGE-REGISTRY with the given properties."
-  (make-container-image :cloud-vendor (cid:steward image-registry)
+  (make-container-image :cloud-vendor (steward image-registry)
 			:repository repository
 			:tag tag))
 
@@ -188,33 +219,36 @@ This sets CID:*TENANT* and CID:*PROJECT* to work on the POC."
 ;;;; Cloud Container Cluster
 ;;;;
 
-(defclass container-cluster (cid:simulation)
+(defclass container-cluster (simulation)
   ((steward-class
     :type :symbol
     :initform 'cloud-vendor
     :allocation :class)
    (private-network
     :initarg :private-network
-    :reader private-network)
-   (private-network-serial
-    :type integer))
+    :reader private-network))
   (:documentation "A cluster providing computational resources to services."))
 
-(defun make-container-cluster (&rest initargs &key cloud-vendor private-network)
+(defun make-container-cluster (&rest initargs &key cloud-vendor
+						   name displayname
+						   description state identifier
+						   private-network)
   "Make a CONTAINER-CLUSTER."
-  (declare (ignore private-network))
+  (declare (ignore name displayname
+		   description state identifier
+		   private-network))
   (apply #'make-instance 'container-cluster
 	 :steward cloud-vendor
-	 (cid::remove-property initargs :cloud-vendor)))
+	 (remove-property initargs :cloud-vendor)))
 
-
-(defmethod cid::readable-constructor ((instance container-cluster))
+(defmethod persistent-constructor ((class (eql 'container-cluster)))
   'make-container-cluster)
 
-(defmethod cid::readable-slots append ((instance container-cluster))
-  '((:private-network private-network)))
+(defmethod persistent-slots append ((instance container-cluster))
+  '((:cloud-vendor steward)
+    (:private-network private-network)))
 
-(defmethod cid:resource-prerequisites append ((instance container-cluster))
+(defmethod resource-prerequisites append ((instance container-cluster))
   (with-slots (private-network) instance
     (list private-network)))
 
@@ -223,7 +257,7 @@ This sets CID:*TENANT* and CID:*PROJECT* to work on the POC."
 ;;;; Cloud Container Service
 ;;;;
 
-(defclass container-service (cid:simulation)
+(defclass container-service (simulation)
   ((steward-class
     :type :symbol
     :initform 'cloud-vendor
@@ -246,24 +280,30 @@ Allowed values are one of :HTTP, :HTTPS, :TCP.")
   (:documentation "This class represents a cloud container service."))
 
 (defun make-container-service (&rest initargs
-				     &key cloud-vendor cluster
-					  image protocol port)
+			       &key cloud-vendor
+				    name displayname
+				    description state identifier
+				    cluster image protocol port)
   "Make a CONTAINER-SERVICE."
-  (declare (ignore cluster image protocol port))
+  (declare (ignore
+	    name displayname
+	    description state identifier
+	    cluster image protocol port))
   (apply #'make-instance 'container-service
 	 :steward cloud-vendor
-	 (cid::remove-property initargs :cloud-vendor)))
+	 (remove-property initargs :cloud-vendor)))
 
 
-(defmethod cid::readable-constructor ((instance container-service))
+(defmethod persistent-constructor ((class (eql 'container-service)))
   'make-container-service)
 
-(defmethod cid::readable-slots append ((instance container-service))
-  '((:cluster cluster)
+(defmethod persistent-slots append ((instance container-service))
+  '((:cloud-vendor steward)
+    (:cluster cluster)
     (:image image)
     (:protocol protocol)))
 
-(defmethod cid:resource-prerequisites append ((instance container-service))
+(defmethod resource-prerequisites append ((instance container-service))
   (with-slots (cluster image) instance
     (list cluster image)))
 
@@ -272,7 +312,7 @@ Allowed values are one of :HTTP, :HTTPS, :TCP.")
 ;;;; Cloud Public Load Balancer
 ;;;;
 
-(defclass public-load-balancer (cid:simulation)
+(defclass public-load-balancer (simulation)
   ((steward-class
     :type :symbol
     :initform 'cloud-vendor
@@ -285,22 +325,27 @@ Allowed values are one of :HTTP, :HTTPS, :TCP.")
     :reader services))
   (:documentation "This class represents a public load balancer."))
 
-(defun make-public-load-balancer (&rest initargs &key cloud-vendor private-network services)
+(defun make-public-load-balancer (&rest initargs
+				  &key cloud-vendor
+				       name displayname
+				       description state identifier
+				       private-network services)
   "Make a CLOUD-PUBLIC-LOADBALANCER."
-  (declare (ignore private-network services))
+  (declare (ignore name displayname description state identifier private-network services))
   (apply #'make-instance 'public-load-balancer
 	 :steward cloud-vendor
-	 (cid::remove-property initargs :cloud-vendor)))
+	 (remove-property initargs :cloud-vendor)))
 
 
-(defmethod cid::readable-constructor ((instance public-load-balancer))
+(defmethod persistent-constructor ((class (eql 'public-load-balancer)))
   'make-public-load-balancer)
 
-(defmethod cid::readable-slots append ((instance public-load-balancer))
-  '((:private-network private-network)
+(defmethod persistent-slots append ((instance public-load-balancer))
+  '((:cloud-vendor steward)
+    (:private-network private-network)
     (:services services)))
 
-(defmethod cid:resource-prerequisites append ((instance public-load-balancer))
+(defmethod resource-prerequisites append ((instance public-load-balancer))
   (with-slots (private-network services) instance
     (append services (list private-network))))
 
@@ -314,12 +359,12 @@ Allowed values are one of :HTTP, :HTTPS, :TCP.")
   ((tenant
     :type tenant
     :initarg :tenant
-    :initform cid:*tenant*
+    :initform *tenant*
     :reader tenant)
    (project
     :type string
     :initarg :project
-    :initform cid:*project*
+    :initform *project*
     :reader project)
    (description
     :accessor description
@@ -338,14 +383,28 @@ defined, provisioned and modified as a unit."))
 				       &rest initargs
 				       &key &allow-other-keys)
   (declare (ignore initargs))
-  (flet ((finalize-resource-list ()
+  (flet ((support-initialize-tenant-slot-with-designator ()
+	   (cond
+	     ((typep (slot-value instance 'tenant) 'string)
+	      (with-slots (tenant) instance
+		(setf tenant (or (find-tenant tenant)
+				 (error "Cannot find tenant ~S." tenant)))))))
+	 (support-initialize-project-slot-with-designator ()
+	   (cond
+	     ((typep (slot-value instance 'project) 'string)
+	      (with-slots (tenant project) instance
+		(setf project (or (find-project project :tenant tenant )
+				  (error "Cannot find project ~S for tenant ~S."
+					 project (name tenant))))))))
+	 (finalize-resource-list ()
 	   (setf (slot-value instance 'resources)
 		 (loop :for prerequisite :in (slot-value instance 'resources)
-		       :for deep-prerequisites = (cid:resource-prerequisites prerequisite)
+		       :for deep-prerequisites = (resource-prerequisites prerequisite)
 		       :append (cons prerequisite deep-prerequisites) :into prerequisites
 		       :finally (return (remove-duplicates prerequisites :test #'eq))))))
+    (support-initialize-tenant-slot-with-designator)
+    (support-initialize-project-slot-with-designator)
     (finalize-resource-list)))
-	 
 
 (defun make-infrastructure-stack (&rest initargs &key tenant project 
 						      name displayname
@@ -355,10 +414,10 @@ defined, provisioned and modified as a unit."))
   (declare (ignore tenant project name displayname description resources))
   (apply #'make-instance 'infrastructure-stack initargs))
 
-(defmethod cid::readable-constructor ((instance infrastructure-stack))
+(defmethod persistent-constructor ((class (eql 'infrastructure-stack)))
   'make-infrastructure-stack)
 
-(defmethod cid::readable-slots append ((instance infrastructure-stack))
+(defmethod persistent-slots append ((instance infrastructure-stack))
   '((:tenant tenant)
     (:project project)
     (:name name)
@@ -368,32 +427,89 @@ defined, provisioned and modified as a unit."))
 
 (defmethod print-object ((instance infrastructure-stack) stream)
   (flet ((print-readably ()
-	   (cid::print-readable-object instance stream))
+	   (write-persistent-object instance stream))
 	 (print-unreadably ()
 	   (with-slots (project tenant name displayname) instance
 	     (print-unreadable-object (instance stream :type t :identity t)
-	       (format stream "~A:~A:~A ~A" (name tenant) (name project) name displayname)))))
+	       (format stream "~A:~A:~A ~A"
+		       (name tenant) (name project) name displayname)))))
     (if *print-readably*
 	(print-readably)
 	(print-unreadably))))
 
-(defmethod cid:create-resource ((instance infrastructure-stack))
+(defmethod create-resource ((instance infrastructure-stack))
   (with-slots (resources) instance
     (loop :for resource :in resources
-	  :do (cid:create-resource resource))))
+	  :do (create-resource resource))))
 
-(defmethod cid:delete-resource ((instance infrastructure-stack))
+(defmethod delete-resource ((instance infrastructure-stack))
   (with-slots (resources) instance
     (loop :for resource :in resources
-	  :do (cid:delete-resource resource))))
+	  :do (delete-resource resource))))
 
-(defun save-infrastructure-stack (stack)
-  (with-slots (resources) stack
-    (loop :for resource :in resources
-	  :do (error "Not implemented")))
-  (values stack))
+
+;;;;
+;;;; Read and Write Infrastructure Stacks to Files
+;;;;
 
-(defun make-delivery-stack (&key (tag *tag*) (cloud-vendor *cloud-vendor*))
+(defun read-infrastructure-stack (stream)
+  (read-persistent-object stream))
+
+(defun read-infrastructure-stack-from-string (string &key (start 0) end)
+  (with-input-from-string (stream string :start start :end end)
+    (read-infrastructure-stack stream)))
+
+(defun load-infrastructure-stack (tenant-name project-name stack-name allowed-version-names)
+  "Read persisted INFRASTRUCTURE-STACK from FILENAME.
+The INFRASTRUCTURE-STACK must be initialised with a TENANT, a PROJECT
+and a NAME."
+  (let ((filename
+	  (cid::user-data-relative-pathname
+	   tenant-name project-name
+	   (concatenate 'string stack-name ".lisp"))))
+    (assert (probe-file filename) () 'file-does-not-exist)
+    (with-open-file (stream filename :direction :input)
+      (let ((version (read-line stream)))
+	(assert (member version allowed-version-names :test #'string=)
+		() 'file-version-is-not-allowed)
+        (let ((object
+		(read-infrastructure-stack stream)))
+	  (values object filename version))))))
+
+(defun write-infrastructure-stack (object &optional (stream *standard-output*))
+  (let ((*print-readably* t)
+        (*print-circle* t)
+        (*package* (find-package :keyword)))
+    (pprint object stream)
+    (terpri stream)))
+
+(defun write-infrastructure-stack-to-string (object)
+  (with-output-to-string (stream)
+    (write-infrastructure-stack object stream)))
+
+(defun save-infrastructure-stack (object version-name)
+  "Persist OBJECT."
+  (let ((filename
+	  (cid::user-data-relative-pathname
+	   (name (tenant object))
+	   (name (project object))
+	   (concatenate 'string (name object) ".lisp"))))
+    (ensure-directories-exist filename) 
+    (with-open-file (stream filename
+                            :direction :output
+                            :if-exists :supersede
+                            :if-does-not-exist :create)
+      (format stream "~A~%" version-name)
+      (write-infrastructure-stack object stream)
+      (finish-output stream))
+    (values object filename)))
+
+
+;;;;
+;;;; Delivery Stack
+;;;;
+
+(defun make-delivery-stack (&key (tenant *tenant*) (project *project*) (tag *tag*) (cloud-vendor *cloud-vendor*))
   (let* ((private-network
 	   (make-private-network
 	    :cloud-vendor cloud-vendor))
@@ -446,6 +562,8 @@ defined, provisioned and modified as a unit."))
 	    :services (list trac-service jenkins-service gitserver-service)
 	    :private-network private-network)))
     (make-infrastructure-stack
+     :tenant tenant
+     :project project
      :name "delivery"
      :displayname "Delivery Stack"
      :description "A typical infrastructure stack for software delivery."

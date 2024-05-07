@@ -77,6 +77,7 @@
    #:assert-t*
    #:assert-nil
    #:assert-eq
+   #:assert-equal
    #:assert-equalp
    #:assert-set-equal
    #:assert-string=
