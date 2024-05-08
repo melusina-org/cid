@@ -113,14 +113,14 @@
   (:method-combination append)
   (:documentation "The slot specifications to use when readably printing OBJECT."))
 
-(defun write-persistent-object (object stream &optional constructor slot-specs)
-  "Readably print OBJECT on STREAM."
-  (let ((constructor
-	  (or constructor (type-of object)))
+(defun write-persistent-object (object stream &optional class slot-specs)
+  "Readably write persistent OBJECT on STREAM."
+  (let ((class
+	  (or class (type-of object)))
 	(slot-specs
 	  (or slot-specs (persistent-slots object))))
     (pprint-logical-block (stream nil :prefix "[" :suffix "]")
-      (pprint constructor stream)
+      (pprint class stream)
       (write-char #\Space stream)
       (pprint-newline :linear stream)
       (pprint-indent :current 0 stream)
@@ -140,8 +140,40 @@
 		      (write-char #\Space stream)
 		      (pprint-newline :linear stream))))))))
 
+(defun write-persistent-object-to-string (object)
+  "Readably write persistent OBJECT to a string."
+    (with-output-to-string (stream)
+      (let ((*print-readably* t)
+	    (*print-circle* t)
+            (*package* (find-package :keyword)))
+	(pprint object stream)
+	(terpri stream))))
+
+(defun save-persistent-object (object version-name)
+  "Persist OBJECT."
+  (destructuring-bind (tenant-name project-name object-name)
+      (list (name (tenant object)) (name (project object)) (name object))
+    (let ((filename
+	    (user-data-relative-pathname
+	     tenant-name
+	     project-name
+	     (concatenate 'string object-name ".lisp"))))
+      (ensure-directories-exist filename) 
+      (with-open-file (stream filename
+                              :direction :output
+                              :if-exists :supersede
+                              :if-does-not-exist :create)
+	(format stream "~A~%" version-name)
+	(let ((*print-readably* t)
+              (*print-circle* t)
+              (*package* (find-package :keyword)))
+	  (write-persistent-object object stream)
+	  (terpri stream))
+	(finish-output stream))
+      (values object filename version-name))))
+
 (defun read-persistent-object (stream)
-  "Read an object from STREAM."
+  "Read a persistent object from STREAM."
   (flet ((read-persisted-object (stream char)
 	   (declare (ignore char))
 	   (let* ((delimited-list
@@ -157,6 +189,34 @@
       (let ((*readtable* readable-readtable)
 	    (*read-eval* nil))
 	(read stream)))))
+
+(defun read-persistent-object-from-string (string &key (start 0) end)
+  "Read a persistent object from STRING."
+  (with-input-from-string (stream string :start start :end end)
+    (read-persistent-object stream)))
+
+(defun load-persistent-object (object allowed-version-names)
+  "Read persisted object from corresponding file.
+The OBJECT must either be a list consisting of three strings
+TENANT-NAME, PROJECT-NAME or OBJECT-NAME or an object with a
+TENANT, a PROJECT and a NAME."
+  (destructuring-bind (tenant-name project-name object-name)
+      (cond ((and (listp object) (= 3 (length object)) (every #'stringp object))
+	     object)
+	    (t
+	     (list (name (tenant object)) (name (project object)) (name object))))
+    (let ((filename
+	    (user-data-relative-pathname
+	     tenant-name project-name
+	     (concatenate 'string object-name ".lisp"))))
+      (assert (probe-file filename) () 'file-does-not-exist)
+      (with-open-file (stream filename :direction :input)
+	(let ((version (read-line stream)))
+	  (assert (member version (alexandria:ensure-list allowed-version-names) :test #'string=)
+		  () 'file-version-is-not-allowed)
+          (let ((persistent-object
+		  (read-persistent-object stream)))
+	  (values persistent-object filename version)))))))
 
 
 ;;;;

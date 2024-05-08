@@ -455,63 +455,6 @@ defined, provisioned and modified as a unit."))
 
 
 ;;;;
-;;;; Read and Write Infrastructure Stacks to Files
-;;;;
-
-(defun read-infrastructure-stack (stream)
-  (read-persistent-object stream))
-
-(defun read-infrastructure-stack-from-string (string &key (start 0) end)
-  (with-input-from-string (stream string :start start :end end)
-    (read-infrastructure-stack stream)))
-
-(defun load-infrastructure-stack (tenant-name project-name stack-name allowed-version-names)
-  "Read persisted INFRASTRUCTURE-STACK from FILENAME.
-The INFRASTRUCTURE-STACK must be initialised with a TENANT, a PROJECT
-and a NAME."
-  (let ((filename
-	  (cid::user-data-relative-pathname
-	   tenant-name project-name
-	   (concatenate 'string stack-name ".lisp"))))
-    (assert (probe-file filename) () 'file-does-not-exist)
-    (with-open-file (stream filename :direction :input)
-      (let ((version (read-line stream)))
-	(assert (member version allowed-version-names :test #'string=)
-		() 'file-version-is-not-allowed)
-        (let ((object
-		(read-infrastructure-stack stream)))
-	  (values object filename version))))))
-
-(defun write-infrastructure-stack (object &optional (stream *standard-output*))
-  (let ((*print-readably* t)
-        (*print-circle* t)
-        (*package* (find-package :keyword)))
-    (pprint object stream)
-    (terpri stream)))
-
-(defun write-infrastructure-stack-to-string (object)
-  (with-output-to-string (stream)
-    (write-infrastructure-stack object stream)))
-
-(defun save-infrastructure-stack (object version-name)
-  "Persist OBJECT."
-  (let ((filename
-	  (cid::user-data-relative-pathname
-	   (name (tenant object))
-	   (name (project object))
-	   (concatenate 'string (name object) ".lisp"))))
-    (ensure-directories-exist filename) 
-    (with-open-file (stream filename
-                            :direction :output
-                            :if-exists :supersede
-                            :if-does-not-exist :create)
-      (format stream "~A~%" version-name)
-      (write-infrastructure-stack object stream)
-      (finish-output stream))
-    (values object filename)))
-
-
-;;;;
 ;;;; Delivery Stack
 ;;;;
 

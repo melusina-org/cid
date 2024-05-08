@@ -26,7 +26,11 @@
    #:persistent-constructor
    #:persistent-slots
    #:write-persistent-object
+   #:write-persistent-object-to-string
+   #:save-persistent-object
    #:read-persistent-object
+   #:read-persistent-object-from-string
+   #:load-persistent-object
    ;; Tenant
    #:*tenant*
    #:*tenant-directory*

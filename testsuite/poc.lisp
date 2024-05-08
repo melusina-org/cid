@@ -77,8 +77,8 @@ resources is usually longer than those of Common Lisp sessions."
 			     (slot-value object1 slot-name)
 			     (slot-value object2 slot-name))))))
 	     (write-then-read (object)
-	       (poc::read-infrastructure-stack-from-string
-		(poc::write-infrastructure-stack-to-string object)))
+	       (cid:read-persistent-object-from-string
+		(cid:write-persistent-object-to-string object)))
 	     (check-persistence-idempotency (object)
 	       (check-structural-equality object (write-then-read object)))
 	     (stack-resources (stack)
@@ -97,12 +97,8 @@ resources is usually longer than those of Common Lisp sessions."
 	(check-structural-equality
 	 delivery-stack
 	 (progn
-	   (poc::save-infrastructure-stack delivery-stack *testsuite-id*)
-	   (poc::load-infrastructure-stack
-	    (cid:name (cid:tenant delivery-stack))
-	    (cid:name (cid:project delivery-stack))
-	    (cid:name delivery-stack)
-	    (list *testsuite-id*))))))))
+	   (cid:save-persistent-object delivery-stack *testsuite-id*)
+	   (cid:load-persistent-object delivery-stack *testsuite-id*)))))))
 
 (define-testcase demonstrate-that-infrastructure-stack-can-be-modified ()
   "Demonstrate that an infrastructure stack can be modified.
