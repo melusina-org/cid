@@ -64,9 +64,17 @@ a public cloud, among many other possibilities."))
   (flet ((print-readably ()
 	   (write-persistent-object instance stream))
 	 (print-unreadably ()
-	   (with-slots (tenant project name displayname) instance
+	   (flet ((print-scope ()
+		    (format stream "~A:~A"
+			    (name (tenant instance))
+			    (name (project instance))))
+		  (print-name ()
+		    (with-slots (name displayname) instance
+		      (when (and name displayname)
+			(format stream ":~A ~A" name displayname)))))
 	     (print-unreadable-object (instance stream :type t :identity t)
-	       (format stream "~A:~A:~A ~A" (name tenant) (name project) name displayname)))))
+	       (print-scope)
+	       (print-name)))))
     (if *print-readably*
 	(print-readably)
 	(print-unreadably))))

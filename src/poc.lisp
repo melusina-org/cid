@@ -71,6 +71,9 @@
   ((credential
     :initarg :credential
     :documentation "The credentials used to access the public API."))
+  (:default-initargs
+   :name "sws"
+   :displayname "Simulated Web Services")
   (:documentation "A cloud vendor providing infrastruture as a service."))
 
 (defun make-cloud-vendor (&rest initargs &key tenant project name displayname 

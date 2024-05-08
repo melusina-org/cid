@@ -81,18 +81,23 @@ resources. For a given STEWARD, any resource is uniquely identified by its IDENT
   (flet ((print-readably ()
 	   (write-persistent-object instance stream))
 	 (print-unreadably ()
-	   (with-slots (name displayname) instance
-	     (cond ((and name displayname)
-		    (print-unreadable-object (instance stream :type t :identity t)
-		      (format stream "~A:~A:~A ~A"
-			      (name (tenant instance))
-			      (name (project instance))
-			      name displayname)))
-		   (t
-		    (print-unreadable-object (instance stream :type t :identity t)
-		      (format stream "~A:~A Anonymous"
-			      (name (tenant instance))
-			      (name (project instance)))))))))
+	   (flet ((print-scope ()
+		    (format stream "~A:~A"
+			    (name (tenant instance))
+			    (name (project instance))))
+		  (print-name ()
+		    (with-slots (name displayname) instance
+		      (when (and name displayname)
+			(format stream ":~A ~A" name displayname))))
+		  (print-state-and-identifier ()
+		    (with-slots (state identifier) instance
+		      (when identifier
+			(format stream " ~A" identifier))
+		      (format stream " :STATE ~A" state))))
+	     (print-unreadable-object (instance stream :type t :identity t)
+	       (print-scope)
+	       (print-name)
+	       (print-state-and-identifier)))))
     (if *print-readably*
 	(print-readably)
 	(print-unreadably))))
@@ -325,10 +330,16 @@ the RESOURCE-READY-P predicate.")
 This returns the RESOURCE instance."))
 
 (defmethod create-resource :around ((instance resource))
-  "Enforce calling convention and ensure that we do not recreate a resource that already exists."
+  "Ensure that we do not recreate a resource that already exists.
+When we try to recreate a resource that already exists, we signal
+a continuable error.
+
+This also enforces the calling convention, ensuring that the generic
+function returns only one value, the instance created."
   (with-slots (identifier state) instance
     (when state
-      (cerror "Recreate the resource." "Cannot create the resource ~A as it already exists." identifier)
+      (cerror "Recreate the resource."
+	      "Cannot create the resource ~A as it already exists." identifier)
       (return-from create-resource instance)))
   (call-next-method)
   (values instance))

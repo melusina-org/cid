@@ -79,7 +79,7 @@ new resources."))
 	 "It is not possible for steward ~A to create the simulator resource ~A.
 This resource already exists."
 	 steward instance))
-      (setf identifier (random-string)
+      (setf identifier (random-string 7)
 	    state t)
       (push identifier resource-identifiers))))
 
