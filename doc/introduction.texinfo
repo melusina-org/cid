@@ -26,6 +26,21 @@ your contributors.
 [FUTURE] Use integrated artefact repositories.
 @item
 [FUTURE] Use integrated monitoring system.
+@item
+[FUTURE] Use infrastructure as code description to prove connectivity
+statements about your infrastructure. (Can instance X communicate with
+database Y?)
+@item
+[FUTURE] Use infrastructure as code description to prove permission
+statements about your infrastructure. (Is role X allowed to access
+resource Y?)
+@item
+[FUTURE] Use infrastructure as code description to understand
+authorization boundaries in your infrastructure.
+@item
+[FUTURE] Use infrastructurew as code description and automatic
+security vulnerability analysis to understand threats on your
+infrastructure.
 @end itemize
 
 @subsection Escape the hold of the Monolithic Continuous Integration and Delivery Server
