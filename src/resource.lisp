@@ -21,7 +21,9 @@
   ((steward
     :type steward
     :reader steward
-    :initarg :steward)
+    :initarg :steward
+    :documentation "The steward of a resource.
+When a *STEWARD-DIRECTORY* is active, keywords can be used to initialise this slot.")
    (steward-class
     :type symbol
     :allocation :class)
@@ -63,6 +65,18 @@ the underlying resource has not been created, the IDENTIFIER is NIL."))
   (:documentation "The class represents the state of resources required to a component deployment.
 These resources can be created, read, updated and deleted. Resources can depend on other
 resources. For a given STEWARD, any resource is uniquely identified by its IDENTIFIER slot."))
+
+(defmethod initialize-instance :after ((instance resource) &rest initargs &key &allow-other-keys)
+  (declare (ignore initargs))
+  (flet ((support-initialize-steward-slot-with-keyword ()
+	   (with-slots ((designator steward)) instance
+	     (when (and *steward-directory* (keywordp designator))
+	       (let ((actual-steward
+		       (find-steward designator)))
+		 (unless actual-steward
+		   (error "There is no steward identified by ~A." designator))
+		 (setf designator actual-steward))))))
+    (support-initialize-steward-slot-with-keyword)))
 
 (defmethod tenant ((instance resource))
   (tenant (steward instance)))

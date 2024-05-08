@@ -41,6 +41,28 @@
 	:when (and property-p (not (eq property name)))
 	:append (list name value)))
 
+(defun plist-p (object &key test test-not)
+  "Predicate recognising property lists."
+  (when (and test test-not)
+    (error "The TEST and TEST-NOT arguments cannot be simultaneously provided."))
+  (flet ((test-value (value)
+	   (and (or (not test) (funcall test value))
+		(or (not test-not) (not (funcall test-not value))))))
+    (and (alexandria:proper-list-p object)
+	 (evenp (length object))
+	 (loop :for (name value . tail) :on object :by #'cddr
+	       :always (and (keywordp name) (test-value value))))))
+
+
+;;;;
+;;;; Association Lists
+;;;;
+
+(defun alist-p (object)
+  "Predicate recognising association lists."
+  (and (alexandria:proper-list-p object)
+       (every #'consp object)))
+
 
 ;;;;
 ;;;; Check instance slots
@@ -105,14 +127,15 @@
       (loop :for slot-spec-iterator :on slot-specs
 	    :for slot-spec = (first slot-spec-iterator)
 	    :for lastp = (not (rest slot-spec-iterator))
-	    :do (destructuring-bind (initarg slot-name &optional sensitive-p) slot-spec
+	    :do (destructuring-bind (initarg slot-name &key sensitive-p (presentation 'identity)) slot-spec
 		  (declare (ignore sensitive-p))
 		  (when (slot-boundp object slot-name)
 		    (pprint-logical-block (stream nil)
 		      (pprint initarg stream)
 		      (write-char #\Space stream)
 		      (pprint-newline :linear stream)
-		      (pprint (slot-value object slot-name) stream))
+		      (pprint (funcall presentation (slot-value object slot-name))
+			      stream))
 		    (unless lastp
 		      (write-char #\Space stream)
 		      (pprint-newline :linear stream))))))))

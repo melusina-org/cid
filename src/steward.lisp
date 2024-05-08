@@ -101,4 +101,78 @@ to services, the ability to write on local file systems, etc."))
   (call-next-method)
   (values instance))
 
+
+;;;;
+;;;; Steward Directory
+;;;;
+
+(defparameter *steward-directory* nil
+  "When set, this is a hashtable mapping keywords to stewards.")
+
+(defun find-steward (designator)
+  "Find steward in *STEWARD-DIRECTORY*."
+  (etypecase designator
+    (steward
+     designator)
+    (keyword
+     (when *steward-directory*
+       (nth-value 0 (gethash designator *steward-directory*))))
+    (null
+     nil)))
+
+
+;;;;
+;;;; Composite Steward
+;;;;
+
+(defclass composite-steward (steward)
+  ((stewards
+    :initarg :stewards
+    :initform nil
+    :documentation "A hash table whose keys are keywords and values are stewards
+forming up the composite.
+
+This slot can also be initialised from an alist or a plist."))
+  (:documentation "A composite steward is a juxtaposition of stewards.
+Such a steward can be used to create complex infrastructure stacks
+that need to interact with several stewards."))
+
+(defmethod initialize-instance :after ((instance composite-steward) &rest initargs &key &allow-other-keys)
+  (declare (ignore initargs))
+  (flet ((support-initialize-stewards-slot-with-plist ()
+	   (with-slots (stewards) instance
+	     (when (plist-p stewards)
+	       (setf stewards
+		     (alexandria:plist-hash-table stewards :test #'eq)))))
+	 (support-initialize-stewards-slot-with-alist ()
+	   (with-slots (stewards) instance
+	     (when (alist-p stewards)
+	       (setf stewards
+		     (alexandria:alist-hash-table stewards :test #'eq))))))
+    (support-initialize-stewards-slot-with-plist)
+    (support-initialize-stewards-slot-with-alist)))
+
+(defun make-composite-steward (&rest initargs &key tenant project name displayname
+						   description stewards)
+  "Make a COMPOSITE-STEWARD."
+  (declare (ignore tenant project name displayname description stewards))
+  (apply #'make-instance 'composite-steward initargs))
+
+(defmethod configure-steward ((instance composite-steward))
+  (with-slots (stewards) instance
+    (loop :for steward :in (alexandria:hash-table-values stewards)
+	  :do (configure-steward steward))))
+
+(defmethod persistent-constructor ((class (eql 'composite-steward)))
+  #'make-composite-steward)
+
+(defmethod persistent-slots append ((instance composite-steward))
+  '((:stewards stewards :presentation #'alexandria:hash-table-plist)))
+
+(defmacro with-composite-steward-directory ((composite-steward) &body body)
+  "Run BODY forms in an environment where COMPOSITE-STEWARD is used as a directory."
+  `(let ((*steward-directory*
+	   (slot-value ,composite-steward 'stewards)))
+     ,@body))
+
 ;;;; End of file `steward.lisp'

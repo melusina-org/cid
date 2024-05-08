@@ -48,6 +48,10 @@
    #:find-steward
    #:configure-steward
    #:steward-class
+   #:composite-steward
+   #:make-composite-steward
+   #:*steward-directory*
+   #:with-composite-steward-directory
    ;; Resource
    #:resource
    #:resource-identifier
