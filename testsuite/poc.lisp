@@ -108,34 +108,29 @@ resources is usually longer than those of Common Lisp sessions."
   "Demonstrate that an infrastructure stack can be modified.
 This testcase prepares an infrastructure stack value, then creates
 the corresponding resources, modify an aspect of the stack and requires
-the update of the stack."
-  (assert-t nil))
+the update of the stack.")
 
 (define-testcase demonstrate-that-infrastructure-errors-can-be-resumed ()
   "Demonstrate that an infrastructure errors can be resumed
 This testcase prepares an infrastructure stack value, configures
 the laboratory so that resource creation then creates
 the corresponding resources, modify an aspect of the stack and requires
-the update of the stack."
-  (assert-t nil))
+the update of the stack.")
 
 (define-testcase demonstrate-that-infrastructure-stacks-cannot-be-misadvertently-duplicated ()
   "When we are about to recreate a stack that has already been created,
-this is detected early and the condition can be restarted in an appropriate way"
-  (assert-t nil))
+this is detected early and the condition can be restarted in an appropriate way")
 
 (define-testcase demonstrate-that-infrastructure-stacks-modification-can-be-reviewed-before-being-committed ()
   "When we are about to update the underlying resources of an infrastructure
 stack, the changes about to be made can be reviewed before being performed.
-This gives the operator the chance to interrupt the process if unexpected results are to be processed."
-  (assert-t nil))
+This gives the operator the chance to interrupt the process if unexpected results are to be processed.")
 
 (define-testcase demonstrate-that-infrastructure-stacks-can-be-promoted-through-environments ()
   "Infrastructure stacks are promoted through environments.
 An infrastructure stack has several instances and versions,
 a given version can be promoted through computational environments
-such as develelopment, staging, production."
-  (assert-t nil))
+such as develelopment, staging, production.")
 
 (define-testcase validate-poc ()
   "Validate our proof of concept."
