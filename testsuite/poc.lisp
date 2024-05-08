@@ -65,8 +65,8 @@ resources is usually longer than those of Common Lisp sessions."
 			:for item2 :in object2
 			:do (check-structural-equality item1 item2)))
 		 ((or cid:tenant cid:project)
-		  ;; TENANT and PROJECT are listed in a directory and must
-		  ;; be physically equal rather than structurally equal.
+		  ;; TENANT and PROJECT instances are listed in a directory
+		  ;; and must be physically equal rather than structurally equal.
 		  (assert-eq object1 object2))
 		 ((or poc:infrastructure-stack cid:steward cid:resource)
 		  (assert-eq (cid:persistent-constructor (type-of object1))

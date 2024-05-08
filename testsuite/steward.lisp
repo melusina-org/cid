@@ -29,7 +29,6 @@
      (list
       :key :simulator
       :steward-class 'cid:simulator
-      :name "simulator"
       :tenant "testsuite"
       :project "testproject"
       :make-steward #'make-simulator))

@@ -26,6 +26,9 @@
     :initarg :resource-identifiers
     :initform nil
     :documentation "The list of resource identifiers that have been created."))
+  (:default-initargs
+   :name "simulator"
+   :displayname "Resource Simulator")
   (:documentation
    "A steward that does not administrate actual resources.
 A SIMULATOR stewards creates SIMULATION resources. These resources do not
