@@ -36,7 +36,10 @@
    #:remove-property
    #:resource-prerequisites
    #:write-persistent-object
-   #:read-persistent-object)
+   #:read-persistent-object
+   #:sort-resources
+   #:create-resource
+   #:delete-resource)
   (:export
    #:configure-laboratory
    #:cloud-vendor
@@ -404,7 +407,7 @@ defined, provisioned and modified as a unit."))
 		 (loop :for prerequisite :in (slot-value instance 'resources)
 		       :for deep-prerequisites = (resource-prerequisites prerequisite)
 		       :append (cons prerequisite deep-prerequisites) :into prerequisites
-		       :finally (return (remove-duplicates prerequisites :test #'eq))))))
+		       :finally (return (sort-resources (remove-duplicates prerequisites :test #'eq)))))))
     (support-initialize-tenant-slot-with-designator)
     (support-initialize-project-slot-with-designator)
     (finalize-resource-list)))
@@ -442,7 +445,7 @@ defined, provisioned and modified as a unit."))
 
 (defmethod create-resource ((instance infrastructure-stack))
   (with-slots (resources) instance
-    (loop :for resource :in resources
+    (loop :for resource :in (reverse resources)
 	  :do (create-resource resource))))
 
 (defmethod delete-resource ((instance infrastructure-stack))

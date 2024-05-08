@@ -42,3 +42,4 @@ modifying or examining the underlying resource.
 @include include/fun-org.melusina.cid-list-resources.texinfo
 
 @include include/fun-org.melusina.cid-resource-prerequisites.texinfo
+@include include/fun-org.melusina.cid-sort-resources.texinfo

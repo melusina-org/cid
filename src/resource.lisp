@@ -392,6 +392,12 @@ before its prerequisites."))
 	:append (cons prerequisite deep-prerequisites) :into prerequisites
 	:finally (return (remove-duplicates prerequisites :test #'eq))))
 
+(defun sort-resources (resources)
+  "Sort RESOURCES so that any resource in the list appears before its prerequisites."
+  (flet ((require-p (resource1 resource2)
+	   (member resource2 (resource-prerequisites resource1))))
+    (sort resources #'require-p)))
+  
 
 ;;;;
 ;;;; Resource Lifecycle Methods

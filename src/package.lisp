@@ -75,6 +75,7 @@
    #:examine-differences-between-instance-and-resource
    #:resource-prerequisites
    #:resource-serial
+   #:sort-resources
    ;; Infrastructure Stacks
    #:stack-name
    ;; Simulators and Simulations
