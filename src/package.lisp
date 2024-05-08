@@ -58,6 +58,8 @@
    #:resource-properties
    #:resource-error
    #:resource-no-longer-exists
+   #:resource-already-exists
+   #:resource-prerequisite-is-missing
    #:resource-confirmation
    #:with-resource-confirmation
    #:resource-exists-p

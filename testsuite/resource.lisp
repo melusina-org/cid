@@ -47,7 +47,7 @@ to update the resource we use SLOT-NAME and a NEW-SLOT-VALUE."
 	   (assert-t* (cid:examine-resource resource))
 	   (assert-t* (cid:resource-identifier resource))
 	   (assert-type (cid:resource-identifier resource) 'string)
-	   (assert-condition (cid:create-resource resource) simple-error)))
+	   (assert-condition (cid:create-resource resource) cid:resource-already-exists)))
     (flet ((exercise-import-resource (resource)
 	     (let ((imported-resource
 		     (cid:import-resource (cid:steward resource) (type-of resource)
@@ -105,7 +105,7 @@ according to the instance slots."
 	      (assert-t* (cid:resource-identifier resource))
 	      (assert-type (cid:resource-identifier resource) 'string)
 	      (assert-condition (cid:create-resource resource)
-		  simple-error))
+		  cid:resource-already-exists))
     (cid:delete-resource resource)))
 
 (define-testcase ensure-that-delete-signals-resource-no-longer-exists (resource)

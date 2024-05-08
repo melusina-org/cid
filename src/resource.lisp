@@ -137,15 +137,16 @@ the resource, so that it is usually unsafe to publish this EXPLANATION."))
    "This condition is signaled when a steward operating a resource meets an error condition."))
 
 (defun describe-resource-error (condition stream)
-  (with-slots (name steward) (resource-error-resource condition)
+  (with-slots (name displayname steward) (resource-error-resource condition)
     (let ((*print-circle* nil))
       (format stream "~&Operation on resource ~A failed.
 
 The steward ~A trying to ~A the resource ~A met an error condition.
 ~A" 
-	      name
+	      (or displayname name (resource-error-resource condition))
 	      (slot-value steward 'name)
-	      (resource-error-operation condition) name
+	      (resource-error-operation condition)
+	      (or displayname name (resource-error-resource condition))
 	      (resource-error-description condition))
       (with-slots (explanation) condition
 	(when explanation
@@ -169,30 +170,113 @@ The steward ~A trying to ~A the resource ~A met an error condition.
   nil
   (:report describe-resource-no-longer-exists)
   (:documentation
-   "This condition is signaled when a steward operating a resource realises the actual
-resource no longer exists."))
+   "This condition is signaled when a steward operating a resource realises
+that the underlying resource no longer exists while the last state known
+to the resource handle indicates that the underlying resource exists."))
 
 (defun describe-resource-no-longer-exists (condition stream)
-  (with-slots (name steward) (resource-error-resource condition)
+  (with-slots (name displayname steward) (resource-error-resource condition)
     (let ((*print-circle* nil))
       (format stream "~&Operation on resource ~A failed.
 
-The steward ~A trying to ~A the resource ~A realised that the actual
-resource no longer exists.
-~A" 
-	      name
+The steward ~A trying to ~A the resource ~A realised that
+the underlying resource ~A no longer exists while the last
+known state indicates the underlying resource was existing." 
+	      (or displayname name (resource-error-resource condition))
 	      (slot-value steward 'name)
-	      (resource-error-operation condition) name
+	      (resource-error-operation condition)
+	      (or displayname name (resource-error-resource condition))
 	      (resource-error-description condition))
       (with-slots (explanation) condition
 	(when explanation
 	  (format stream "~&~A" explanation))))))
 
 (defun resource-no-longer-exists (operation resource description &optional control-string &rest format-arguments)
-  "Signal a RESOURCE-ERROR."
+  "Signal a RESOURCE-NO-LONGER-EXISTS."
   (error 'resource-no-longer-exists
 	 :operation operation
 	 :resource resource
+	 :description description
+	 :explanation (when control-string
+			(apply #'format nil control-string format-arguments))))
+
+
+
+;;;;
+;;;; Resource Already Exists
+;;;;
+
+(define-condition resource-already-exists (resource-error)
+  nil
+  (:report describe-resource-already-exists)
+  (:documentation
+   "This condition is signaled when a steward operating a resource realises
+that the underlying resource already exists while the last state known
+to the resource handle indicates that the underlying resource did not exist."))
+
+(defun describe-resource-already-exists (condition stream)
+  (with-slots (name displayname steward) (resource-error-resource condition)
+    (let ((*print-circle* nil))
+      (format stream "~&Operation on resource ~A failed.
+
+The steward ~A trying to ~A the resource ~A realised that
+the underlying resource ~A already exists while the last
+known state indicates the underlying resource did exist." 
+	      (or displayname name (resource-error-resource condition))
+	      (slot-value steward 'name)
+	      (resource-error-operation condition)
+	      (or displayname name (resource-error-resource condition))
+	      (resource-error-description condition))
+      (with-slots (explanation) condition
+	(when explanation
+	  (format stream "~&~A" explanation))))))
+
+(defun resource-already-exists (operation resource description &optional control-string &rest format-arguments)
+  "Signal a RESOURCE-ALREADY-EXISTS."
+  (error 'resource-already-exists
+	 :operation operation
+	 :resource resource
+	 :description description
+	 :explanation (when control-string
+			(apply #'format nil control-string format-arguments))))
+
+
+;;;;
+;;;; Resource Prerequisite is Mising
+;;;;
+
+(define-condition resource-prerequisite-is-missing (resource-error)
+  ((prerequisite
+    :type resource
+    :initarg :prerequisite
+    :reader resource-error-prerequisite))
+  (:report describe-resource-prerequisite-is-missing)
+  (:documentation
+   "This condition is signaled when a steward creating a resource realises
+that the prerequisites of the resource do not yet exist."))
+
+(defun describe-resource-prerequisite-is-missing (condition stream)
+  (with-slots (name displayname steward) (resource-error-resource condition)
+    (let ((*print-circle* nil))
+      (format stream "~&Operation on resource ~A failed.
+
+The steward ~A trying to ~A the resource ~A realised that
+some prerequisite ~A for that resource do not yet exist." 
+	      (or displayname name (resource-error-resource condition))
+	      (slot-value steward 'name)
+	      (resource-error-operation condition)
+	      (or displayname name (resource-error-resource condition))
+	      (resource-error-prerequisite condition))
+      (with-slots (explanation) condition
+	(when explanation
+	  (format stream "~&~A" explanation))))))
+
+(defun resource-prerequisite-is-missing (operation resource prerequisite description &optional control-string &rest format-arguments)
+  "Signal a RESOURCE-PREREQUISITE-IS-MISSING."
+  (error 'resource-prerequisite-is-missing
+	 :operation operation
+	 :resource resource
+	 :prerequisite prerequisite
 	 :description description
 	 :explanation (when control-string
 			(apply #'format nil control-string format-arguments))))
@@ -338,17 +422,38 @@ This also enforces the calling convention, ensuring that the generic
 function returns only one value, the instance created."
   (with-slots (identifier state) instance
     (when state
-      (cerror "Recreate the resource."
-	      "Cannot create the resource ~A as it already exists." identifier)
-      (return-from create-resource instance)))
+      (restart-case
+	  (resource-already-exists
+	   'create-resource instance
+	   "Cannot create the resource as it already exists."
+	   "The resource ~A cannot be created as the underlying resource
+already exists."
+	   instance)
+	(use-resource ()
+	  :report "Use the existing resource."
+	  (return-from create-resource instance))
+	(recreate-resource ()
+	  :report "Delete and recreate the resource."
+	  (delete-resource instance)))))
   (call-next-method)
   (values instance))
 
 (defmethod create-resource :before ((instance resource))
-  "Create INSTANCE prerequisites before INSTANCE itself."
-  (loop :for prerequisite :in (reverse (resource-prerequisites instance))
-	:unless (resource-exists-p prerequisite)
-	:do (create-resource prerequisite)))
+  "Verify INSTANCE prerequisites do exist.
+When a prerequisite does not exist, an error is signaled
+in a context where a CREATE-PREREQUISITE restart is available."
+  (flet ((ensure-that-prerequisite-exists (prerequisite)
+	   (unless (resource-exists-p prerequisite)
+	     (restart-case
+		 (resource-prerequisite-is-missing
+		  'create-resource
+		   instance prerequisite
+		   "Resource prerequisite does not exist.")
+	       (create-prerequisite ()
+		 :report "Create the missing prerequisite."
+		 (create-resource prerequisite))))))
+    (loop :for prerequisite :in (reverse (resource-prerequisites instance))
+	  :do (ensure-that-prerequisite-exists prerequisite))))
 
 (defgeneric delete-resource (resource)
   (:documentation "Delete a RESOURCE using its steward.
@@ -374,12 +479,6 @@ to assume the delete operation was succesful."
     (when (eq state nil)
       (setf identifier nil)))
   (values instance))
-
-(defmethod delete-resource :after ((instance resource))
-  "Delete INSTANCE prerequisites after INSTANCE itself."
-  (loop :for prerequisite :in (resource-prerequisites instance)
-	:when (resource-exists-p prerequisite)
-	:do (delete-resource prerequisite)))
 
 (defgeneric update-instance-from-resource (instance)
   (:documentation "Update INSTANCE slots with attributes from resource.
