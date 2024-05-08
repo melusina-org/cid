@@ -18,24 +18,23 @@
     :type tenant
     :reader tenant
     :initarg :tenant
-    :initform *tenant*)
+    :initform *tenant*
+    :documentation "The TENANT this STEWARD operates for.")
    (project
     :type project
     :reader project
     :initarg :project
-    :initform *project*)
+    :initform *project*
+    :documentation "The PROJECT this STEWARD operates for.")
    (description
     :type (or string null)
     :initarg :description
     :reader description
     :initform nil
     :documentation "A short description of the STEWARD."))
-  (:documentation "The class represents stewards responsible for
-resources consumed by the deployment of software components.
-
-Some examples of STEWARDS are the localhost, a configured docker engine,
-a remote host accesible over SSH, a kubernetes cluster hosted in
-a public cloud, among many other possibilities."))
+  (:documentation "The class represents stewards responsible for resources
+that are examined, created, deleted and consumed during the deployment
+of infrastructure stacks."))
 
 (defmethod initialize-instance :after ((instance steward) &rest initargs &key &allow-other-keys)
   (declare (ignore initargs))

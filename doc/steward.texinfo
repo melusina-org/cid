@@ -4,18 +4,32 @@
 
 @subsection Introduction to Stewards
 
-Stewards are responsible for resources examined and consumed by the
-deployment of software components.
+Stewards are responsible for resources examined, created, deleted and
+consumed during the deployment and operation of infrastructure stacks.
 
 Some examples of stewards and resources they are responsible for are
-the localhost and users, files, and software packages; a configured
-docker engine and docker volumes, images and deployments; a remote
-host accessible over SSH and users, files, and software packages; a
-kubernetes cluster hosted in a public cloud and the rich landscape of
-resources it can manage.
+the UNIX localhost and its users, files, and software packages; a
+configured docker engine and its docker volumes, images and
+deployments; a remote UNIX host accessible over SSH and its users,
+files, and software packages; a kubernetes cluster hosted in a public
+cloud and the rich landscape of resources it can manage.
 
 Stewards are persistent objects that are attached to a tenant and a
 project.
+
+@subsection Steward Configuration
+
+Before a steward can operate it may require a preparation step that we
+call @i{configuration}.  This step must prepare transient resources
+that a steward requires to operate, it must also perform appropriate
+verifications to prevent operational errors.
+
+For instance a steward responsible for creating files in a specific
+directory of the local file system could verify that this directory
+exists and that the program has appropriate rights to create files in
+this directory.  A steward interacting with a web service could verify
+the connectivity to the web service, the availability and validity of
+credentials for that service.
 
 @section The Stewards Dictionary
 
