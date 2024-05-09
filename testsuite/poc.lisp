@@ -72,7 +72,7 @@ resources is usually longer than those of Common Lisp sessions."
 		  (assert-eq (cid:persistent-constructor (type-of object1))
 			     (cid:persistent-constructor (type-of object2)))
 		  (loop :for slot-spec :in (cid:persistent-slots object1)
-			:for slot-name = (second slot-spec)
+			:for slot-name = (getf slot-spec :slot-name)
 			:do (check-structural-equality
 			     (slot-value object1 slot-name)
 			     (slot-value object2 slot-name))))))

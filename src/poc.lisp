@@ -91,7 +91,8 @@
   'make-cloud-vendor)
 
 (defmethod persistent-slots append ((instance cloud-vendor))
-  '((:credential credential)))
+  '((:initarg :credential
+     :slot-name credential)))
 
 
 ;;;;
@@ -149,7 +150,8 @@ This sets *TENANT* and *PROJECT* to work on the POC."
   'make-private-network)
 
 (defmethod persistent-slots append ((instance private-network))
-  '((:cloud-vendor steward)))
+  '((:initarg :cloud-vendor
+     :slot-name steward)))
 
 
 ;;;;
@@ -183,9 +185,12 @@ This sets *TENANT* and *PROJECT* to work on the POC."
   'make-container-image)
 
 (defmethod persistent-slots append ((instance container-image))
-  '((:cloud-vendor steward)
-    (:repository repository)
-    (:tag tag)))
+  '((:initarg :cloud-vendor
+     :slot-name steward)
+    (:initarg :repository
+     :slot-name repository)
+    (:initarg :tag
+     :slot-name tag)))
 
 
 ;;;;
@@ -212,7 +217,8 @@ This sets *TENANT* and *PROJECT* to work on the POC."
   'make-container-image-registry)
 
 (defmethod persistent-slots append ((instance container-image-registry))
-  '((:cloud-vendor steward)))
+  '((:initarg :cloud-vendor
+     :slot-name steward)))
 
 (defun find-container-image (&key image-registry repository tag)
   "Find a container image in IMAGE-REGISTRY with the given properties."
@@ -251,8 +257,10 @@ This sets *TENANT* and *PROJECT* to work on the POC."
   'make-container-cluster)
 
 (defmethod persistent-slots append ((instance container-cluster))
-  '((:cloud-vendor steward)
-    (:private-network private-network)))
+  '((:initarg :cloud-vendor
+     :slot-name steward)
+    (:initarg :private-network
+     :slot-name private-network)))
 
 (defmethod resource-prerequisites append ((instance container-cluster))
   (with-slots (private-network) instance
@@ -304,10 +312,14 @@ Allowed values are one of :HTTP, :HTTPS, :TCP.")
   'make-container-service)
 
 (defmethod persistent-slots append ((instance container-service))
-  '((:cloud-vendor steward)
-    (:cluster cluster)
-    (:image image)
-    (:protocol protocol)))
+  '((:initarg :cloud-vendor
+     :slot-name steward)
+    (:initarg :cluster
+     :slot-name cluster)
+    (:initarg :image
+     :slot-name image)
+    (:initarg :protocol
+     :slot-name protocol)))
 
 (defmethod resource-prerequisites append ((instance container-service))
   (with-slots (cluster image) instance
@@ -347,9 +359,12 @@ Allowed values are one of :HTTP, :HTTPS, :TCP.")
   'make-public-load-balancer)
 
 (defmethod persistent-slots append ((instance public-load-balancer))
-  '((:cloud-vendor steward)
-    (:private-network private-network)
-    (:services services)))
+    '((:initarg :cloud-vendor
+     :slot-name steward)
+    (:initarg :private-network
+     :slot-name private-network)
+    (:initarg :services
+     :slot-name services)))
 
 (defmethod resource-prerequisites append ((instance public-load-balancer))
   (with-slots (private-network services) instance
@@ -424,12 +439,18 @@ defined, provisioned and modified as a unit."))
   'make-infrastructure-stack)
 
 (defmethod persistent-slots append ((instance infrastructure-stack))
-  '((:tenant tenant)
-    (:project project)
-    (:name name)
-    (:displayname displayname)
-    (:description description)
-    (:resources resources)))
+  '((:initarg :tenant
+     :slot-name tenant)
+    (:initarg :project
+     :slot-name project)
+    (:initarg :name
+     :slot-name name)
+    (:initarg :displayname
+     :slot-name displayname)
+    (:initarg :description
+     :slot-name description)
+    (:initarg :resources
+     :slot-name resources)))
 
 (defmethod print-object ((instance infrastructure-stack) stream)
   (flet ((print-readably ()

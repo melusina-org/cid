@@ -79,10 +79,7 @@ up using `FIND-PROJECT'."
 
 (defmethod print-object ((instance project) stream)
   (flet ((print-readably ()
-	   (write-persistent-object instance stream 'project
-				    '((:tenant tenant)
-				      (:name name)
-				      (:displayname displayname))))
+	   (write-persistent-object instance stream))
 	 (print-unreadably ()
 	   (with-slots (tenant name displayname) instance
 	     (print-unreadable-object (instance stream :type t :identity t)
@@ -93,6 +90,14 @@ up using `FIND-PROJECT'."
 
 (defmethod persistent-constructor ((class (eql 'project)))
   #'make-project)
+
+(defmethod persistent-slots append ((instance project))
+  '((:initarg :tenant
+     :slot-name tenant)
+    (:initarg :name
+     :slot-name name)
+    (:initarg :displayname
+     :slot-name displayname)))
 
 (defun list-projects (&key (tenant *tenant*))
   "List existing projects."

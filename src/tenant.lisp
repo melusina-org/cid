@@ -57,9 +57,7 @@ up using `FIND-TENANT'."
 
 (defmethod print-object ((instance tenant) stream)
   (flet ((print-readably ()
-	   (write-persistent-object instance stream 'tenant
-				    '((:name name)
-				      (:displayname displayname))))
+	   (write-persistent-object instance stream))
 	 (print-unreadably ()
 	   (with-slots (name displayname) instance
 	     (print-unreadable-object (instance stream :type t :identity t)
@@ -70,6 +68,12 @@ up using `FIND-TENANT'."
 
 (defmethod persistent-constructor ((class (eql 'tenant)))
   #'make-tenant)
+
+(defmethod persistent-slots append ((instance tenant))
+  '((:initarg :name
+     :slot-name name)
+    (:initarg :displayname
+     :slot-name displayname)))
 
 (defun list-tenants ()
   "List existing tenants."

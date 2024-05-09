@@ -46,7 +46,8 @@ new resources."))
   'make-simulator)
 
 (defmethod persistent-slots append ((instance simulator))
-  '((:resource-identifiers resource-identifiers)))
+  '((:initarg :resource-identifiers
+     :slot-name resource-identifiers)))
 
 
 ;;;;

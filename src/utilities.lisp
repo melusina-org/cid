@@ -111,14 +111,31 @@
 
 (defgeneric persistent-slots (object)
   (:method-combination append)
-  (:documentation "The slot specifications to use when readably printing OBJECT."))
+  (:documentation "The slot specifications to use when readably printing OBJECT.
+The slot specification is a list of slot specification. Each slot specification
+is a plist with the following mandatory members
 
-(defun write-persistent-object (object stream &optional class slot-specs)
+  :INITARG
+    The initarg keyword used by the constructor to construct the instance.
+
+  :SLOT-NAME
+    The name of the corresponding object slot.
+
+The following members are optional:
+
+  :CONFIDENTIAL
+    A boolean marking slots which requires encryption when they are persisted.
+
+  :PRESENTATION
+    When provided, a function used to transform the slot value in a value
+    which can be persisted."))
+
+(defun write-persistent-object (object stream)
   "Readably write persistent OBJECT on STREAM."
   (let ((class
-	  (or class (type-of object)))
+	  (type-of object))
 	(slot-specs
-	  (or slot-specs (persistent-slots object))))
+	  (persistent-slots object)))
     (pprint-logical-block (stream nil :prefix "[" :suffix "]")
       (pprint class stream)
       (write-char #\Space stream)
@@ -127,8 +144,8 @@
       (loop :for slot-spec-iterator :on slot-specs
 	    :for slot-spec = (first slot-spec-iterator)
 	    :for lastp = (not (rest slot-spec-iterator))
-	    :do (destructuring-bind (initarg slot-name &key sensitive-p (presentation 'identity)) slot-spec
-		  (declare (ignore sensitive-p))
+	    :do (destructuring-bind (&key initarg slot-name confidential (presentation 'identity)) slot-spec
+		  (declare (ignore confidential))
 		  (when (slot-boundp object slot-name)
 		    (pprint-logical-block (stream nil)
 		      (pprint initarg stream)

@@ -55,9 +55,12 @@ of infrastructure stacks."))
     (support-initialize-project-slot-with-designator)))
 
 (defmethod persistent-slots append ((instance steward))
-  '((:tenant tenant)
-    (:project project)
-    (:description description)))
+  '((:initarg :tenant
+     :slot-name tenant)
+    (:initarg :project
+     :slot-name project)
+    (:initarg :description
+     :slot-name description)))
 
 (defmethod print-object ((instance steward) stream)
   (flet ((print-readably ()
@@ -167,7 +170,9 @@ that need to interact with several stewards."))
   #'make-composite-steward)
 
 (defmethod persistent-slots append ((instance composite-steward))
-  '((:stewards stewards :presentation #'alexandria:hash-table-plist)))
+  '((:initarg :stewards
+     :slot-name stewards
+     :presentation #'alexandria:hash-table-plist)))
 
 (defmacro with-composite-steward-directory ((composite-steward) &body body)
   "Run BODY forms in an environment where COMPOSITE-STEWARD is used as a directory."

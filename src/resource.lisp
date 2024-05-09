@@ -85,11 +85,16 @@ resources. For a given STEWARD, any resource is uniquely identified by its IDENT
   (project (steward instance)))
 
 (defmethod persistent-slots append ((instance resource))
-  '((:name name)
-    (:displayname displayname)
-    (:description description)
-    (:state state)
-    (:identifier identifier)))
+  '((:initarg :name
+     :slot-name name)
+    (:initarg :displayname
+     :slot-name displayname)
+    (:initarg :description
+     :slot-name description)
+    (:initarg :state
+     :slot-name state)
+    (:initarg :identifier
+     :slot-name identifier)))
 
 (defmethod print-object ((instance resource) stream)
   (flet ((print-readably ()
@@ -593,5 +598,36 @@ These resources can be imported."))
 		  steward
 		  resource-class
 		  :identifier identifier)))
+
+
+;;;;
+;;;; Update Resources from a Blueprint
+;;;;
+
+(defun apply-modification-instructions (instructions)
+  "Process resource modifying INSTRUCTIONS.
+The possible INSTRUCTIONS and their semantics are described below:
+
+  :CREATE RESOURCE
+    Create the given RESOURCE.
+
+  :DELETE RESOURCE
+    Delete the given RESOURCE.
+
+  :UPDATE-INSTANCE RESOURCE {SLOT-NAME SLOT-VALUE}*
+    Update the RESOURCE instance so that its slots take the specified values.
+
+  :UPDATE-RESOURCE RESOURCE
+    Update the underlying RESOURCE so that it reflects the change carried on the INSTANCE.")
+  
+(defun prepare-modification-instructions (resource blueprint)
+  "Prepare INSTRUCTIONS to modify RESOURCE to resemble the BLUEPRINT.
+When applied the instruction must update the RESOURCE instance so that its slots take the
+values of the slots of BLUEPRINT.  Some slots are excluded from the process, such as the
+STATE and the IDENTIFIER."
+  (list
+   (list :delete resource)
+   (list :update-instance resource blueprint)
+   (list :create resource)))
 
 ;;;; End of file `resource.lisp'
