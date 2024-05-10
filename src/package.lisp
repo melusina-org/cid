@@ -59,7 +59,6 @@
    ;; Resource
    #:resource
    #:resource-identifier
-   #:resource-pathname
    #:resource-steward
    #:resource-project
    #:resource-tenant
@@ -80,9 +79,7 @@
    #:import-resource
    #:list-resources
    #:list-resource-identifiers
-   #:examine-differences-between-instance-and-resource
    #:resource-prerequisites
-   #:resource-serial
    #:sort-resources
    ;; Infrastructure Stacks
    #:stack-name
