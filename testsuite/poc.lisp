@@ -30,7 +30,7 @@ This is the smallest possible testcase for an infrastructure stack."
 		   :do (assert-nil (cid:resource-exists-p resource))))
 	   (stack-resources (stack)
 	     (loop :for resource :in (slot-value stack 'poc::resources)
-		   :append (cid:resource-prerequisites resource))))		      
+		   :append (cid:resource-prerequisites resource))))
       (let* ((delivery-stack
 	       (poc:make-delivery-stack
 		:cloud-vendor (poc:make-cloud-vendor
@@ -99,6 +99,76 @@ resources is usually longer than those of Common Lisp sessions."
 	 (progn
 	   (cid:save-persistent-object delivery-stack *testsuite-id*)
 	   (cid:load-persistent-object delivery-stack *testsuite-id*)))))))
+
+(define-testcase demonstrate-that-single-resources-can-be-modified ()
+  "Demonstrate that a single resource can be modified.
+This testcase handles several case: the regular case, the case where
+the attribute to modify is immutable, the case where the attribute to
+modify has a value of type resource."
+  (with-test-environment
+    (flet ((regular-case ()
+	     (let* ((cloud-vendor
+		      (poc:make-cloud-vendor
+		       :credential "ThisIsNotARealCredential"))
+		    (resource
+		      (poc:make-private-network
+		       :cloud-vendor cloud-vendor
+		       :name "vpc"
+		       :displayname "Unique VPC"))
+		    (blueprint
+		      (poc:make-private-network
+		       :cloud-vendor cloud-vendor
+		       :name "vpc-1"
+		       :displayname "First VPC")))
+	       (flet ((validate-update-instance (instructions)
+			(let ((instruction
+				(first instructions)))
+			  (assert-eq
+			   :update-instance
+			   (first instruction))
+			  (assert-eq
+			   resource
+			   (getf instruction :update-instance))
+			  (assert-string=
+			   "vpc-1"
+			   (getf instruction 'cid:name))
+			  (assert-string=
+			   "First VPC"
+			   (getf instruction 'cid:displayname))
+			  (assert-nil
+			   (member 'cid::state instruction))
+			  (assert-nil
+			   (member 'cid::identifier instruction))))
+		      (validate-update-resource (instructions)
+			(let ((instruction
+				(second instructions)))
+			  (assert-eq
+			   :update-resource
+			   (first instruction))
+			  (assert-eq
+			   resource
+			   (getf instruction :update-resource))
+			  (assert-eq
+			   2
+			   (length instruction)))))
+		 (cid:create-resource resource)
+		 (let ((instructions
+			 (cid:prepare-modification-instructions resource blueprint)))
+		   (assert-eq 2 (length instructions))
+		   (validate-update-instance instructions)
+		   (validate-update-resource instructions)
+		   (cid:apply-modification-instructions instructions)
+		   (assert-string=
+		    (cid:name blueprint)
+		    (cid:name resource))
+		   (assert-string=
+		    (cid:displayname blueprint)
+		    (cid:displayname resource))
+		   (assert-t
+		    (cid:resource-ready-p resource))
+		   (assert-t
+		    (cid:resource-exists-p resource)))))))
+      (regular-case))))
 
 (define-testcase demonstrate-that-infrastructure-stack-can-be-modified ()
   "Demonstrate that an infrastructure stack can be modified.

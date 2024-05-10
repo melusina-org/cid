@@ -128,7 +128,16 @@ The following members are optional:
 
   :PRESENTATION
     When provided, a function used to transform the slot value in a value
-    which can be persisted."))
+    which can be persisted.
+
+  :EXTERNAL
+    This flag indicates a slot-value which is determined by external factors.
+    It is forbidden for the user to modify this value.
+
+  :IMMUTABLE
+    This flag indicates a slot-value which cannot be modified by the Steward
+    of a resource.  It means that modifying that slot of the resource is only
+    possible by deleting and recreating the resource."))
 
 (defun write-persistent-object (object stream)
   "Readably write persistent OBJECT on STREAM."

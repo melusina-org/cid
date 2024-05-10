@@ -44,6 +44,7 @@
    #:configure-laboratory
    #:cloud-vendor
    #:make-cloud-vendor
+   #:*cloud-vendor*
    #:private-network
    #:make-private-network
    #:container-image
@@ -59,8 +60,6 @@
    #:make-public-load-balancer
    #:infrastructure-stack
    #:make-infrastructure-stack
-   #:write-infrastructure-stack
-   #:read-infrastructure-stack
    #:make-delivery-stack))
 
 (in-package #:org.melusina.cid/poc)

@@ -38,9 +38,12 @@ resource Y?)
 [FUTURE] Use infrastructure as code description to understand
 authorization boundaries in your infrastructure.
 @item
-[FUTURE] Use infrastructurew as code description and automatic
+[FUTURE] Use infrastructure as code description and automatic
 security vulnerability analysis to understand threats on your
 infrastructure.
+@item
+[FUTURE] Use infrastructure as code description to forecast
+operational costs.
 @end itemize
 
 @subsection Escape the hold of the Monolithic Continuous Integration and Delivery Server

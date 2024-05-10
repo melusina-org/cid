@@ -81,8 +81,8 @@
    #:list-resource-identifiers
    #:resource-prerequisites
    #:sort-resources
-   ;; Infrastructure Stacks
-   #:stack-name
+   #:prepare-modification-instructions
+   #:apply-modification-instructions
    ;; Simulators and Simulations
    #:simulator
    #:make-simulator

@@ -623,11 +623,49 @@ The possible INSTRUCTIONS and their semantics are described below:
 (defun prepare-modification-instructions (resource blueprint)
   "Prepare INSTRUCTIONS to modify RESOURCE to resemble the BLUEPRINT.
 When applied the instruction must update the RESOURCE instance so that its slots take the
-values of the slots of BLUEPRINT.  Some slots are excluded from the process, such as the
-STATE and the IDENTIFIER."
-  (list
-   (list :delete resource)
-   (list :update-instance resource blueprint)
-   (list :create resource)))
+values of the slots of BLUEPRINT.  Some slots are handled specially by
+the process, such as the STATE and the IDENTIFIER. The STATE and IDENTIFIER
+slots from the BLUEPRINT are ignored."
+  (labels ((blueprint-slots (blueprint)
+	     (flet ((ignored-slot-p (slot-name)
+		      (member slot-name '(:state :identifier)))
+		    (getf-slot-name (spec)
+		      (getf spec :slot-name)))
+	       (remove-if #'ignored-slot-p 
+			  (persistent-slots blueprint)
+			  :key #'getf-slot-name)))
+	   (slot-value-changed-p (slot-value1 slot-value2)
+	     (not (equal slot-value1 slot-value2)))
+	   (update-slot-specs (resource blueprint)
+	     (loop :for spec :in (blueprint-slots blueprint)
+		   :for slot-name = (getf spec :slot-name)
+		   :for slot-value-resource = (slot-value resource slot-name)
+		   :for slot-value-blueprint = (slot-value blueprint slot-name)
+		   :when (slot-value-changed-p slot-value-resource slot-value-blueprint)
+		   :collect spec))
+	   (resource-recreate-p (update-slot-specs)
+	     (flet ((getf-immutable (spec)
+		      (getf spec :immutable)))
+	       (member t update-slot-specs :key #'getf-immutable)))
+	   (prepare-update-instructions (update-slot-specs)
+	     (list*
+	      :update-instance
+	      resource
+	      (loop :for spec :in update-slot-specs
+		    :for slot-name = (getf spec :slot-name)
+		    :collect slot-name
+		    :collect (slot-value blueprint slot-name)))))
+    (let ((update-slot-specs
+	    (update-slot-specs resource blueprint)))
+      (unless update-slot-specs
+	(return-from prepare-modification-instructions nil))
+      (if (resource-recreate-p update-slot-specs)
+	  (list
+	   (list :delete resource)
+	   (prepare-update-instructions update-slot-specs)
+	   (list :create resource))
+	  (list
+	   (prepare-update-instructions update-slot-specs)
+	   (list :update-resource resource))))))
 
 ;;;; End of file `resource.lisp'
