@@ -72,6 +72,7 @@
    #:resource-exists-p
    #:resource-ready-p
    #:create-resource
+   #:create-missing-prerequisite
    #:delete-resource
    #:update-instance-from-resource
    #:update-resource-from-instance

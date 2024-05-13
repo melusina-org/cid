@@ -474,11 +474,20 @@ in a context where a CREATE-PREREQUISITE restart is available."
 		  'create-resource
 		   instance prerequisite
 		   "Resource prerequisite does not exist.")
-	       (create-prerequisite ()
+	       (create-missing-prerequisite ()
 		 :report "Create the missing prerequisite."
 		 (create-resource prerequisite))))))
     (loop :for prerequisite :in (reverse (resource-prerequisites instance))
 	  :do (ensure-that-prerequisite-exists prerequisite))))
+
+(defun create-missing-prerequisite (c)
+  "A restart function invoking the CREATE-MISSING-PREREQUISITE restart.
+This restart function is useful in a HANDLER-BIND clause around an
+invokation of the CREATE-RESOURCE function or the
+APPLY-MODIFICATION-INSTRUCTIONS function."
+  (declare (ignore c))
+  (let ((restart (find-restart 'create-missing-prerequisite)))
+    (when restart (invoke-restart restart))))
 
 (defgeneric delete-resource (resource)
   (:documentation "Delete a RESOURCE using its steward.
@@ -608,10 +617,10 @@ These resources can be imported."))
   "Process resource modifying INSTRUCTIONS.
 The possible INSTRUCTIONS and their semantics are described below:
 
-  :CREATE RESOURCE
+  :CREATE-RESOURCE RESOURCE
     Create the given RESOURCE.
 
-  :DELETE RESOURCE
+  :DELETE-RESOURCE RESOURCE
     Delete the given RESOURCE.
 
   :UPDATE-INSTANCE RESOURCE {SLOT-NAME SLOT-VALUE}*
@@ -625,21 +634,34 @@ The possible INSTRUCTIONS and their semantics are described below:
 		 :on slot-names-and-values :by #'cddr
 		 :do (setf (slot-value instance slot-name) slot-value)))
 	 (apply-update-resource (instance)
-	   (update-resource-from-instance instance)))
+	   (update-resource-from-instance instance))
+	 (apply-create-resource (instance)
+	   (create-resource instance))
+	 (apply-delete-resource (instance)
+	   (delete-resource instance)))
     (loop :for instruction :in instructions
 	  :do
 	  (ecase (first instruction)
 	    (:update-instance
 	     (apply-update-instance (second instruction) (cddr instruction)))
 	    (:update-resource
-	     (apply-update-resource (second instruction)))))))
+	     (apply-update-resource (second instruction)))
+	    (:create-resource
+	     (apply-create-resource (second instruction)))
+	    (:delete-resource
+	     (apply-delete-resource (second instruction)))))))
 
 (defun prepare-modification-instructions (resource blueprint)
   "Prepare INSTRUCTIONS to modify RESOURCE to resemble the BLUEPRINT.
-When applied the instruction must update the RESOURCE instance so that its slots take the
-values of the slots of BLUEPRINT.  Some slots are handled specially by
-the process, such as the STATE and the IDENTIFIER. The STATE and IDENTIFIER
-slots from the BLUEPRINT are ignored."
+When applied the instruction must update the RESOURCE instance so that
+its slots take the values of the slots of BLUEPRINT.
+
+Some slots are handled specially by the process, such as the STATE
+and the IDENTIFIER. The STATE and IDENTIFIER slots from the BLUEPRINT,
+which are ignored.
+
+Slots which are marked as resource prerequisites are handled differently
+wether the prerequisite can be updated requires to be recreated."
   (labels ((blueprint-slots (blueprint)
 	     (flet ((ignored-slot-p (slot-name)
 		      (member slot-name '(state identifier)))
@@ -675,9 +697,9 @@ slots from the BLUEPRINT are ignored."
 	(return-from prepare-modification-instructions nil))
       (if (resource-recreate-p update-slot-specs)
 	  (list
-	   (list :delete resource)
+	   (list :delete-resource resource)
 	   (prepare-update-instructions update-slot-specs)
-	   (list :create resource))
+	   (list :create-resource resource))
 	  (list
 	   (prepare-update-instructions update-slot-specs)
 	   (list :update-resource resource))))))

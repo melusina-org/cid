@@ -237,7 +237,10 @@ This sets *TENANT* and *PROJECT* to work on the POC."
     :allocation :class)
    (private-network
     :initarg :private-network
-    :reader private-network))
+    :reader private-network
+    :documentation "The PRIVATE-NETWORK that the cluster belongs to.
+Due to some limitations in the CLOUD-VENDOR, it is not possible to move
+a cluster from one private network to the other and this slot is immutable."))
   (:documentation "A cluster providing computational resources to services."))
 
 (defun make-container-cluster (&rest initargs &key cloud-vendor
@@ -259,7 +262,8 @@ This sets *TENANT* and *PROJECT* to work on the POC."
   '((:initarg :cloud-vendor
      :slot-name steward)
     (:initarg :private-network
-     :slot-name private-network)))
+     :slot-name private-network
+     :immutable t)))
 
 (defmethod resource-prerequisites append ((instance container-cluster))
   (with-slots (private-network) instance

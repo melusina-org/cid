@@ -106,8 +106,9 @@ A simple resource is a resource that has no prerequisites, while complex
 resources with prerequisites can be seen as compounds.
 
 This testcase handles several case: the regular case, the case where
-the attribute to modify is immutable, the case where the attribute to
-modify has a value of type resource."
+the attribute to modify is immutable, the case where the the attribute to
+modify is a prerequisite resourcce and the case where the attribute to modify
+is immutable and the resource is precious."
   (with-test-environment
     (flet ((regular-case ()
 	     (let* ((cloud-vendor
@@ -170,8 +171,52 @@ modify has a value of type resource."
 		   (assert-t
 		    (cid:resource-ready-p resource))
 		   (assert-t
-		    (cid:resource-exists-p resource)))))))
-      (regular-case))))
+		    (cid:resource-exists-p resource))))))
+	   (immutable-case ()
+	     (let* ((cloud-vendor
+		      (poc:make-cloud-vendor
+		       :credential "ThisIsNotARealCredential"))
+		    (network1
+		      (poc:make-private-network
+		       :cloud-vendor cloud-vendor
+		       :name "vpc-1"
+		       :displayname "First VPC"))
+		    (network2
+		      (poc:make-private-network
+		       :cloud-vendor cloud-vendor
+		       :name "vpc-2"
+		       :displayname "Second VPC"))
+		    (resource
+		      (poc:make-container-cluster
+		       :cloud-vendor cloud-vendor
+		       :name "cluster-1"
+		       :displayname "Container Cluster"
+		       :private-network network1))
+		    (blueprint
+		      (poc:make-container-cluster
+		       :cloud-vendor cloud-vendor
+		       :name "cluster-2"
+		       :displayname "Container Cluster"
+		       :private-network network2)))
+	       (flet ()
+		 (handler-bind ((cid:resource-prerequisite-is-missing
+				  #'cid:create-missing-prerequisite))
+		   (cid:create-resource resource))
+		 (let ((instructions
+			 (cid:prepare-modification-instructions resource blueprint)))
+		   (assert-eq network1
+			      (slot-value resource 'poc::private-network))
+		   (assert-eq 3 (length instructions))
+		   (assert-eq :delete-resource (first (first instructions)))
+		   (assert-eq :update-instance (first (second instructions)))
+		   (assert-eq :create-resource (first (third instructions)))
+		   (handler-bind ((cid:resource-prerequisite-is-missing
+				    #'cid:create-missing-prerequisite))
+		     (cid:apply-modification-instructions instructions))
+		   (assert-eq network2
+			      (slot-value resource 'poc::private-network)))))))
+      (regular-case)
+      (immutable-case))))
 
 (define-testcase demonstrate-that-infrastructure-stack-can-be-modified ()
   "Demonstrate that an infrastructure stack can be modified.
