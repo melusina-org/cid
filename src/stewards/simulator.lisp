@@ -113,4 +113,7 @@ This resource does not actually exist."
 	(setf state nil
 	      identifier nil))))
 
+(defmethod update-resource-from-instance ((instance simulation))
+  (values))
+
 ;;;; End of file `simulator.lisp'

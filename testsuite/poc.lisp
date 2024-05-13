@@ -100,8 +100,11 @@ resources is usually longer than those of Common Lisp sessions."
 	   (cid:save-persistent-object delivery-stack *testsuite-id*)
 	   (cid:load-persistent-object delivery-stack *testsuite-id*)))))))
 
-(define-testcase demonstrate-that-single-resources-can-be-modified ()
-  "Demonstrate that a single resource can be modified.
+(define-testcase demonstrate-that-simple-resources-can-be-modified ()
+  "Demonstrate that a simple resource can be modified.
+A simple resource is a resource that has no prerequisites, while complex
+resources with prerequisites can be seen as compounds.
+
 This testcase handles several case: the regular case, the case where
 the attribute to modify is immutable, the case where the attribute to
 modify has a value of type resource."

@@ -618,8 +618,22 @@ The possible INSTRUCTIONS and their semantics are described below:
     Update the RESOURCE instance so that its slots take the specified values.
 
   :UPDATE-RESOURCE RESOURCE
-    Update the underlying RESOURCE so that it reflects the change carried on the INSTANCE.")
-  
+    Update the underlying RESOURCE so that it reflects the change carried on the
+    INSTANCE."
+  (flet ((apply-update-instance (instance slot-names-and-values)
+	   (loop :for (slot-name slot-value other-slots)
+		 :on slot-names-and-values :by #'cddr
+		 :do (setf (slot-value instance slot-name) slot-value)))
+	 (apply-update-resource (instance)
+	   (update-resource-from-instance instance)))
+    (loop :for instruction :in instructions
+	  :do
+	  (ecase (first instruction)
+	    (:update-instance
+	     (apply-update-instance (second instruction) (cddr instruction)))
+	    (:update-resource
+	     (apply-update-resource (second instruction)))))))
+
 (defun prepare-modification-instructions (resource blueprint)
   "Prepare INSTRUCTIONS to modify RESOURCE to resemble the BLUEPRINT.
 When applied the instruction must update the RESOURCE instance so that its slots take the
@@ -628,7 +642,7 @@ the process, such as the STATE and the IDENTIFIER. The STATE and IDENTIFIER
 slots from the BLUEPRINT are ignored."
   (labels ((blueprint-slots (blueprint)
 	     (flet ((ignored-slot-p (slot-name)
-		      (member slot-name '(:state :identifier)))
+		      (member slot-name '(state identifier)))
 		    (getf-slot-name (spec)
 		      (getf spec :slot-name)))
 	       (remove-if #'ignored-slot-p 
