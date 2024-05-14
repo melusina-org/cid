@@ -82,6 +82,8 @@
    #:list-resource-identifiers
    #:resource-prerequisites
    #:sort-resources
+   #:resource-require-p
+   #:resource-prerequisite-p
    #:prepare-modification-instructions
    #:apply-modification-instructions
    ;; Simulators and Simulations

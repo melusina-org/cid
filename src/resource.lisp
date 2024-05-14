@@ -411,11 +411,19 @@ before its prerequisites."))
 	:append (cons prerequisite deep-prerequisites) :into prerequisites
 	:finally (return (remove-duplicates prerequisites :test #'eq))))
 
+(defun resource-prerequisite-p (resource1 resource2)
+  "Predicate recognising when RESOURCE1 is a prerequisite of RESOURCE2."
+  (and (member resource1 (resource-prerequisites resource2)) t))
+
+(defun resource-require-p (resource1 resource2)
+  "Predicate recognising when RESOURCE1 requires RESOURCE2.
+This is equivalent to say that RESOURCE2 is a prerequisite of RESOURCE1."
+  (and (member resource2 (resource-prerequisites resource1)) t))
+
+
 (defun sort-resources (resources)
   "Sort RESOURCES so that any resource in the list appears before its prerequisites."
-  (flet ((require-p (resource1 resource2)
-	   (member resource2 (resource-prerequisites resource1))))
-    (sort resources #'require-p)))
+  (sort resources #'resource-require-p))
   
 
 ;;;;
