@@ -664,12 +664,33 @@ The possible INSTRUCTIONS and their semantics are described below:
 When applied the instruction must update the RESOURCE instance so that
 its slots take the values of the slots of BLUEPRINT.
 
+The BLUEPRINT must have the same type as the RESOURCE, and
+each prerequisite of the BLUEPRINT must have the same type
+as the corresponding prerequisite of the RESOURCE. Furthermore,
+physically equal prerequisites for RESOURCE must also have
+physically equal counterparts in BLUEPRINT.
+
 Some slots are handled specially by the process, such as the STATE
 and the IDENTIFIER. The STATE and IDENTIFIER slots from the BLUEPRINT,
 which are ignored.
 
 Slots which are marked as resource prerequisites are handled differently
-wether the prerequisite can be updated requires to be recreated."
+wether the prerequisite can be updated or requires to be recreated.
+
+The resulting instructions follow the consistency rules below:
+
+ 1. The only resources affected by the instructions are the RESOURCE
+    and its prerequisites.
+
+ 2. Any affected resource is deleted at most once.
+
+ 3. Any affected resource which is deleted is deleted before
+    every of its deleted prerequisites.
+
+ 4. Any affected resource is created at most once.
+
+ 5. Any affected resource which is created is created after
+    every of its created prerequisites is created."
   (labels ((blueprint-slots (blueprint)
 	     (flet ((ignored-slot-p (slot-name)
 		      (member slot-name '(state identifier)))
