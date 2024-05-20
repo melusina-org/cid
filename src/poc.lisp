@@ -42,6 +42,14 @@
    #:delete-resource)
   (:export
    #:configure-laboratory
+   #:certificate-authority
+   #:make-certificate-authority
+   #:subject-certificate
+   #:make-subject-certificate
+   #:private-key
+   #:common-name
+   #:not-valid-before
+   #:not-valid-after
    #:cloud-vendor
    #:make-cloud-vendor
    #:*cloud-vendor*
@@ -64,6 +72,120 @@
 
 (in-package #:org.melusina.cid/poc)
 
+
+;;;;
+;;;; Certificate Authority
+;;;;
+
+(defclass certificate-authority (simulator)
+  ((private-key
+    :initarg :private-key
+    :documentation "The private key used to sign certificates.")
+   (public-key
+    :initarg :public-key
+    :documentation "The public key used to authentify certificates.")
+   (not-valid-before
+    :initarg :not-valid-before
+    :documentation "The first time point where the certificate authority is valid.")
+   (not-valid-after
+    :initarg :not-valid-after
+    :documentation "The last time point where the certificate authority is valid.")
+   (common-name
+    :initarg :common-name
+    :documentation "The Common Name of the certificate authority.")
+   (crl-distribution-points
+    :initarg :crl-distribution-points
+    :documentation "Distribution points for the certificate revocation list."))
+  (:default-initargs
+   :name "ca"
+   :displayname "Certificate Authority")
+  (:documentation "A certificate authority issuing identity certificates."))
+
+(defun make-certificate-authority (&rest initargs
+				   &key tenant project name displayname 
+					description resource-identifiers 
+					private-key public-key
+					not-valid-before not-valid-after
+					common-name
+					crl-distribution-points)
+  "Make a CERTIFICATE-AUTHORITY with the given parameters."
+  (declare (ignore tenant project name displayname
+		   description resource-identifiers
+		   private-key public-key
+		   not-valid-before not-valid-after
+		   common-name
+		   crl-distribution-points))
+  (apply #'make-instance 'certificate-authority initargs))
+
+(defmethod persistent-constructor ((class (eql 'certificate-authority)))
+  'make-certificate-authority)
+
+(defmethod persistent-slots append ((instance certificate-authority))
+  '((:initarg :private-key
+     :slot-name private-key)
+    (:initarg :public-key
+     :slot-name public-key)
+    (:initarg :not-valid-before
+     :slot-name not-valid-before)
+    (:initarg :not-valid-after
+     :slot-name not-valid-after)
+    (:initarg :common-name
+     :slot-name common-name)
+    (:initarg :crl-distribution-points
+     :slot-name crl-distribution-points)))
+
+(defclass subject-certificate (simulation)
+  ((steward-class
+    :type :symbol
+    :initform 'certificate-authority
+    :allocation :class)
+   (public-key
+    :initarg :public-key
+    :documentation "The public key used to authentify certificates.")
+   (not-valid-before
+    :initarg :not-valid-before
+    :documentation "The first time point where the subject certificate is valid.")
+   (not-valid-after
+    :initarg :not-valid-after
+    :documentation "The last time point where the subject certificate is valid.")
+   (common-name
+    :initarg :common-name
+    :documentation "The Common Name of the certified subject.")))
+  
+(defun make-subject-certificate (&rest initargs
+				 &key name displayname
+				      description state identifier
+				      certificate-authority
+				      public-key
+				      not-valid-before not-valid-after
+				      common-name)
+  "Make a SUBJECT-CERTIFICATE with the given parameters."
+  (declare (ignore name displayname
+		   description state identifier
+		   public-key
+		   not-valid-before not-valid-after
+		   common-name))
+  (apply #'make-instance 'subject-certificate
+	 :steward certificate-authority
+	 (remove-property initargs :certificate-authority)))
+
+(defmethod persistent-constructor ((class (eql 'subject-certificate)))
+  'make-subject-certificate)
+
+(defmethod persistent-slots append ((instance subject-certificate))
+  '((:initarg :public-key
+     :slot-name public-key
+     :immutable t)
+    (:initarg :not-valid-before
+     :slot-name not-valid-before
+     :immutable t)
+    (:initarg :not-valid-after
+     :slot-name not-valid-after
+     :immutable t)
+    (:initarg :common-name
+     :slot-name common-name
+     :immutable t)))
+  
 
 ;;;;
 ;;;; Cloud Vendor
@@ -101,6 +223,9 @@
 (defvar *cloud-vendor* nil
   "The CLOUD-VENDOR used to manage resources.")
 
+(defvar *certificate-authority* nil
+  "The CERTIFICATE-AUTHORITY used to manage identities.")
+
 (defvar *tag* "current"
   "The TAG used to designate resources in a repository.")
 
@@ -123,7 +248,14 @@ This sets *TENANT* and *PROJECT* to work on the POC."
     :project *project*
     :name "sws"
     :displayname "Simulated Web Services"
-    :credential "ThisIsNotARealSecret")))
+    :credential "ThisIsNotARealSecret")
+   *certificate-authority*
+   (make-certificate-authority
+    :tenant *tenant*
+    :project *project*
+    :name "ca"
+    :displayname "Certificate Authority"
+    :private-key "ThisIsNotARealSecret")))
 
 
 ;;;;
@@ -309,7 +441,6 @@ Allowed values are one of :HTTP, :HTTPS, :TCP.")
   (apply #'make-instance 'container-service
 	 :steward cloud-vendor
 	 (remove-property initargs :cloud-vendor)))
-
 
 (defmethod persistent-constructor ((class (eql 'container-service)))
   'make-container-service)

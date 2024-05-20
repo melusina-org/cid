@@ -103,120 +103,84 @@ resources is usually longer than those of Common Lisp sessions."
 (define-testcase demonstrate-that-simple-resources-can-be-modified ()
   "Demonstrate that a simple resource can be modified.
 A simple resource is a resource that has no prerequisites, while complex
-resources with prerequisites can be seen as compounds.
-
-This testcase handles several case: the regular case, the case where
-the attribute to modify is immutable, the case where the the attribute to
-modify is a prerequisite resourcce and the case where the attribute to modify
-is immutable and the resource is precious."
+resources with prerequisites can be seen as compounds."
   (with-test-environment
-    (flet ((regular-case ()
-	     (let* ((cloud-vendor
-		      (poc:make-cloud-vendor
-		       :credential "ThisIsNotARealCredential"))
+    (let* ((cloud-vendor
+	     (poc:make-cloud-vendor
+	      :credential "ThisIsNotARealCredential"))
 		    (resource
 		      (poc:make-private-network
 		       :cloud-vendor cloud-vendor
 		       :name "vpc"
 		       :displayname "Unique VPC"))
-		    (blueprint
-		      (poc:make-private-network
-		       :cloud-vendor cloud-vendor
+	   (blueprint
+	     (poc:make-private-network
+	      :cloud-vendor cloud-vendor
 		       :name "vpc-1"
-		       :displayname "First VPC")))
-	       (flet ((validate-update-instance (instructions)
-			(let ((instruction
-				(first instructions)))
-			  (assert-eq
-			   :update-instance
-			   (first instruction))
-			  (assert-eq
-			   resource
-			   (getf instruction :update-instance))
-			  (assert-string=
-			   "vpc-1"
-			   (getf instruction 'cid:name))
-			  (assert-string=
-			   "First VPC"
-			   (getf instruction 'cid:displayname))
-			  (assert-nil
-			   (member 'cid::state instruction))
-			  (assert-nil
-			   (member 'cid::identifier instruction))))
-		      (validate-update-resource (instructions)
-			(let ((instruction
-				(second instructions)))
-			  (assert-eq
-			   :update-resource
-			   (first instruction))
-			  (assert-eq
-			   resource
-			   (getf instruction :update-resource))
-			  (assert-eq
-			   2
-			   (length instruction)))))
-		 (cid:create-resource resource)
-		 (let ((instructions
-			 (cid:prepare-modification-instructions resource blueprint)))
-		   (assert-eq 2 (length instructions))
-		   (validate-update-instance instructions)
-		   (validate-update-resource instructions)
-		   (cid:apply-modification-instructions instructions)
-		   (assert-string=
-		    (cid:name blueprint)
-		    (cid:name resource))
-		   (assert-string=
-		    (cid:displayname blueprint)
-		    (cid:displayname resource))
-		   (assert-t
-		    (cid:resource-ready-p resource))
-		   (assert-t
-		    (cid:resource-exists-p resource))))))
-	   (immutable-case ()
-	     (let* ((cloud-vendor
-		      (poc:make-cloud-vendor
-		       :credential "ThisIsNotARealCredential"))
-		    (network1
-		      (poc:make-private-network
-		       :cloud-vendor cloud-vendor
-		       :name "vpc-1"
-		       :displayname "First VPC"))
-		    (network2
-		      (poc:make-private-network
-		       :cloud-vendor cloud-vendor
-		       :name "vpc-2"
-		       :displayname "Second VPC"))
-		    (resource
-		      (poc:make-container-cluster
-		       :cloud-vendor cloud-vendor
-		       :name "cluster-1"
-		       :displayname "Container Cluster"
-		       :private-network network1))
-		    (blueprint
-		      (poc:make-container-cluster
-		       :cloud-vendor cloud-vendor
-		       :name "cluster-2"
-		       :displayname "Container Cluster"
-		       :private-network network2)))
-	       (flet ()
-		 (handler-bind ((cid:resource-prerequisite-is-missing
-				  #'cid:create-missing-prerequisite))
-		   (cid:create-resource resource))
-		 (let ((instructions
-			 (cid:prepare-modification-instructions resource blueprint)))
-		   (assert-eq network1
-			      (slot-value resource 'poc::private-network))
-		   (assert-eq 3 (length instructions))
-		   (assert-eq :delete-resource (first (first instructions)))
-		   (assert-eq :update-instance (first (second instructions)))
-		   (assert-eq :create-resource (first (third instructions)))
-		   (handler-bind ((cid:resource-prerequisite-is-missing
-				    #'cid:create-missing-prerequisite))
-		     (cid:apply-modification-instructions instructions))
-		   (assert-eq network2
-			      (slot-value resource 'poc::private-network)))))))
-      (regular-case)
-      (immutable-case))))
+	      :displayname "First VPC")))
+      (cid:create-resource resource)
+      (let ((instructions
+	      (cid:prepare-modification-instructions resource blueprint)))
+	(assert-equal
+	 instructions
+	 (list
+	  (list :update-instance resource
+		'cid:name "vpc-1"
+		'cid:displayname "First VPC")
+	  (list :update-resource resource)))
+	(cid:apply-modification-instructions instructions)
+	(assert-string=
+	 (cid:name blueprint)
+	 (cid:name resource))
+	(assert-string=
+	 (cid:displayname blueprint)
+	 (cid:displayname resource))
+	(assert-t
+	 (cid:resource-ready-p resource))
+	(assert-t
+	 (cid:resource-exists-p resource))))))
+
+(define-testcase demonstrate-that-updating-an-immutable-field-recreates-the-resource ()
+  (with-test-environment
+    (let* ((certificate-authority
+	     (poc:make-certificate-authority
+	      :common-name "POC Root Certificate"
+	      :public-key "ThisIsNotARealPublicKey"
+	      :private-key "ThisIsNotARealPrivateKey"
+	      :not-valid-before :today
+	      :not-valid-after :today+1Y
+	      :crl-distribution-points "URI:https://poc.local/crl"))
+	   (resource
+	     (poc:make-subject-certificate
+	      :certificate-authority certificate-authority
+	      :common-name "POC Subject Certificate"
+	      :public-key "ThisIsNotARealPublicKey"
+	      :not-valid-before :today
+	      :not-valid-after :today+1W))
+	   (blueprint
+	     (poc:make-subject-certificate
+	      :certificate-authority certificate-authority
+	      :common-name "POC Subject Certificate"
+	      :public-key "ThisIsNotARealPublicKey"
+	      :not-valid-before :today
+	      :not-valid-after :today+4W)))
+      (cid:create-resource resource)
+      (let ((instructions
+	      (cid:prepare-modification-instructions resource blueprint)))
+	(assert-equal
+	 instructions
+	 (list
+	  (list :delete-resource resource)
+	  (list :update-instance resource
+		'poc:not-valid-after :today+4W)
+	  (list :create-resource resource)))
+	(cid:apply-modification-instructions instructions)
+	(assert-eq
+	 (slot-value resource 'poc:not-valid-after) :today+4W)
+	(assert-t
+	 (cid:resource-ready-p resource))
+	(assert-t
+	 (cid:resource-exists-p resource))))))
 
 (define-testcase demonstrate-that-infrastructure-stack-can-be-modified ()
   "Demonstrate that an infrastructure stack can be modified.
