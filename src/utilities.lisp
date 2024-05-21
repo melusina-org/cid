@@ -153,8 +153,8 @@ The following members are optional:
       (loop :for slot-spec-iterator :on slot-specs
 	    :for slot-spec = (first slot-spec-iterator)
 	    :for lastp = (not (rest slot-spec-iterator))
-	    :do (destructuring-bind (&key initarg slot-name confidential (presentation 'identity)) slot-spec
-		  (declare (ignore confidential))
+	    :do (destructuring-bind (&key initarg slot-name immutable confidential (presentation 'identity)) slot-spec
+		  (declare (ignore immutable confidential))
 		  (when (slot-boundp object slot-name)
 		    (pprint-logical-block (stream nil)
 		      (pprint initarg stream)

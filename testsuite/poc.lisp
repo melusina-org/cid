@@ -108,15 +108,15 @@ resources with prerequisites can be seen as compounds."
     (let* ((cloud-vendor
 	     (poc:make-cloud-vendor
 	      :credential "ThisIsNotARealCredential"))
-		    (resource
-		      (poc:make-private-network
-		       :cloud-vendor cloud-vendor
-		       :name "vpc"
-		       :displayname "Unique VPC"))
+	   (resource
+	     (poc:make-private-network
+	      :cloud-vendor cloud-vendor
+	      :name "vpc"
+	      :displayname "Unique VPC"))
 	   (blueprint
 	     (poc:make-private-network
 	      :cloud-vendor cloud-vendor
-		       :name "vpc-1"
+	      :name "vpc-1"
 	      :displayname "First VPC")))
       (cid:create-resource resource)
       (let ((instructions
@@ -182,11 +182,151 @@ resources with prerequisites can be seen as compounds."
 	(assert-t
 	 (cid:resource-exists-p resource))))))
 
-(define-testcase demonstrate-that-infrastructure-stack-can-be-modified ()
-  "Demonstrate that an infrastructure stack can be modified.
-This testcase prepares an infrastructure stack value, then creates
-the corresponding resources, modify an aspect of the stack and requires
-the update of the stack.")
+(define-testcase demonstrate-that-updating-a-prerequisite-does-not-touch-the-main-resource ()
+  "Demonstrate that updating a prerequisite does not touch the main resource.
+In this testcase we build a cluster with its private network prerequisite.
+The NAME and DISPLAYNAME of the private network can be modified in-place,
+which is what we do in the blueprint.
+
+Under this scenario we expect only the network to be modified, even
+if the modification request is on the cluster."
+  (with-test-environment
+    (let* ((cloud-vendor
+	     (poc:make-cloud-vendor
+	      :credential "ThisIsNotARealCredential"))
+	   (network1
+	     (poc:make-private-network
+	      :cloud-vendor cloud-vendor
+	      :name "vpc-1"
+	      :displayname "First VPC"))
+	   (network2
+	     (poc:make-private-network
+	      :cloud-vendor cloud-vendor
+	      :name "vpc-2"
+	      :displayname "Second VPC"))
+	   (resource
+	     (poc:make-container-cluster
+	      :cloud-vendor cloud-vendor
+	      :name "cluster"
+	      :displayname "Cluster"
+	      :private-network network1))
+	   (blueprint
+	     (poc:make-container-cluster
+	      :cloud-vendor cloud-vendor
+	      :name "cluster"
+	      :displayname "Cluster"
+	      :private-network network2)))
+      (handler-bind ((cid:resource-prerequisite-is-missing
+		       #'cid:create-missing-prerequisite))
+	(cid:create-resource resource))
+      (let ((instructions
+	      (cid:prepare-modification-instructions resource blueprint)))
+	(assert-equal
+	 instructions
+	 (list
+	  (list :update-instance network1
+		'cid:name "vpc-2"
+		'cid:displayname "Second VPC")
+	  (list :update-resource network1)))
+	(handler-bind ((cid:resource-prerequisite-is-missing
+			 #'cid:create-missing-prerequisite))
+	  (cid:apply-modification-instructions instructions))
+	(assert-string=
+	 (cid:name blueprint)
+	 (cid:name resource))
+	(assert-string=
+	 (cid:displayname blueprint)
+	 (cid:displayname resource))
+	(assert-t
+	 (cid:resource-ready-p resource))
+	(assert-t
+	 (cid:resource-exists-p resource))))))
+
+(define-testcase demonstrate-that-prerequisites-are-recreated-at-most-once ()
+  "Demonstrate that prerequisites are recreated at most once.
+In this testcase we build an infrastructure stack for software delivery
+and we perform a modification of the cluster that forces it to be recreated.
+
+In this scenario, we see that the network and the cluster is recreated
+only once even if the cluster is a prerequisite of every service in
+the stack."
+  (with-test-environment
+    (flet ((stack-network (stack)
+	     (find-if #'(lambda (resource)
+			  (typep resource 'poc:private-network))
+		      (slot-value stack 'poc:resources)))
+	   (stack-cluster (stack)
+	     (find-if #'(lambda (resource)
+			  (typep resource 'poc:container-cluster))
+		      (slot-value stack 'poc:resources)))
+	   (stack-service (stack image-repository)
+	     (find-if #'(lambda (resource)
+			  (and
+			   (typep resource 'poc:container-service)
+			   (string= image-repository
+				    (slot-value
+				     (slot-value resource 'poc:image)
+				     'poc:repository))))
+		      (slot-value stack 'poc:resources)))
+	   (stack-load-balancer (stack)
+	     (find-if #'(lambda (resource)
+			  (typep resource 'poc:public-load-balancer))
+		      (slot-value stack 'poc:resources))))
+      (let* ((cloud-vendor
+	       (poc:make-cloud-vendor
+		:credential "ThisIsNotARealCredential"))
+	     (resource
+	       (poc:make-delivery-stack
+		:cloud-vendor cloud-vendor
+		:tag *testsuite-id*))
+	     (network
+	       (stack-network resource))
+	     (cluster
+	       (stack-cluster resource))
+	     (blueprint
+	       (let* ((delivery-stack
+			(poc:make-delivery-stack
+			 :cloud-vendor cloud-vendor
+			 :tag *testsuite-id*))
+		      (network
+			(stack-network delivery-stack)))
+		 (setf (slot-value network 'poc:availability-zone)
+		       :az-2)
+		 (values delivery-stack))))
+	(handler-bind ((cid:resource-prerequisite-is-missing
+			 #'cid:create-missing-prerequisite))
+	  (cid:create-resource resource))
+	(let ((instructions
+		(cid:prepare-modification-instructions
+		 (stack-load-balancer resource)
+		 (stack-load-balancer blueprint))))
+	  (assert-equal
+	   instructions
+	   (list
+	    (list :delete-resource (stack-load-balancer resource))
+	    (list :delete-resource (stack-service resource "cid/trac"))
+	    (list :delete-resource (stack-service resource "cid/jenkins"))
+	    (list :delete-resource (stack-service resource "cid/gitserver"))
+	    (list :delete-resource cluster)
+	    (list :delete-resource network)
+	    (list :update-instance network
+		  'poc:availability-zone :az-2)
+	    (list :create-resource network)
+	    (list :create-resource cluster)
+	    (list :create-resource (stack-service resource "cid/gitserver"))
+	    (list :create-resource (stack-service resource "cid/jenkins"))
+	    (list :create-resource (stack-service resource "cid/trac"))
+	    (list :create-resource (stack-load-balancer resource))))
+	  (handler-bind ((cid:resource-prerequisite-is-missing
+			   #'cid:create-missing-prerequisite))
+	    (cid:apply-modification-instructions instructions))
+	  (assert-t
+	   (cid:resource-ready-p (stack-load-balancer resource)))
+	  (assert-t
+	   (cid:resource-exists-p (stack-load-balancer resource)))
+	  (assert-eq
+	   :az-2
+	   (slot-value (stack-network resource) 'poc:availability-zone)))))))
 
 (define-testcase demonstrate-that-infrastructure-errors-can-be-resumed ()
   "Demonstrate that an infrastructure errors can be resumed
@@ -214,7 +354,10 @@ such as develelopment, staging, production.")
   "Validate our proof of concept."
   (demonstrate-that-infrastructure-stack-can-be-created-and-destroyed)
   (demonstrate-that-infrastructure-stack-can-be-persisted)
-  (demonstrate-that-infrastructure-stack-can-be-modified)
+  (demonstrate-that-simple-resources-can-be-modified)
+  (demonstrate-that-updating-an-immutable-field-recreates-the-resource)
+  (demonstrate-that-updating-a-prerequisite-does-not-touch-the-main-resource)
+  (demonstrate-that-prerequisites-are-recreated-at-most-once)
   (demonstrate-that-infrastructure-stacks-cannot-be-misadvertently-duplicated)
   (demonstrate-that-infrastructure-stacks-modification-can-be-reviewed-before-being-committed)
   (demonstrate-that-infrastructure-stacks-can-be-promoted-through-environments))

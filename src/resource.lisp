@@ -691,7 +691,13 @@ The resulting instructions follow the consistency rules below:
 
  5. Any affected resource which is created is created after
     every of its created prerequisites is created."
-  (labels ((blueprint-slots (blueprint)
+  (labels ((type-equal-p (object1 object2)
+	     (and (subtypep (type-of object1) (type-of object2))
+		  (subtypep (type-of object2) (type-of object1))))
+	   (check-that-resource-and-blueprint-have-the-same-type ()
+	     (unless (type-equal-p resource blueprint)
+	       (error "The RESOURCE and its modification BLUEPRINT have distinct types.")))
+	   (slots-spec (blueprint)
 	     (flet ((ignored-slot-p (slot-name)
 		      (member slot-name '(state identifier)))
 		    (getf-slot-name (spec)
@@ -699,38 +705,124 @@ The resulting instructions follow the consistency rules below:
 	       (remove-if #'ignored-slot-p 
 			  (persistent-slots blueprint)
 			  :key #'getf-slot-name)))
-	   (slot-value-changed-p (slot-value1 slot-value2)
-	     (not (equal slot-value1 slot-value2)))
-	   (update-slot-specs (resource blueprint)
-	     (loop :for spec :in (blueprint-slots blueprint)
+	   (affected-resources (resource)
+	     (cons resource (resource-prerequisites resource)))
+	   (make-strategy (resource blueprint)
+	     (let ((affected-resources
+		     (affected-resources resource))
+		   (affected-blueprint
+		     (affected-resources blueprint)))
+	       (unless (eq (length affected-resources) (length affected-blueprint))
+		 (error "Prerequisites for RESOURCE and its BLUEPRINT do not have the same structure."))
+	       (loop :for resource :in affected-resources
+		     :for blueprint :in affected-blueprint
+		     :for slots-spec = (slots-spec blueprint)
+		     :collect (list resource
+				    :resource resource
+				    :blueprint blueprint
+				    :update-slots (update-slots resource blueprint slots-spec)
+				    :resource-slots (resource-slots resource blueprint slots-spec)))))
+	   (resource-type-p (object)
+	     (or (typep object 'resource)
+		 (and (typep object 'list)
+		      (and (every #'resource-type-p object)))))
+	   (update-slots (resource blueprint slots-spec)
+	     (loop :for spec :in slots-spec
 		   :for slot-name = (getf spec :slot-name)
 		   :for slot-value-resource = (slot-value resource slot-name)
 		   :for slot-value-blueprint = (slot-value blueprint slot-name)
-		   :when (slot-value-changed-p slot-value-resource slot-value-blueprint)
+		   :when (and
+			  (not (resource-type-p slot-value-blueprint))
+			  (not (getf spec :resource))
+			  (not (equal slot-value-resource slot-value-blueprint)))
 		   :collect spec))
-	   (resource-recreate-p (update-slot-specs)
-	     (flet ((getf-immutable (spec)
-		      (getf spec :immutable)))
-	       (member t update-slot-specs :key #'getf-immutable)))
-	   (prepare-update-instructions (update-slot-specs)
-	     (list*
-	      :update-instance
-	      resource
-	      (loop :for spec :in update-slot-specs
-		    :for slot-name = (getf spec :slot-name)
-		    :collect slot-name
-		    :collect (slot-value blueprint slot-name)))))
-    (let ((update-slot-specs
-	    (update-slot-specs resource blueprint)))
-      (unless update-slot-specs
-	(return-from prepare-modification-instructions nil))
-      (if (resource-recreate-p update-slot-specs)
-	  (list
-	   (list :delete-resource resource)
-	   (prepare-update-instructions update-slot-specs)
-	   (list :create-resource resource))
-	  (list
-	   (prepare-update-instructions update-slot-specs)
-	   (list :update-resource resource))))))
+	   (resource-slots (resource blueprint slots-spec)
+	     (declare (ignore resource))
+	     (loop :for spec :in slots-spec
+		   :when (or
+			  (getf spec :resource)
+			  (resource-type-p
+			   (slot-value blueprint (getf spec :slot-name))))
+		   :collect spec))
+	   (set-the-recreate-slot (strategy)
+	     (labels
+		 ((update-slots (resource)
+		    (getf (cdr (assoc resource strategy)) :update-slots))
+		  (resource-slots (resource)
+		    (getf (cdr (assoc resource strategy)) :resource-slots))
+		  (recreate-p (resource)
+		    (etypecase resource
+		      (resource
+		       (getf (cdr (assoc resource strategy)) :recreate))
+		      (list
+		       (some #'recreate-p resource))))
+		  ((setf recreate-p) (new-value resource)
+		    (setf (getf (cdr (assoc resource strategy)) :recreate)
+			  new-value))
+		  (immutable-slot-modified-p (resource)
+		    (member-if
+		     (lambda (spec) (getf spec :immutable))
+		     (update-slots resource)))
+		  (prerequisite-recreated-p (resource)
+		    (member-if
+		     (lambda (spec)
+		       (recreate-p
+			(slot-value resource (getf spec :slot-name))))
+		     (resource-slots resource))))
+	       (loop :for strategy-step :in (reverse strategy)
+		     ;; The RECREATE property is available
+		     ;; on prerequisites of every resource in
+		     ;; STRATEGY-STEP because we iterate in
+		     ;; reverse prerequisite order.
+		     :for resource = (getf (cdr strategy-step) :resource)
+		     :when (or (immutable-slot-modified-p resource)
+			       (prerequisite-recreated-p resource))
+		     :do (setf (recreate-p resource) t)))))
+    (check-that-resource-and-blueprint-have-the-same-type)
+    (let ((strategy
+	    (make-strategy resource blueprint)))
+      (set-the-recreate-slot strategy)
+      (labels ((update-instance-instruction (resource)
+		 (let ((update-slots
+			 (getf (cdr (assoc resource strategy)) :update-slots))
+		       (blueprint
+			 (getf (cdr (assoc resource strategy)) :blueprint)))
+		   (when update-slots
+		     (list*
+		      :update-instance
+		      resource
+		      (loop :for spec :in update-slots
+			    :for slot-name = (getf spec :slot-name)
+			    :collect slot-name
+			    :collect (slot-value blueprint slot-name))))))
+	       (recreate-instructions (resource)
+		 (let ((update-instance-instructions
+			 (update-instance-instruction resource)))
+		   (if update-instance-instructions
+		       (list update-instance-instructions
+			     (list :create-resource resource))
+		       (list (list :create-resource resource)))))
+	       (update-instructions (resource)
+		 (let ((update-instance-instructions
+			 (update-instance-instruction resource)))
+		   (if update-instance-instructions
+		       (list update-instance-instructions
+			     (list :update-resource resource))
+		       nil)))
+	       (delete-recreated-resources ()
+		 (loop :for strategy-step :in strategy
+		       :for resource = (first strategy-step)
+		       :for recreate-p = (getf (rest strategy-step) :recreate)
+		       :when recreate-p
+		       :collect (list :delete-resource resource)))
+	       (update-or-recreate-resources ()
+		 (loop :for strategy-step :in (reverse strategy)
+		       :for resource = (first strategy-step)
+		       :for recreate-p = (getf (rest strategy-step) :recreate)
+		       :append (if recreate-p
+				   (recreate-instructions resource)
+				   (update-instructions resource)))))
+	(append (delete-recreated-resources)
+		(update-or-recreate-resources))))))
 
 ;;;; End of file `resource.lisp'

@@ -17,6 +17,8 @@
    (#:cid #:org.melusina.cid))
   (:import-from
    #:org.melusina.cid
+   #:state
+   #:identifier
    #:tenant
    #:project
    #:name
@@ -54,8 +56,11 @@
    #:make-cloud-vendor
    #:*cloud-vendor*
    #:private-network
+   #:availability-zone
    #:make-private-network
    #:container-image
+   #:repository
+   #:tag
    #:make-container-image
    #:container-image-registry
    #:make-container-image-registry
@@ -63,11 +68,13 @@
    #:container-cluster
    #:make-container-cluster
    #:container-service
+   #:image
    #:make-container-service
    #:public-load-balancer
    #:make-public-load-balancer
    #:infrastructure-stack
    #:make-infrastructure-stack
+   #:resources
    #:make-delivery-stack))
 
 (in-package #:org.melusina.cid/poc)
@@ -266,13 +273,18 @@ This sets *TENANT* and *PROJECT* to work on the POC."
   ((steward-class
     :type :symbol
     :initform 'cloud-vendor
-    :allocation :class))
+    :allocation :class)
+   (availability-zone
+    :initform :az-1
+    :initarg :availability-zone))
   (:documentation "This class represents a private network."))
 
 (defun make-private-network (&rest initargs &key cloud-vendor name displayname
-						 description state identifier)
+						 description state identifier
+						 availability-zone)
   "Make a PRIVATE-NETWORK."
-  (declare (ignore name displayname description state identifier))
+  (declare (ignore name displayname description state identifier
+		   availability-zone))
   (apply #'make-instance 'private-network
 	 :steward cloud-vendor
 	 (remove-property initargs :cloud-vendor)))
@@ -282,7 +294,10 @@ This sets *TENANT* and *PROJECT* to work on the POC."
 
 (defmethod persistent-slots append ((instance private-network))
   '((:initarg :cloud-vendor
-     :slot-name steward)))
+     :slot-name steward)
+    (:initarg :availability-zone
+     :slot-name availability-zone
+     :immutable t)))
 
 
 ;;;;
@@ -306,7 +321,7 @@ This sets *TENANT* and *PROJECT* to work on the POC."
 						 name displayname
 						 description state identifier
 						 repository tag)
-  "Make a PRIVATE-NETWORK."
+  "Make a CONTAINER-IMAGE."
   (declare (ignore name displayname description state identifier repository tag))
   (apply #'make-instance 'container-image
 	 :steward cloud-vendor
@@ -338,7 +353,7 @@ This sets *TENANT* and *PROJECT* to work on the POC."
 (defun make-container-image-registry (&rest initargs &key cloud-vendor
 							  name displayname
 							  description state identifier)
-  "Make a PRIVATE-NETWORK."
+  "Make a CONTAINER-IMAGE-REGISTRY."
   (declare (ignore name displayname description state identifier))
   (apply #'make-instance 'container-image-registry
 	 :steward cloud-vendor
@@ -449,7 +464,8 @@ Allowed values are one of :HTTP, :HTTPS, :TCP.")
   '((:initarg :cloud-vendor
      :slot-name steward)
     (:initarg :cluster
-     :slot-name cluster)
+     :slot-name cluster
+     :immutable t)
     (:initarg :image
      :slot-name image)
     (:initarg :protocol
@@ -496,7 +512,8 @@ Allowed values are one of :HTTP, :HTTPS, :TCP.")
     '((:initarg :cloud-vendor
      :slot-name steward)
     (:initarg :private-network
-     :slot-name private-network)
+     :slot-name private-network
+     :immutable t)
     (:initarg :services
      :slot-name services)))
 
@@ -607,6 +624,7 @@ defined, provisioned and modified as a unit."))
   (with-slots (resources) instance
     (loop :for resource :in resources
 	  :do (delete-resource resource))))
+
 
 
 ;;;;
