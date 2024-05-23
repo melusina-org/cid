@@ -9,10 +9,18 @@ examined, created, deleted and consumed during the deployment and
 operation of infrastructure stacks. The actual resource represented by
 an instance of the class @code{resource} is referred to as the
 @i{underlying resource} while the instance is reffered to as the
-@i{resource handle} when the distinction must be empahsised.
+@i{resource handle} when the distinction must be emphasised.
 
 Resource handles are persistent objects that are attached to a tenant
 and a project.
+
+@subsection Attributes of Resources
+
+Resources consumed by infrastructure stacks are @i{expendable}, @i{disposable},
+and @i{replaceable}. The lifespan of a resource can be very short,
+like for a serverless function, or very long, like for the virtual
+private network used by an infrastructure stack. This lifespan is
+however usually finite.
 
 @subsection Resource Steward
 
