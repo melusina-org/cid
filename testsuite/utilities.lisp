@@ -239,4 +239,40 @@ reply than the last *HTTP-REPLY*."
       (position (slot-value reply 'status-code) status)
       (= (slot-value reply 'status-code) status)))
 
+
+;;;;
+;;;;
+;;;;
+
+(define-testcase verify-persistence-idempotency (object)
+  "Demonstrate that OBJECT persistence is idempotent."
+  (labels ((check-structural-equality (object1 object2)
+	     (assert-equal (type-of object1) (type-of object2))
+	     (etypecase object1
+	       (string
+		(assert-string= object1 object2))
+	       (symbol
+		(assert-eq object1 object2))
+	       (list
+		(assert-equal (length object1) (length object2))
+		(loop :for item1 :in object1
+		      :for item2 :in object2
+		      :do (check-structural-equality item1 item2)))
+	       ((or cid:tenant cid:project)
+		;; TENANT and PROJECT instances are listed in a directory
+		;; and must be physically equal rather than structurally equal.
+		(assert-eq object1 object2))
+	       ((or poc:infrastructure-stack cid:steward cid:resource)
+		(assert-eq (cid:persistent-constructor (type-of object1))
+			   (cid:persistent-constructor (type-of object2)))
+		(loop :for slot-spec :in (cid:persistent-slots object1)
+		      :for slot-name = (getf slot-spec :slot-name)
+		      :do (check-structural-equality
+			   (slot-value object1 slot-name)
+			   (slot-value object2 slot-name))))))
+	   (write-then-read (object)
+	     (cid:read-persistent-object-from-string
+	      (cid:write-persistent-object-to-string object))))
+    (check-structural-equality object (write-then-read object))))
+
 ;;;; End of file `utilities.lisp'

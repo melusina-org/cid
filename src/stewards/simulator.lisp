@@ -62,9 +62,11 @@ new resources."))
   (:documentation
    "A resource simulation, every step of the lifecycle is a no-operation."))
 
-(defun make-simulation (&rest initargs &key simulator displayname description)
+(defun make-simulation (&rest initargs
+			&key simulator name displayname description 
+			     state identifier)
   "Make a simulator resource."
-  (declare (ignore displayname description))
+  (declare (ignore name displayname description))
   (apply #'make-instance 'simulation
 	 :steward simulator
 	 (remove-property initargs :simulator)))

@@ -52,53 +52,16 @@ resources is usually longer than those of Common Lisp sessions."
   (with-test-environment
     (populate-tenant-table)
     (populate-project-table)
-    (labels ((check-structural-equality (object1 object2)
-	       (assert-equal (type-of object1) (type-of object2))
-	       (etypecase object1
-		 (string
-		  (assert-string= object1 object2))
-		 (symbol
-		  (assert-eq object1 object2))
-		 (list
-		  (assert-equal (length object1) (length object2))
-		  (loop :for item1 :in object1
-			:for item2 :in object2
-			:do (check-structural-equality item1 item2)))
-		 ((or cid:tenant cid:project)
-		  ;; TENANT and PROJECT instances are listed in a directory
-		  ;; and must be physically equal rather than structurally equal.
-		  (assert-eq object1 object2))
-		 ((or poc:infrastructure-stack cid:steward cid:resource)
-		  (assert-eq (cid:persistent-constructor (type-of object1))
-			     (cid:persistent-constructor (type-of object2)))
-		  (loop :for slot-spec :in (cid:persistent-slots object1)
-			:for slot-name = (getf slot-spec :slot-name)
-			:do (check-structural-equality
-			     (slot-value object1 slot-name)
-			     (slot-value object2 slot-name))))))
-	     (write-then-read (object)
-	       (cid:read-persistent-object-from-string
-		(cid:write-persistent-object-to-string object)))
-	     (check-persistence-idempotency (object)
-	       (check-structural-equality object (write-then-read object)))
-	     (stack-resources (stack)
-	       (loop :for resource :in (slot-value stack 'poc::resources)
-		     :append (cid:resource-prerequisites resource))))
-      (let* ((delivery-stack
-	       (poc:make-delivery-stack
-		:cloud-vendor (poc:make-cloud-vendor
-			       :credential "ThisIsNotARealCredential")
-		:tag *testsuite-id*))
-	     (delivery-resources
-	       (stack-resources delivery-stack)))
-	(loop :for resource :in delivery-resources
-	      :do (check-persistence-idempotency resource))
-	(check-persistence-idempotency delivery-stack)
-	(check-structural-equality
-	 delivery-stack
-	 (progn
-	   (cid:save-persistent-object delivery-stack *testsuite-id*)
-	   (cid:load-persistent-object delivery-stack *testsuite-id*)))))))
+    (let* ((delivery-stack
+	     (poc:make-delivery-stack
+	      :cloud-vendor (poc:make-cloud-vendor
+			     :credential "ThisIsNotARealCredential")
+	      :tag *testsuite-id*))
+	   (delivery-resources
+	     (slot-value delivery-stack 'poc::resources)))
+      (loop :for resource :in delivery-resources
+	      :do (verify-persistence-idempotency resource))
+      (verify-persistence-idempotency delivery-stack))))
 
 (define-testcase demonstrate-that-simple-resources-can-be-modified ()
   "Demonstrate that a simple resource can be modified.

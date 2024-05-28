@@ -119,6 +119,7 @@ according to the instance slots."
     (assert-condition (cid:delete-resource resource) cid:resource-no-longer-exists)))
 
 (define-testcase resource-unit-test (&key make-resource slot-name new-slot-value resource-type)
+  (verify-persistence-idempotency (funcall make-resource))
   (verify-steward-resource-relationships (funcall make-resource))
   (verify-resource-lifecycle-invariants (funcall make-resource)
 					:slot-name slot-name
