@@ -33,7 +33,11 @@ role_user_db()
     fi
 
     {
-        if [ -d "${config_dir}/user" ]; then
+        if [ -f "${config_dir}/user.conf" ]; then
+	  git config -f "${config_dir}/user.conf"\
+	      --name-only --get-regexp 'user[.].*[.].*'\
+	    | awk -F '[.]' '{ collect[$2] } END {for(name in collect){print(name)}}'
+        elif [ -d "${config_dir}/user" ]; then
             find "${config_dir}/user" -type d -maxdepth 1 -mindepth 1
         fi
     } | {
@@ -58,7 +62,9 @@ role_user_db()
 role_user_config()
 {
     local userconf value
-    if [ -f "${config_dir}/user/$1/user.conf" ]; then
+    if [ -f "${config_dir}/user.conf" ]; then
+        userconf="${config_dir}/user.conf"
+    elif [ -f "${config_dir}/user/$1/user.conf" ]; then
         userconf="${config_dir}/user/$1/user.conf"
     else
         userconf='/dev/null'
@@ -85,7 +91,9 @@ role_user_config()
 
 role_user_secret()
 {
-    if [ -f "${config_dir}/user/$1/secret" ]; then
+    if [ -f "${config_dir}/user.conf" ]; then
+        git config -f "${config_dir}/user.conf" "user.$1.secret"
+    elif [ -f "${config_dir}/user/$1/secret" ]; then
         cat "${config_dir}/user/$1/secret"
     else
         failwith 'role_user_secret: %s: User has no secret.' "$1"
@@ -98,7 +106,9 @@ role_user_secret()
 
 role_user_authorized_keys()
 {
-    if [ -f "${config_dir}/user/$1/authorized_keys" ]; then
+    if [ -f "${config_dir}/user.conf" ]; then
+        git config -f "${config_dir}/user.conf" "user.$1.authorizedKey"
+    elif [ -f "${config_dir}/user/$1/authorized_keys" ]; then
         # Using sed ensures the file ends with a newline character.
         sed -e '' "${config_dir}/user/$1/authorized_keys"
     else
