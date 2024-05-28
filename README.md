@@ -6,14 +6,6 @@ improve, to share with team mates and collaborators, and that can be
 deployed easily either locally, on bare metal or in the cloud.
 
 
-# Introduction
-
-The **El Cid** project aims at providing a complete continuous
-integration and delivery system that is easy to incrementally
-improve, to share with team mates and collaborators, and that can be
-deployed easily either locally, on bare metal or in the cloud.
-
-
 ## Benefits and Features
 
 We review the benefits of using **El Cid** and the features of the
@@ -127,14 +119,30 @@ stack. The prerequisites and dependences are:
     the Docker client and daemons are provided by
     [the *docker-ce* package][external-docker-ce] but the
     `docker-compose` program has to be installed separately.
-    On OS X Systems, this is provided by
-    [the Docker for Mac][external-docker-mac] package.
+    On OS X Systems, this is provided by the COLIMA package.
 
   - A working copy of the master branch of this repository. This can
     be created by exploding [the zip archive created by GitHub][cid-zip]
     or cloning the repository. Ensure that the working copy is in an
     adequate place where QuickLisp can find the Lisp systems defined
     in the working copy.
+
+### Load the El Cid System
+
+~~~ lisp
+CL-USER> (ql:quickload '#:org.melusina.cid/user)
+CL-USER> (in-package #:org.melusina.cid/user)
+~~~
+
+### Create a Colima instance on a Mac
+
+~~~ lisp
+CID/USER> (defvar *colima-instance*
+            (make-instance 'colima:instance :name "Tourist"))
+						   
+*COLIMA-INSTANCE*
+CID/USER> (colima:start-instance *colima-instance*)
+~~~
 
 ### Discover the project lifecycle
 
@@ -143,16 +151,20 @@ docker image, create, configure, start, dump, restore, stop and delete
 a project.
 
 ~~~ lisp
-CL-USER> (ql:quickload '#:org.melusina.cid/user)
-CL-USER> (in-package #:org.melusina.cid/user)
 CID/USER> (development:build)
+CID/USER> (setf operation:*project*
+            (operation:make-project :name "tourist"))
 CID/USER> (operation:create-project)
+CID/USER> (operation:edit-project-configuration-file)
 CID/USER> (operation:configure-project)
 CID/USER> (operation:start-project)
 CID/USER> (operation:dump-project)
-CID/USER> (operation:restore-project #p"~/.local/share/org.melusina.cid/local/backups/local.2023-10-31.a.txz")
 CID/USER> (operation:stop-project)
 CID/USER> (operation:delete-project)
+CID/USER> (operation:create-project)
+CID/USER> (operation:configure-project)
+CID/USER> (operation:restore-project #p"~/.local/share/org.melusina.cid/local/backups/local.2023-10-31.a.txz")
+CID/USER> (operation:start-project)
 ~~~
 
 The commands in the `org.melusina.cid/operation` system operate on the

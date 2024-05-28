@@ -33,6 +33,10 @@
    #:project-http-port
    #:project-https-port
    #:project-ssh-port
+   #:project-pathname
+   #:project-configuration-file
+   #:edit-project-configuration-file
+   #:project-backup-directory
    #:make-project
    #:list-projects
    #:create-project
@@ -57,6 +61,9 @@
 (defparameter *docker-compose*
   (system-relative-pathname #p"docker/compose/cid.yml")
   "The DOCKER-COMPOSE file used to run El Cid in the laboratory.")
+
+(defvar *project* nil
+  "The current project to operate on.")
 
 (defclass project ()
   ((name
@@ -101,11 +108,16 @@
    (volumes
     :initform nil)))
 
-(defun project-backup-directory (project)
+(defun project-backup-directory (&optional (project *project*))
   (merge-pathnames #p"backups/" (project-pathname project)))
 
-(defun project-configuration-file (project)
+(defun project-configuration-file (&optional (project *project*))
   (merge-pathnames #p"cid.conf" (project-pathname project)))
+
+(defun edit-project-configuration-file (&optional (project *project*))
+  (uiop:run-program
+   (list "open" "-a" "EmacsMac"
+	 (namestring (project-configuration-file project)))))
 
 (defun project-configuration-key (designator)
   (flet ((key-component (object)
@@ -233,9 +245,6 @@
     (with-slots (name tag) instance
       (format stream ":NAME ~S :TAG ~S :URL ~S" name tag (project-url instance)))))
 
-(defparameter *project*
-  (make-project :name "local" :tag "latest" :ssh-port 2022))
-
 (defun list-projects ()
   (flet ((project-name (volume-name)
 	   (multiple-value-bind (match-start match-end reg-starts reg-ends)
@@ -272,7 +281,7 @@
 	  :do (docker:update-volume volume))
     (values project)))
 
-(defun create-project (&key name tag hostname http-port https-port ssh-port (docker-compose *docker-compose*) project)
+(defun create-project (&key project name tag hostname http-port https-port ssh-port (docker-compose *docker-compose*))
   (unless (or name tag project)
     (setf project *project*))
   (if project
@@ -375,7 +384,9 @@
       (uiop:delete-file-if-exists pathname))
     (with-slots (volumes status) project
       (loop :for volume :in volumes
-	    :do (docker:delete-volume volume)))))
+	    :do (docker:delete-volume volume))
+      (setf status nil)))
+  (values project))
 
 
 ;;;;
