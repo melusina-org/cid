@@ -73,19 +73,4 @@ policy_trac_add_changeset()
 
 policy_trac_add_changeset
 
-
-### IMPLEMENTATION
-
-# Redirect output to stderr.
-exec 2>>/var/log/cid_hithook_postreceive.log
-exec 1>&2
-
-set -x
-
-# Save list of incoming commits in tmpfile
-tmpfile_initializer postreceivedata
-cat > "${postreceivedata}"
-
-policy_trac_add_changeset < "${postreceivedata}"
-
 # End of file `cid_githook_postreceive.sh'

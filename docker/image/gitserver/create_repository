@@ -1,0 +1,49 @@
+#!/bin/sh
+
+# create_repository.sh — Create a Repository
+
+# El Cid (https://github.com/melusina-org/cid)
+# This file is part of El Cid.
+#
+# Copyright © 2015–2024 Michaël Le Barbier
+# All rights reserved.
+
+# This file must be used under the terms of the MIT License.
+# This source file is licensed as described in the file LICENSE, which
+# you should have received as part of this distribution. The terms
+# are also available at https://opensource.org/licenses/MIT
+
+: ${gitdir:=/var/git}
+: ${tracdir:=/var/trac}
+
+main()
+{
+    local repository
+    case "$#-$1-$2" in
+	2-*-*.git)
+	    environment="${tracdir}/$1"
+	    shortname="${2%.git}"
+	    repository="${gitdir}/$1/$2"
+	    ;;
+	2-*-*)
+	    environment="${tracdir}/$1"
+	    shortname="$2"
+	    repository="${gitdir}/$1/$2.git"
+	    ;;
+	*)
+	    failwith 'gitserver_create_repository'
+    esac
+
+    install -d -o git -g git -m 750 "${repository}"
+    su -l git -s /bin/sh -c "git init --bare ${repository}"
+    su -l www-data -s /bin/sh -c "trac-admin ${environment} repository add ${shortname} ${repository} git"
+    (
+	cd "${repository}/hooks"
+	rm -f post-receive
+	ln -s /opt/cid/libexec/cid/cid_githook_postreceive post-receive
+    )
+}
+
+main "$@"
+
+# End of file `create_repository.sh'

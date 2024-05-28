@@ -259,6 +259,24 @@ CID/USER> (operation:start-project *local*)
 CID/USER> (operation:stop-project *local*)
 ~~~
 
+## Administration of GITSERVER
+
+The current server certainly needs to be replaced by a git-tea
+instance. However it is still here and the following instructions are
+about configuring it and running.
+
+### Authorized Keys
+
+~~~ console
+docker exec -it "${PROJECT_NAME}-gitserver-1" vi /var/git/.ssh/authorized_keys
+~~~
+
+### Create a Repository
+
+~~~ 
+$ docker exec -it "${PROJECT_NAME}-gitserver-1" /usr/local/bin/create_repository TRACNAME REPOSITORYNAME
+~~~
+
 ## Free software
 
 El Cid is free software: copying it and redistributing it is very

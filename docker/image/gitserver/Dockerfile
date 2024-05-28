@@ -37,6 +37,7 @@ RUN chown -R cid:cid /opt/cid/var/src/cid/support
 RUN sh /root/setup/support.sh
 
 COPY ./docker/image/gitserver/sudoers-gitserver /etc/sudoers.d/gitserver
+COPY ./docker/image/gitserver/create_repository /usr/local/bin/create_repository
 COPY ./docker/image/gitserver/entrypoint /usr/local/bin/entrypoint
 ENTRYPOINT ["/usr/local/bin/entrypoint"]
 VOLUME ["/var/git"]
