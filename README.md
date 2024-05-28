@@ -274,7 +274,13 @@ docker exec -it "${PROJECT_NAME}-gitserver-1" vi /var/git/.ssh/authorized_keys
 ### Create a Repository
 
 ~~~ 
-$ docker exec -it "${PROJECT_NAME}-gitserver-1" /usr/local/bin/create_repository TRACNAME REPOSITORYNAME
+CID/USER> (operation:create-git-repository "trac-environment" "repository-name")
+~~~
+
+### Delete a Repository
+
+~~~ 
+CID/USER> (operation:delete-git-repository "trac-environment" "repository-name")
 ~~~
 
 ## Free software

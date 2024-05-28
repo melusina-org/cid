@@ -54,25 +54,23 @@ s|.*/||
 
 repository_install_hook()
 {
-    local repo
+    local repo repodir
 
     if [ $# -le 0 ]; then
         repository_ls
     else
         printf '%s\n' "$@"
     fi | while read repo; do
-        (
-            cd "${gitserverdir}/${repository_environment}/${repo}.git" || exit 1
-            if trac_is_enabled; then
-                git config trac.addchangeset yes
-            else
-                git config trac.addchangeset no
-            fi
-            git config trac.environment "${tracdir}/${repository_environment}"
-            git config trac.repositoryname "${repo}"
-            rm -f 'hooks/post-receive'
-            ln -s "${libexecdir}/cid/cid_githook_postreceive" 'hooks/post-receive'
-        )
+      repodir="${gitserverdir}/${repository_environment}/${repo}.git"
+      if trac_is_enabled; then
+        git config -f "${repodir}/config" trac.addchangeset yes
+      else
+        git config -f "${repodir}/config" trac.addchangeset no
+      fi
+      git config -f "${repodir}/config" trac.environment "${tracdir}/${repository_environment}"
+      git config -f "${repodir}/config" trac.repositoryname "${repo}"
+      rm -f "${repodir}/hooks/post-receive"
+      ln -s "${libexecdir}/cid/cid_githook_postreceive" "${repodir}/hooks/post-receive"
     done
 }
 

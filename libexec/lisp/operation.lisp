@@ -49,6 +49,9 @@
    #:configure-project
    #:dump-project
    #:restore-project
+   #:list-git-repositories
+   #:create-git-repository
+   #:delete-git-repository
    ))
 
 (in-package #:org.melusina.cid/operation)
@@ -393,7 +396,7 @@
 ;;;; Run Program
 ;;;;
 
-(defun run-console-program (command &key (project *project*) volumes)
+(defun run-console-program (command &key (project *project*) volumes (output t))
   (flet ((docker-bind (source destination)
 	   (list
 	    "--mount"
@@ -424,7 +427,7 @@
       volumes
       (docker-image)
       command)
-     :output t :error-output t)))
+     :output output :error-output t)))
 
 
 ;;;;
@@ -440,8 +443,9 @@ by the PROJECT."
    (list "/bin/sh" "/opt/cid/bin/cid_configure")
    :project project))
 
+
 ;;;;
-;;;; Dump a PROJECT
+;;;; Dump and Restore a PROJECT
 ;;;;
 
 (defun dump-project (&optional (project *project*))
@@ -469,4 +473,28 @@ by the PROJECT."
 	     (namestring (truename pathname))
 	     (namestring (dockername pathname))))))
 
+
+;;;;
+;;;; Administration of git Repositories
+;;;;
+
+(defun list-git-repositories (trac-environment &optional (project *project*))
+  "List git repositories."
+  (run-console-program
+   (list "/bin/sh" "/opt/cid/bin/cid_repository" "-t" trac-environment "ls")
+   :project project
+   :output :lines))
+
+(defun create-git-repository (trac-environment name &optional (project *project*))
+  "Create a git repository."
+  (run-console-program
+   (list "/bin/sh" "/opt/cid/bin/cid_repository" "-t" trac-environment "create" name)
+   :project project))
+  
+(defun delete-git-repository (trac-environment name &optional (project *project*))
+  "Delete a git repository."
+  (run-console-program
+   (list "/bin/sh" "/opt/cid/bin/cid_repository" "-t" trac-environment "rm" name)
+   :project project))
+  
 ;;;; End of file `operation.lisp'
