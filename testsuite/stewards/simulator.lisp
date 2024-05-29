@@ -27,6 +27,8 @@
 				    :description "A simulation resource used in the testsuite.")))
 	(resource-unit-test
 	 :resource-type 'cid:simulation
-	 :make-resource #'make-simulation)))))
+	 :make-resource #'make-simulation
+	 :slot-name 'cid:description
+	 :new-slot-value "A modified description for a simulation used in the testsuite.")))))
 
 ;;;; End of file `simulator.lisp'

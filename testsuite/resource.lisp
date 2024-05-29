@@ -67,7 +67,16 @@ to update the resource we use SLOT-NAME and a NEW-SLOT-VALUE."
 	   (exercise-modify-resource (resource)
 	     (when slot-name
 	       (setf (slot-value resource slot-name) new-slot-value)
-	       (cid:update-resource-from-instance resource)))
+	       (cid:update-resource-from-instance resource)
+	       (assert-equal
+		new-slot-value
+		(slot-value
+		 (cid:import-resource
+		  (cid:steward resource) (type-of resource)
+		  :displayname (cid:displayname resource)
+		  :description (cid:description resource)
+		  :identifier (cid:resource-identifier resource))
+		 slot-name))))
 	   (exercise-delete-resource (resource)
 	     (cid:delete-resource resource)))
       (non-existent-resource-invariants resource)

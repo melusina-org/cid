@@ -249,10 +249,14 @@ reply than the last *HTTP-REPLY*."
   (labels ((check-structural-equality (object1 object2)
 	     (assert-equal (type-of object1) (type-of object2))
 	     (etypecase object1
+	       (integer
+		(assert-equal object1 object2))
 	       (string
 		(assert-string= object1 object2))
 	       (symbol
 		(assert-eq object1 object2))
+	       (pathname
+		(assert-equal object1 object2))
 	       (list
 		(assert-equal (length object1) (length object2))
 		(loop :for item1 :in object1

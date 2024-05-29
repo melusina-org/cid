@@ -575,18 +575,24 @@ on its IDENTIFIER, then the IDENTIFIER is wiped and NIL is returned."))
 
 (defmethod update-instance-from-resource :around ((instance resource))
   "Enforce calling convention."
-  (unless (slot-value instance 'identifier)
-    (resource-error 'update-instance-from-resource instance
-		    "Cannot update instance from resource without a resource identifier."
-		    "The resource instance ~A has no resource identifier attached
-it is therefore impossible to examine the resource attached to this identifier." instance))		    
-  (handler-case (call-next-method)
-    (resource-no-longer-exists (condition)
-      (declare (ignore condition))
-      (with-slots (state identifier) instance
-	(setf state nil
-	      identifier nil))))
-  (values instance))
+  (flet ((check-that-resource-has-an-identifier ()
+	   (unless (slot-value instance 'identifier)
+	     (resource-error
+	      'update-instance-from-resource instance
+	      "Cannot update instance from resource without a resource identifier."
+	      "The resource instance ~A has no resource identifier attached
+it is therefore impossible to examine the resource attached to this identifier."
+	      instance)))
+	 (call-next-method-with-restartable-resource-no-longer-exists ()
+	   (handler-case (call-next-method)
+	     (resource-no-longer-exists (condition)
+	       (declare (ignore condition))
+	       (with-slots (state identifier) instance
+		 (setf state nil
+		       identifier nil))))))
+    (check-that-resource-has-an-identifier)
+    (call-next-method-with-restartable-resource-no-longer-exists)
+    (values instance)))
 
 (defgeneric update-resource-from-instance (instance)
   (:documentation "Update resource attributes to reflect INSTANCE.
