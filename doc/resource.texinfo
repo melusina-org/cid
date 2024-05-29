@@ -31,11 +31,20 @@ modifying or examining the underlying resource.
 
 @include include/class-org.melusina.cid-resource.texinfo
 
+@subsection Resource Conditions
 @include include/condition-org.melusina.cid-resource-error.texinfo
 @include include/fun-org.melusina.cid-resource-error.texinfo
 @include include/condition-org.melusina.cid-resource-confirmation.texinfo
 @include include/fun-org.melusina.cid-resource-confirmation.texinfo
 @include include/macro-org.melusina.cid-with-resource-confirmation.texinfo
+@include include/condition-org.melusina.cid-resource-already-exists.texinfo
+@include include/fun-org.melusina.cid-resource-already-exists.texinfo
+@include include/condition-org.melusina.cid-resource-no-longer-exists.texinfo
+@include include/fun-org.melusina.cid-resource-no-longer-exists.texinfo
+@include include/condition-org.melusina.cid-resource-prerequisite-is-missing.texinfo
+@include include/fun-org.melusina.cid-resource-prerequisite-is-missing.texinfo
+
+@subsection Resource Lifecyle
 
 @include include/fun-org.melusina.cid-resource-exists-p.texinfo
 @include include/fun-org.melusina.cid-resource-ready-p.texinfo
@@ -53,3 +62,8 @@ modifying or examining the underlying resource.
 @include include/fun-org.melusina.cid-resource-prerequisite-p.texinfo
 @include include/fun-org.melusina.cid-resource-require-p.texinfo
 @include include/fun-org.melusina.cid-sort-resources.texinfo
+
+@subsection Plan and Execute Resource Modification
+
+@include include/fun-org.melusina.cid-apply-modification-instructions.texinfo
+@include include/fun-org.melusina.cid-prepare-modification-instructions.texinfo

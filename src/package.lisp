@@ -67,6 +67,7 @@
    #:resource-no-longer-exists
    #:resource-already-exists
    #:resource-prerequisite-is-missing
+   #:resource-slot-is-immutable
    #:resource-confirmation
    #:with-resource-confirmation
    #:resource-exists-p
