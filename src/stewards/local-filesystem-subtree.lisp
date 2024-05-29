@@ -17,24 +17,29 @@
 ;;;; Steward
 ;;;;
 
-(clsql:def-view-class local-filesystem-subtree (steward)
-  ((description
-    :allocation :class
-    :initform "A steward which owns files in a specific filesystem subtree."
-    :type string)
-   (pathname
+(defclass local-filesystem-subtree (steward)
+  ((pathname
     :initform (error "A LOCAL-FILESYSTEM-SUBTREE requires a PATHNAME.")
     :type pathname
     :initarg :pathname
     :documentation "The root of the filesystem subtree owned by the steward."))
+  (:default-initargs
+   :description "A steward which owns files in a specific filesystem subtree.")
   (:documentation
    "A steward which owns files in a specific filesystem subtree.
 In this subtree, text files can be created and updated."))
 
-(defun make-local-filesystem-subtree (&rest initargs &key tenant project name displayname pathname)
+(defun make-local-filesystem-subtree (&rest initargs &key tenant project name displayname description pathname)
   "Make a LOCAL-FILESYSTEM-SUBTREE steward with the given parameters."
-  (declare (ignore tenant project name displayname pathname))
+  (declare (ignore tenant project name displayname description pathname))
   (apply #'make-instance 'local-filesystem-subtree initargs))
+
+(defmethod persistent-constructor ((class (eql 'local-filesystem-subtree)))
+  'make-local-filesystem-subtree)
+
+(defmethod persistent-slots append ((instance local-filesystem-subtree))
+  '((:initarg :pathname
+     :slot-name pathname)))
 
 (defmethod list-resource-identifiers ((steward local-filesystem-subtree) (resource-class (eql 'local-text-file)))
   (loop :for absolute-pathname :in (uiop:directory-files (slot-value steward 'pathname))
@@ -47,7 +52,7 @@ In this subtree, text files can be created and updated."))
 ;;;; Resources
 ;;;;
 
-(clsql:def-view-class local-text-file (resource)
+(defclass local-text-file (resource)
   ((steward-class
     :type symbol
     :initform 'local-filesystem-subtree
@@ -73,9 +78,11 @@ In this subtree, text files can be created and updated."))
    "A text file on the local filesystem."))
 
 (defun make-local-text-file (&rest initargs &key local-filesystem-subtree name displayname description
-					    pathname mode content external-format)
+						 state identifier
+						 pathname mode content external-format)
   "Make a local text file."
   (declare (ignore name displayname description
+		   state identifier
 		   mode content external-format))
   (flet ((check-that-pathname-is-relative (pathname)
 	   (unless (or (eq nil (pathname-directory pathname))
@@ -90,6 +97,21 @@ Deeper hierarchies are not implemented." pathname))
     (apply #'make-instance 'local-text-file
 	   :steward local-filesystem-subtree
 	   (remove-property initargs :local-filesystem-subtree))))
+
+(defmethod persistent-constructor ((class (eql 'local-text-file)))
+  'make-local-text-file)
+
+(defmethod persistent-slots append ((instance local-text-file))
+  '((:initarg :local-filesystem-subtree
+     :slot-name steward)
+    (:initarg :pathname
+     :slot-name pathname)
+    (:initarg :mode
+     :slot-name mode)
+    (:initarg :external-format
+     :slot-name external-format)
+   (:initarg :content
+    :slot-name content)))
 
 (defmethod examine-resource append ((instance local-text-file))
   (with-slots (pathname mode external-format content checksum) instance

@@ -15,10 +15,9 @@
 
 (define-testcase local-filesystem-subtree-unit-test ()
   (rashell:with-temporary-directory (tmpdir)
-    (with-test-database
+    (with-test-environment
       (populate-tenant-table)
       (populate-project-table)
-      (populate-steward-tables)
       (let ((steward
 	      (cid:make-local-filesystem-subtree
 	       :tenant "testsuite"
@@ -36,6 +35,7 @@
 		  :content "Some test content for the temporary file.")))
 	  (resource-unit-test
 	   :resource-type 'cid:local-text-file
-	   :make-resource #'make-local-text-file))))))
+	   :make-resource #'make-local-text-file
+	   ))))))
 
 ;;;; End of file `local-filesystem-subtree.lisp'
