@@ -219,6 +219,45 @@ known state indicates the underlying resource was existing."
 	 :explanation (when control-string
 			(apply #'format nil control-string format-arguments))))
 
+
+;;;;
+;;;; Resource Slot is Immutable
+;;;;
+
+(define-condition resource-slot-is-immutable (resource-error)
+  ((slot-name
+    :type symbol
+    :initarg :slot-name
+    :reader resource-error-slot-name))
+  (:report describe-resource-slot-is-immutable)
+  (:documentation
+   "This condition is signaled when we try to update
+an immutable slot of a RESOURCE using the UPDATE-RESOURCE-FROM-INSTANCE
+generic function."))
+
+(defun describe-resource-slot-is-immutable (condition stream)
+  (with-slots (name displayname steward) (resource-error-resource condition)
+    (let ((*print-circle* nil))
+      (format stream "~&Operation on resource ~A failed.
+
+The slot ~A of resource ~A is immutable and cannot be updated." 
+	      (or displayname name (resource-error-resource condition))
+	      (resource-error-slot-name condition)
+	      (or displayname name (resource-error-resource condition)))
+      (with-slots (explanation) condition
+	(when explanation
+	  (format stream "~&~A" explanation))))))
+
+(defun resource-slot-is-immutable (operation resource description slot-name &optional control-string &rest format-arguments)
+  "Signal a RESOURCE-SLOT-IS-IMMUTABLE."
+  (error 'resource-slot-is-immutable
+	 :operation operation
+	 :resource resource
+	 :description description
+	 :slot-name slot-name
+	 :explanation (when control-string
+			(apply #'format nil control-string format-arguments))))
+
 
 
 ;;;;
@@ -553,8 +592,11 @@ it is therefore impossible to examine the resource attached to this identifier."
   (:documentation "Update resource attributes to reflect INSTANCE.
 The attributes of the underlying resource are examined and when differing
 from the attributes of INSTANCE, the resource is modified to reflect
-the state of instance. Modifying the underlying resource could imply
-recreating it."))
+the state of instance.
+
+It is an error to update an immutable slot using this function. It is
+an error to update the STATE or the IDENTIFIER slot using this function.
+"))
 
 (defmethod update-resource-from-instance :around ((instance resource))
   "Enforce calling convention."
