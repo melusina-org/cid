@@ -77,9 +77,17 @@ to update the resource we use SLOT-NAME and a NEW-SLOT-VALUE."
 		  :description (cid:description resource)
 		  :identifier (cid:resource-identifier resource))
 		 slot-name))))
+	   (exercise-modify-not-created-resource (resource)
+	     (when slot-name
+	       (assert-nil (cid:resource-exists-p resource))
+	       (setf (slot-value resource slot-name) new-slot-value)
+	       (assert-condition
+		   (cid:update-resource-from-instance resource)
+		   cid:resource-error)))
 	   (exercise-delete-resource (resource)
 	     (cid:delete-resource resource)))
       (non-existent-resource-invariants resource)
+      (exercise-modify-not-created-resource resource)
       (cid:create-resource resource) 
       (existent-resource-invariants resource)
       (exercise-import-resource resource)
@@ -127,6 +135,45 @@ according to the instance slots."
     (cid:delete-resource imported-resource)
     (assert-condition (cid:delete-resource resource) cid:resource-no-longer-exists)))
 
+(define-testcase ensure-that-update-signals-resource-slot-is-immutable (resource)
+  "Verify that attempts to modify an immutable slot on a resource are signalled.
+When we attempt to modify a resource using the UPDATE-RESOURCE-FROM-INSTANCE
+a condition RESOURCE-SLOT-IS-IMMUTABLE is signalled."
+  (flet ((immutable-p (spec)
+	   (getf spec :immutable))
+	 (slot-name (spec)
+	   (getf spec :slot-name)))
+    (let* ((slot-name
+	     (slot-name
+	      (find t (cid:persistent-slots resource) :key #'immutable-p)))
+	   (old-slot-value
+	     (when slot-name
+	       (slot-value resource slot-name)))
+	   (new-slot-value
+	     (when slot-name
+	       (etypecase old-slot-value
+		 (integer
+		  (if (= old-slot-value 0) 1 0))
+		 (string
+		  (if (string= old-slot-value "a") "b" "a"))
+		 (boolean
+		  (not old-slot-value))
+		 (symbol
+		  (not old-slot-value))
+		 (pathname
+		  (make-pathname
+		   :name (if (string= (pathname-name old-slot-value) "a")
+			     "b" "a")
+		   :defaults old-slot-value))))))
+      (unless slot-name
+	(return-from ensure-that-update-signals-resource-slot-is-immutable))
+      (cid:create-resource resource)
+      (setf (slot-value resource slot-name) new-slot-value)
+      (assert-condition (cid:update-resource-from-instance resource)
+	  cid:resource-slot-is-immutable)
+      (setf (slot-value resource slot-name) old-slot-value)
+      (cid:delete-resource resource))))
+
 (define-testcase resource-unit-test (&key make-resource slot-name new-slot-value resource-type)
   (verify-persistence-idempotency (funcall make-resource))
   (verify-steward-resource-relationships (funcall make-resource))
@@ -136,6 +183,7 @@ according to the instance slots."
   (ensure-that-not-created-resources-cannot-be-deleted (funcall make-resource))
   (ensure-that-resources-are-created-only-once (funcall make-resource))
   (ensure-that-delete-signals-resource-no-longer-exists (funcall make-resource))
+  (ensure-that-update-signals-resource-slot-is-immutable (funcall make-resource))
   (assert-type (funcall make-resource) 'cid:resource)
   (when resource-type
     (assert-type (funcall make-resource) resource-type)))

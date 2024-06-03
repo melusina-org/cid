@@ -79,6 +79,7 @@
    #:update-resource-from-instance
    #:examine-resource
    #:import-resource
+   #:actual-resource
    #:list-resources
    #:list-resource-identifiers
    #:resource-prerequisites
@@ -97,6 +98,7 @@
    #:make-local-filesystem-subtree
    #:local-text-file
    #:make-local-text-file
+   #:content
    ;; Docker Engine
    #:docker-engine
    #:make-docker-engine

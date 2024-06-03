@@ -71,9 +71,7 @@ In this subtree, text files can be created and updated."))
     :initform :default)
    (content
     :type string
-    :initarg :content)
-   (checksum
-    :type string))
+    :initarg :content))
   (:documentation
    "A text file on the local filesystem."))
 
@@ -105,22 +103,22 @@ Deeper hierarchies are not implemented." pathname))
   '((:initarg :local-filesystem-subtree
      :slot-name steward)
     (:initarg :pathname
-     :slot-name pathname)
+     :slot-name pathname
+     :immutable t)
     (:initarg :mode
      :slot-name mode)
     (:initarg :external-format
      :slot-name external-format)
-   (:initarg :content
-    :slot-name content)))
+    (:initarg :content
+     :slot-name content)))
 
 (defmethod examine-resource append ((instance local-text-file))
-  (with-slots (pathname mode external-format content checksum) instance
+  (with-slots (pathname mode external-format content) instance
     (list
      :pathname pathname
      :mode mode
      :external-format external-format
-     :content content
-     :checksum checksum)))
+     :content content)))
 
 (defun local-text-file-absolute-pathname (local-text-file)
   (check-type local-text-file local-text-file)
@@ -159,10 +157,9 @@ Deeper hierarchies are not implemented." pathname))
     (let ((absolute-pathname
 	    (local-text-file-absolute-pathname instance)))
       (return-early-when-file-does-not-exist absolute-pathname)
-      (with-slots (pathname state mode content checksum) instance
+      (with-slots (pathname state mode content) instance
 	(setf mode (file-mode absolute-pathname)
 	      content (file-content absolute-pathname)
-	      checksum (file-checksum absolute-pathname)
 	      state t)))))
 
 (defmethod create-resource ((instance local-text-file))
@@ -213,5 +210,25 @@ and therefore the local text file ~A cannot be deleted." pathname instance))))
       (return-early-when-file-does-not-exist absolute-pathname)
       (delete-file absolute-pathname)
       (update-state-and-identifier))))
+
+(defmethod update-resource-from-instance ((instance local-text-file))
+  (flet ((update-file-permissions (pathname)
+	   (let ((octal-mode
+		   (write-to-string 
+		    (slot-value instance 'mode)
+		    :base 8))
+		 (path
+		   (namestring pathname)))
+	     (uiop:run-program (list "chmod" octal-mode path))))
+	 (update-file-content (pathname)
+	   (with-slots (mode external-format content) instance
+	     (with-open-file (output pathname :direction :output
+					      :external-format external-format
+					      :if-does-not-exist :error)
+	       (write-string content output)))))
+  (let ((absolute-pathname
+	  (local-text-file-absolute-pathname instance)))
+    (update-file-permissions absolute-pathname)
+    (update-file-content absolute-pathname))))
 
 ;;;; End of file `local-filesystem-subtree.lisp'

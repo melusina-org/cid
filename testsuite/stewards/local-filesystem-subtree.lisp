@@ -36,6 +36,7 @@
 	  (resource-unit-test
 	   :resource-type 'cid:local-text-file
 	   :make-resource #'make-local-text-file
-	   ))))))
+	   :slot-name 'cid:content
+	   :new-slot-value "Some modified test content for the temporary file."))))))
 
 ;;;; End of file `local-filesystem-subtree.lisp'

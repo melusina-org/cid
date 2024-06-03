@@ -594,21 +594,6 @@ it is therefore impossible to examine the resource attached to this identifier."
     (call-next-method-with-restartable-resource-no-longer-exists)
     (values instance)))
 
-(defgeneric update-resource-from-instance (instance)
-  (:documentation "Update resource attributes to reflect INSTANCE.
-The attributes of the underlying resource are examined and when differing
-from the attributes of INSTANCE, the resource is modified to reflect
-the state of instance.
-
-It is an error to update an immutable slot using this function. It is
-an error to update the STATE or the IDENTIFIER slot using this function.
-"))
-
-(defmethod update-resource-from-instance :around ((instance resource))
-  "Enforce calling convention."
-  (call-next-method)
-  (values instance))
-
 (defgeneric examine-resource (resource)
   (:method-combination append)
   (:documentation "Dump the state of a RESOURCE.
@@ -647,6 +632,67 @@ imports it into the current system by creating a resource for it."
        "The resource ~S was not found by steward ~A and it is impossible to import it."
        identifier steward))
     (values instance)))
+
+(defun actual-resource (resource)
+  "Import the RESOURCE using its steward.
+The resulting resource reflects the actual state of the underlying resource
+instead of the expected state as specified by RESOURCE."
+  (import-resource (steward resource) (type-of resource)
+		   :displayname (displayname resource)
+		   :description (description resource)
+		   :identifier (resource-identifier resource)))
+
+(defgeneric update-resource-from-instance (instance)
+  (:documentation "Update resource attributes to reflect INSTANCE.
+The attributes of the underlying resource are examined and when differing
+from the attributes of INSTANCE, the resource is modified to reflect
+the state of instance.
+
+It is an error to update an immutable slot using this function. It is
+an error to update the STATE or the IDENTIFIER slot using this function.
+
+It is an error to update a resource that does not exist. Use the CREATE-RESOURCE
+function to do so. While the CREATE-RESOURCE function could be called as
+a restart to recover from the error, such an error probably result from
+a programming logic and must be understood as a hint of a larger problem."))
+
+(defmethod update-resource-from-instance :before ((instance resource))
+  "Signal errors when updating not created resources."
+  (flet ((signal-error-when-updating-not-created-resource ()
+	   (unless (resource-exists-p instance)
+	     (resource-error
+	      'update-resource-from-instance
+	      instance
+	      "Cannot update resource before it has been created."
+	      "The resource instance ~A has no resource identifier attached
+it is therefore impossible to update the resource attached to this identifier."
+	      instance)))
+	 (signal-error-when-updating-immutable-slots ()
+	   (let ((actual
+		   (actual-resource instance))
+		 (slots-spec
+		   (persistent-slots instance)))
+	     (flet ((signal-on-update-immutable (spec)
+		      (unless (getf spec :immutable)
+			(return-from signal-on-update-immutable))
+		      (let ((slot-name (getf spec :slot-name)))
+			(unless (equal (slot-value instance slot-name)
+				       (slot-value actual slot-name))
+			  (resource-slot-is-immutable
+			   'update-resource-from-instance
+			   instance
+			   "Cannot update immutable slot of a resource."
+			   slot-name
+			   "Immutable slot ~A of the resource instance ~A cannot be modified. Instead the underlying resource must be deleted and recreated."
+			   slot-name instance)))))
+	       (mapc #'signal-on-update-immutable slots-spec)))))
+    (signal-error-when-updating-not-created-resource)
+    (signal-error-when-updating-immutable-slots)))
+
+(defmethod update-resource-from-instance :around ((instance resource))
+  "Enforce calling convention."
+  (call-next-method)
+  (values instance))
 
 (defgeneric list-resource-identifiers (steward resource-class)
   (:documentation
