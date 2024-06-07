@@ -43,7 +43,9 @@
 	    (cid:make-tenant :name "testsuite" :displayname "Test Tenant"))
 	  (cid:*project*
 	    (cid:make-project :name *testsuite-id*
-			      :displayname (concatenate 'string "Projet " *testsuite-id*))))
+			      :displayname (concatenate 'string "Projet " *testsuite-id*)))
+	  (cid:*encryption-key*
+	    (ironclad:random-data 32)))
      ,@body))
 
 

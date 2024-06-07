@@ -23,6 +23,7 @@
    #:name
    #:displayname
    ;; Persistent Objects
+   #:*encryption-key*
    #:persistent-constructor
    #:persistent-slots
    #:write-persistent-object

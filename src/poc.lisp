@@ -29,6 +29,7 @@
    #:persistent-slots
    #:*tenant*
    #:*project*
+   #:*encryption-key*
    #:make-tenant
    #:make-project
    #:find-tenant
@@ -129,7 +130,8 @@
 
 (defmethod persistent-slots append ((instance certificate-authority))
   '((:initarg :private-key
-     :slot-name private-key)
+     :slot-name private-key
+     :confidential t)
     (:initarg :public-key
      :slot-name public-key)
     (:initarg :not-valid-before
@@ -220,7 +222,8 @@
 
 (defmethod persistent-slots append ((instance cloud-vendor))
   '((:initarg :credential
-     :slot-name credential)))
+     :slot-name credential
+     :confidential t)))
 
 
 ;;;;
@@ -262,7 +265,9 @@ This sets *TENANT* and *PROJECT* to work on the POC."
     :project *project*
     :name "ca"
     :displayname "Certificate Authority"
-    :private-key "ThisIsNotARealSecret")))
+    :private-key "ThisIsNotARealSecret")
+   *encryption-key*
+   (ironclad:random-data 32)))
 
 
 ;;;;
