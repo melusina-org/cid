@@ -1,9 +1,9 @@
-### Dockerfile -- git server
+# Dockerfile — git server
 
 # El Cid (https://github.com/melusina-org/cid)
 # This file is part of El Cid.
 #
-# Copyright © 2015–2023 Michaël Le Barbier
+# Copyright © 2015–2024 Michaël Le Barbier
 # All rights reserved.
 
 # This file must be used under the terms of the MIT License.

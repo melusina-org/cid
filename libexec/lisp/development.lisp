@@ -63,6 +63,7 @@
       #p"src"
       #p"subr"
       #p"support"
+      #p"testsuite"
       #p"tool"
       #p"operation"
       #p"development"
