@@ -243,7 +243,7 @@ reply than the last *HTTP-REPLY*."
 
 
 ;;;;
-;;;;
+;;;; Persistence Testcase
 ;;;;
 
 (define-testcase verify-persistence-idempotency (object)
@@ -280,5 +280,38 @@ reply than the last *HTTP-REPLY*."
 	     (cid:read-persistent-object-from-string
 	      (cid:write-persistent-object-to-string object))))
     (check-structural-equality object (write-then-read object))))
+
+(define-testcase verify-formatting-of-persistent-resources ()
+  (let ((tenant
+	  (cid:make-tenant :name "local" :displayname "Local Tenant"))
+	(tenant-line-representation
+	  "
+[ORG.MELUSINA.CID:TENANT :NAME \"local\" :DISPLAYNAME \"Local Tenant\"]
+")
+	(tenant-compact-representation
+	  "
+[ORG.MELUSINA.CID:TENANT
+ :NAME \"local\"
+ :DISPLAYNAME \"Local Tenant\"]
+")
+	(tenant-very-compact-representation
+	  "
+[ORG.MELUSINA.CID:TENANT
+ :NAME
+ \"local\"
+ :DISPLAYNAME
+ \"Local Tenant\"]
+"))
+    (assert-string= tenant-line-representation
+		    (cid:write-persistent-object-to-string tenant))
+    (assert-string= tenant-compact-representation
+		    (let ((*print-right-margin* 32))
+		      (cid:write-persistent-object-to-string tenant)))
+    (assert-string= tenant-very-compact-representation
+		    (let ((*print-right-margin* 8))
+		      (cid:write-persistent-object-to-string tenant)))))
+
+(define-testcase utilities-unit-test ()
+  (verify-formatting-of-persistent-resources))
 
 ;;;; End of file `utilities.lisp'

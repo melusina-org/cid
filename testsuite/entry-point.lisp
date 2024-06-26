@@ -14,6 +14,7 @@
 (in-package #:org.melusina.cid/testsuite)
 
 (define-testcase unit-tests ()
+  (utilities-unit-test)
   (tenant-unit-test)
   (project-unit-test)
   (steward-unit-test)
