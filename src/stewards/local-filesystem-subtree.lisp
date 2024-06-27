@@ -60,7 +60,7 @@ In this subtree, text files can be created and updated."))
    (pathname
     :type pathname
     :initarg :pathname
-    :documentation "The pathname of the file relative to its stweward.")
+    :documentation "The pathname of the file relative to its steward.")
    (mode
     :type integer
     :initarg :mode

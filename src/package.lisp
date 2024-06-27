@@ -100,6 +100,11 @@
    #:local-text-file
    #:make-local-text-file
    #:content
+   ;; Initialization File
+   #:read-initialization-file
+   #:write-initialization-file
+   #:read-initialization-file-from-string
+   #:write-initialization-file-to-string
    ;; Docker Engine
    #:docker-engine
    #:make-docker-engine

@@ -23,6 +23,7 @@
   ((:module "src"
     :components ((:file "package")
 		 (:file "utilities")
+		 (:file "initialization-file")
 		 (:module "traits"
 		  :components ((:file "named")))
 		 (:file "tenant")
@@ -127,6 +128,7 @@
   ((:module "testsuite"
     :components ((:file "package")
 		 (:file "utilities")
+		 (:file "initialization-file")
 		 (:file "tenant")
 		 (:file "project")
 		 (:file "steward")
