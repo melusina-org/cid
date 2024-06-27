@@ -32,11 +32,28 @@
 		  :displayname "Temporary File #1"
 		  :description "A temporary file resource used in the testsuite."
 		  :pathname #p"file-1"
-		  :content "Some test content for the temporary file.")))
+		  :content "Some test content for the temporary file."))
+	       (make-local-initialization-file ()
+		 (cid:make-local-initialization-file
+		  :local-filesystem-subtree steward
+		  :name "configuration-1.ini"
+		  :displayname "Configuration File #1"
+		  :description "A temporary configuration file resource used in the testsuite."
+		  :pathname #p"configuration-1.ini"
+		  :configuration
+		  (cid:read-initialization-file
+		   (system-relative-pathname #p"example/initialization-file/example-2.ini")))))
 	  (resource-unit-test
 	   :resource-type 'cid:local-text-file
 	   :make-resource #'make-local-text-file
 	   :slot-name 'cid:content
-	   :new-slot-value "Some modified test content for the temporary file."))))))
+	   :new-slot-value "Some modified test content for the temporary file.")
+	  (resource-unit-test
+	   :resource-type 'cid:local-initialization-file
+	   :make-resource #'make-local-initialization-file
+	   :slot-name 'cid:configuration
+	   :new-slot-value
+	   (cid:read-initialization-file
+	    (system-relative-pathname #p"example/initialization-file/example-1.ini"))))))))
 
 ;;;; End of file `local-filesystem-subtree.lisp'

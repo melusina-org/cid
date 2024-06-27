@@ -45,6 +45,13 @@ It must be an octet array of length 32.")
 	:when (and property-p (not (eq property name)))
 	:append (list name value)))
 
+(defun remove-properties (plist &rest properties)
+  "Return a copy from PLIST with PROPERTIES removed."
+  (loop :for (name value . tail) :on plist
+	:for property-p = t :then (not property-p)
+	:when (and property-p (not (member name properties)))
+	:append (list name value)))
+
 (defun plist-p (object &key test test-not)
   "Predicate recognising property lists."
   (when (and test test-not)

@@ -105,6 +105,9 @@
    #:write-initialization-file
    #:read-initialization-file-from-string
    #:write-initialization-file-to-string
+   #:local-initialization-file
+   #:make-local-initialization-file
+   #:configuration
    ;; Docker Engine
    #:docker-engine
    #:make-docker-engine

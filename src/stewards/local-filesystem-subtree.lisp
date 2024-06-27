@@ -231,4 +231,52 @@ and therefore the local text file ~A cannot be deleted." pathname instance))))
     (update-file-permissions absolute-pathname)
     (update-file-content absolute-pathname))))
 
+
+;;;;
+;;;; Initialization File
+;;;;
+
+(defclass local-initialization-file (local-text-file)
+  ((configuration
+    :initarg :configuration
+    :accessor configuration))
+  (:documentation
+   "An initialization file on the local filesystem.
+The configuration is written in the INI format as the file content."))
+
+(defun make-local-initialization-file (&rest initargs &key local-filesystem-subtree name displayname description
+						 state identifier
+						 pathname mode content configuration external-format)
+  "Make a local text file."
+  (declare (ignore name displayname description
+		   state identifier
+		   mode external-format))
+  (flet ((check-that-pathname-is-relative (pathname)
+	   (unless (or (eq nil (pathname-directory pathname))
+		       (eq :relative (first (pathname-directory pathname))))
+	     (error "The pathname ~A must be relative." pathname))))	   
+    (check-type local-filesystem-subtree local-filesystem-subtree)
+    (check-type pathname pathname)
+    (check-that-pathname-is-relative pathname)
+    (when (pathname-directory pathname)
+      (error "The pathname ~A must sit directly under the root of the subtree.
+Deeper hierarchies are not implemented." pathname))
+    (apply #'make-instance 'local-initialization-file
+	   :steward local-filesystem-subtree
+	   :content (or content (write-initialization-file-to-string configuration))
+	   (remove-properties initargs :local-filesystem-subtree :content))))
+
+(defmethod persistent-constructor ((class (eql 'local-initialization-file)))
+  'make-local-initialization-file)
+
+(defmethod update-instance-from-resource :after ((instance local-initialization-file))
+  (with-slots (content configuration) instance
+    (setf configuration
+      (read-initialization-file-from-string content))))
+
+(defmethod update-resource-from-instance :before ((instance local-initialization-file))
+  (with-slots (content configuration) instance
+    (setf content
+      (write-initialization-file-to-string configuration))))
+
 ;;;; End of file `local-filesystem-subtree.lisp'
