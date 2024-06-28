@@ -42,6 +42,8 @@
    #:create-image
    #:delete-image
    #:reclaim-images
+   ;; Miscellaneous
+   #:info
    ))
 
 (in-package #:org.melusina.cid/docker)
@@ -327,4 +329,11 @@
 			 (has-no-name-p image))
 		  :collect image))))
 
+(defun info ()
+  "Retrieve docker info."
+  (yason:parse
+   (uiop:run-program
+    '("docker" "info" "--format" "json")
+    :output :string)))
+ 
 ;;;; End of file `docker.lisp'

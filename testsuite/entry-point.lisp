@@ -25,10 +25,12 @@
   (docker-engine-unit-test))
 
 (define-testcase component-tests ()
+  (check-that-the-testsuite-runs-on-a-test-docker-context)
   (docker-component-test)
   (build-component-test))
 
 (define-testcase integration-tests ()
+  (check-that-the-testsuite-runs-on-a-test-docker-context)
   (project-integration-test))
 
 (define-testcase run-all-tests ()

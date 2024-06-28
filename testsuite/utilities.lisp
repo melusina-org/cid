@@ -243,6 +243,24 @@ reply than the last *HTTP-REPLY*."
 
 
 ;;;;
+;;;; Ensure that the testsuite runs on test docker contexts
+;;;;
+
+(defparameter *test-docker-contexts*
+  '("colima-laboratory")
+  "The list of docker contexts where the testsuite is allowed to run.")
+
+(defun check-that-the-testsuite-runs-on-a-test-docker-context ()
+  "Signal an error unless the testsuite runs on a test docker context."
+  (let ((docker-context
+	  (gethash "Context" (gethash "ClientInfo" (docker:info)))))
+    (unless (member docker-context *test-docker-contexts*
+		    :test #'string=)
+      (error "The testsuite is not allowed to run on the docker context ~S."
+	     docker-context))))
+
+
+;;;;
 ;;;; Persistence Testcase
 ;;;;
 
