@@ -17,6 +17,7 @@
   :license "MIT License"
   :depends-on (#:alexandria
 	       #:cl-ppcre
+	       #:flexi-streams
 	       #:ironclad
 	       #:yason)
   :components
