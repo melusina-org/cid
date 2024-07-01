@@ -265,33 +265,33 @@ reply than the last *HTTP-REPLY*."
 ;;;;
 
 (define-testcase check-structural-equality (object1 object2)
-  (assert-equal (type-of object1) (type-of object2))
-  (etypecase object1
-    (integer
-     (assert-equal object1 object2))
-    (string
-     (assert-string= object1 object2))
-    (symbol
+  (when (assert-equal (type-of object1) (type-of object2))
+    (etypecase object1
+      (integer
+       (assert-equal object1 object2))
+      (string
+       (assert-string= object1 object2))
+      (symbol
+       (assert-eq object1 object2))
+      (null
+       (assert-eq object1 object2))
+      (pathname
+       (assert-equal object1 object2))
+      (cons
+       (check-structural-equality (car object1) (car object2))
+       (check-structural-equality (cdr object1) (cdr object2)))
+      ((or cid:tenant cid:project)
+       ;; TENANT and PROJECT instances are listed in a directory
+       ;; and must be physically equal rather than structurally equal.
      (assert-eq object1 object2))
-    (null
-     (assert-eq object1 object2))
-    (pathname
-     (assert-equal object1 object2))
-    (cons
-     (check-structural-equality (car object1) (car object2))
-     (check-structural-equality (cdr object1) (cdr object2)))
-    ((or cid:tenant cid:project)
-     ;; TENANT and PROJECT instances are listed in a directory
-     ;; and must be physically equal rather than structurally equal.
-     (assert-eq object1 object2))
-    ((or poc:infrastructure-stack cid:steward cid:resource)
-		(assert-eq (cid:persistent-constructor (type-of object1))
-			   (cid:persistent-constructor (type-of object2)))
-     (loop :for slot-spec :in (cid:persistent-slots object1)
-	   :for slot-name = (getf slot-spec :slot-name)
-	   :do (check-structural-equality
-		(slot-value object1 slot-name)
-		(slot-value object2 slot-name))))))
+      ((or poc:infrastructure-stack cid:steward cid:resource)
+       (assert-eq (cid:persistent-constructor (type-of object1))
+		  (cid:persistent-constructor (type-of object2)))
+       (loop :for slot-spec :in (cid:persistent-slots object1)
+	     :for slot-name = (getf slot-spec :slot-name)
+	     :do (check-structural-equality
+		  (slot-value object1 slot-name)
+		  (slot-value object2 slot-name)))))))
 
 (define-testcase verify-persistence-idempotency (object)
   "Demonstrate that OBJECT persistence is idempotent."
