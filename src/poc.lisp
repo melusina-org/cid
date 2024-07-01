@@ -55,6 +55,7 @@
    #:not-valid-after
    #:cloud-vendor
    #:make-cloud-vendor
+   #:*certificate-authority*
    #:*cloud-vendor*
    #:private-network
    #:availability-zone
