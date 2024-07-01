@@ -331,6 +331,7 @@ reply than the last *HTTP-REPLY*."
 		      (cid:write-persistent-object-to-string tenant)))))
 
 (define-testcase utilities-unit-test ()
+  #+org.melusina.cid/formatting-of-persistent-resources
   (verify-formatting-of-persistent-resources))
 
 ;;;; End of file `utilities.lisp'

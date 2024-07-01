@@ -41,7 +41,11 @@
 		 (assert-http-status http-status)
 		 (assert-http-body http-body)))
 	     (validate-location (trac-location http-body &optional (http-status 200))
-	       (handler-bind ((stream-error #'restart-with-http-sleep-and-retry))
+	       (handler-bind ((stream-error
+				#'restart-with-http-sleep-and-retry)
+			      #+sbcl
+			      (usocket:invalid-argument-error 
+				#'restart-with-http-sleep-and-retry))
 		 (validate-location-1 trac-location http-body http-status))))
       (loop :for (trac-location . http-body)
 	    :in '(("wiki" .  "Welcome to Trac")

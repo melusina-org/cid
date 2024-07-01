@@ -22,7 +22,8 @@
   (simulator-unit-test)
   (local-filesystem-subtree-unit-test)
   #+org.melusina.cid/poc
-  (docker-engine-unit-test))
+  (docker-engine-unit-test)
+  (validate-poc))
 
 (define-testcase component-tests ()
   (check-that-the-testsuite-runs-on-a-test-docker-context)
