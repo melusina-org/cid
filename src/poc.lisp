@@ -145,7 +145,7 @@
 
 (defclass subject-certificate (simulation)
   ((steward-class
-    :type :symbol
+    :type symbol
     :initform 'certificate-authority
     :allocation :class)
    (public-key
@@ -276,7 +276,7 @@ This sets *TENANT* and *PROJECT* to work on the POC."
 
 (defclass private-network (simulation)
   ((steward-class
-    :type :symbol
+    :type symbol
     :initform 'cloud-vendor
     :allocation :class)
    (availability-zone
@@ -311,7 +311,7 @@ This sets *TENANT* and *PROJECT* to work on the POC."
 
 (defclass container-image (simulation)
   ((steward-class
-    :type :symbol
+    :type symbol
     :initform 'cloud-vendor
     :allocation :class)
    (repository
@@ -350,7 +350,7 @@ This sets *TENANT* and *PROJECT* to work on the POC."
 
 (defclass container-image-registry (simulation)
   ((steward-class
-    :type :symbol
+    :type symbol
     :initform 'cloud-vendor
     :allocation :class))
   (:documentation "This class represents a cloud image registry."))
@@ -384,7 +384,7 @@ This sets *TENANT* and *PROJECT* to work on the POC."
 
 (defclass container-cluster (simulation)
   ((steward-class
-    :type :symbol
+    :type symbol
     :initform 'cloud-vendor
     :allocation :class)
    (private-network
@@ -428,7 +428,7 @@ a cluster from one private network to the other and this slot is immutable."))
 
 (defclass container-service (simulation)
   ((steward-class
-    :type :symbol
+    :type symbol
     :initform 'cloud-vendor
     :allocation :class)
    (cluster
@@ -487,7 +487,7 @@ Allowed values are one of :HTTP, :HTTPS, :TCP.")
 
 (defclass public-load-balancer (simulation)
   ((steward-class
-    :type :symbol
+    :type symbol
     :initform 'cloud-vendor
     :allocation :class)
    (private-network

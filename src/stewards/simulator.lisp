@@ -56,7 +56,7 @@ new resources."))
 
 (defclass simulation (resource)
   ((steward-class
-    :type :symbol
+    :type symbol
     :initform 'simulator
     :allocation :class))
   (:documentation
