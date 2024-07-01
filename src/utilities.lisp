@@ -157,21 +157,20 @@ The following members are optional:
 	  (type-of object))
 	(slot-specs
 	  (persistent-slots object)))
-    (labels ((write-readable-property (name value)
-	       (write name)
-	       (write-char #\Space)
-	       (pprint-newline :linear)
-	       (write value))
-	     (write-readable-slot-value (object &key slot-name)
-	       (write (slot-value object slot-name)))
-	     (write-presented-slot-value (object &key slot-name presentation)
-	       (write (funcall presentation (slot-value object slot-name))))
-	     (write-confidential-string (object &key slot-name)
-	       (pprint-logical-block (nil nil :prefix "[" :suffix "]")
-	       (write 'confidential-string)
-	       (write-char #\Space)
-	       (pprint-newline :linear)
-	       (pprint-indent :current 0)
+    (labels ((pprint-readable-property (name value stream)
+	       (pprint-logical-block (stream nil)
+		 (pprint name stream)
+		 (write-char #\Space stream)
+		 (pprint-newline :linear stream)
+		 (pprint value stream)))
+	     (pprint-readable-slot-value (object stream &key slot-name &allow-other-keys)
+	       (pprint (slot-value object slot-name) stream))
+	     (pprint-presented-slot-value (object stream &key slot-name presentation &allow-other-keys)
+	       (pprint (funcall presentation (slot-value object slot-name)) stream))
+	     (pprint-confidential-string (object stream &key slot-name &allow-other-keys)
+	       (pprint-logical-block (stream nil :prefix "[" :suffix "]")
+	       (pprint 'confidential-string stream)
+	       (write-char #\Space stream)
 	       (let* ((initialization-vector
 			(ironclad:random-data 16))
 		      (cipher
@@ -189,45 +188,44 @@ The following members are optional:
 				    :element-type '(unsigned-byte 8)
 				    :initial-element 0)))
 		 (ironclad:encrypt cipher plaintext ciphertext)
-		 (write-readable-property
+		 (pprint-readable-property
 		  :initialization-vector
-		  (ironclad:byte-array-to-hex-string initialization-vector))
-		 (write-char #\Space)
-		 (pprint-newline :linear)
-		 (write-readable-property
+		  (ironclad:byte-array-to-hex-string initialization-vector)
+		  stream)
+		 (write-char #\Space stream)
+		 (pprint-newline :linear stream)
+		 (pprint-readable-property
 		  :ciphertext
-		  (ironclad:byte-array-to-hex-string ciphertext))))))
-      (let ((*standard-output* stream))
-	(pprint-logical-block (nil slot-specs :prefix "[" :suffix "]")
-	  (write class)
-	  (pprint-exit-if-list-exhausted)
-	  (write-char #\Space)
-	  (pprint-newline :linear)
-	  (pprint-indent :current 0)
-	  (loop (destructuring-bind (&key initarg slot-name confidential immutable presentation) (pprint-pop)
-		  (declare (ignore immutable))
-		  (when (slot-boundp object slot-name)
-		    (pprint-logical-block (nil nil)
-		      (write initarg)
-		      (write-char #\Space)
-		      (pprint-newline :linear)
-		      (cond
-			((and confidential *encryption-key*)
-			 (write-confidential-string object
-						    :slot-name slot-name))
-			(confidential
-			 (error "The slot ~A is marked as confidential and no encryption key is defined." slot-name))
-			(presentation
-			 (write-presented-slot-value object
-						     :slot-name slot-name
-						     :presentation presentation))
+		  (ironclad:byte-array-to-hex-string ciphertext)
+		  stream)))))
+      (pprint-logical-block (stream nil :prefix "[" :suffix "]")
+	(pprint class stream)
+	(write-char #\Space stream)
+	(pprint-newline :linear stream)
+	(pprint-indent :current 0 stream)
+	(loop :for slot-spec-iterator :on slot-specs
+	      :for slot-spec = (first slot-spec-iterator)
+	      :for lastp = (not (rest slot-spec-iterator))
+	      :do (destructuring-bind (&key initarg slot-name confidential immutable presentation) slot-spec
+		    (declare (ignore immutable))
+		    (when (slot-boundp object slot-name)
+		      (pprint-logical-block (stream nil)
+			(pprint initarg stream)
+			(write-char #\Space stream)
+			(pprint-newline :linear stream)
+			(cond
+			  ((and confidential *encryption-key*)
+			   (apply #'pprint-confidential-string object stream slot-spec))
+			  (confidential
+			   (error "The slot ~A is marked as confidential and no encryption key is defined." slot-name))
+			  (presentation
+			   (apply #'pprint-presented-slot-value object stream slot-spec))
 			   
-			(t
-			 (write-readable-slot-value object
-						    :slot-name slot-name))))
-		    (pprint-exit-if-list-exhausted)
-		    (write-char #\Space)
-		    (pprint-newline :linear)))))))))
+			  (t
+			   (apply #'pprint-readable-slot-value object stream slot-spec))))
+		      (unless lastp
+			(write-char #\Space stream)
+			(pprint-newline :linear stream)))))))))
 
 (defun write-persistent-object-to-string (object)
   "Readably write persistent OBJECT to a string."
