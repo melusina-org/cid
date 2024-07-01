@@ -153,24 +153,19 @@ The following members are optional:
 
 (defun write-persistent-object (object stream)
   "Readably write persistent OBJECT on STREAM."
-  (let ((class
-	  (type-of object))
+  (let ((class-name
+	  (class-name (class-of object)))
 	(slot-specs
 	  (persistent-slots object)))
     (labels ((pprint-readable-property (name value stream)
-	       (pprint-logical-block (stream nil)
-		 (pprint name stream)
-		 (write-char #\Space stream)
-		 (pprint-newline :linear stream)
-		 (pprint value stream)))
+	       (format stream "~_~s ~_~W " name value))
 	     (pprint-readable-slot-value (object stream &key slot-name &allow-other-keys)
-	       (pprint (slot-value object slot-name) stream))
+	       (write (slot-value object slot-name)
+		      :stream stream))
 	     (pprint-presented-slot-value (object stream &key slot-name presentation &allow-other-keys)
-	       (pprint (funcall presentation (slot-value object slot-name)) stream))
+	       (write (funcall presentation (slot-value object slot-name))
+		      :stream stream))
 	     (pprint-confidential-string (object stream &key slot-name &allow-other-keys)
-	       (pprint-logical-block (stream nil :prefix "[" :suffix "]")
-	       (pprint 'confidential-string stream)
-	       (write-char #\Space stream)
 	       (let* ((initialization-vector
 			(ironclad:random-data 16))
 		      (cipher
@@ -188,18 +183,22 @@ The following members are optional:
 				    :element-type '(unsigned-byte 8)
 				    :initial-element 0)))
 		 (ironclad:encrypt cipher plaintext ciphertext)
-		 (pprint-readable-property
-		  :initialization-vector
-		  (ironclad:byte-array-to-hex-string initialization-vector)
-		  stream)
-		 (write-char #\Space stream)
-		 (pprint-newline :linear stream)
-		 (pprint-readable-property
-		  :ciphertext
-		  (ironclad:byte-array-to-hex-string ciphertext)
-		  stream)))))
+		 (pprint-logical-block (stream nil :prefix "[" :suffix "]")
+		   (write 'confidential-string
+			  :stream stream)
+		   (write-char #\Space stream)
+		   (pprint-readable-property
+		    :initialization-vector
+		    (ironclad:byte-array-to-hex-string initialization-vector)
+		    stream)
+		   (write-char #\Space stream)
+		   (pprint-newline :linear stream)
+		   (pprint-readable-property
+		    :ciphertext
+		    (ironclad:byte-array-to-hex-string ciphertext)
+		    stream)))))
       (pprint-logical-block (stream nil :prefix "[" :suffix "]")
-	(pprint class stream)
+	(write class-name :stream stream)
 	(write-char #\Space stream)
 	(pprint-newline :linear stream)
 	(pprint-indent :current 0 stream)
@@ -210,7 +209,8 @@ The following members are optional:
 		    (declare (ignore immutable))
 		    (when (slot-boundp object slot-name)
 		      (pprint-logical-block (stream nil)
-			(pprint initarg stream)
+			(write initarg
+			       :stream stream)
 			(write-char #\Space stream)
 			(pprint-newline :linear stream)
 			(cond
