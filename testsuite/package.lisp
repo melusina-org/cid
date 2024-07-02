@@ -73,6 +73,7 @@
    #:org.melusina.confidence
    #:define-testcase
    #:define-assertion
+   #:assert<
    #:assert-t
    #:assert-t*
    #:assert-nil

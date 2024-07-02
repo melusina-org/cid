@@ -15,13 +15,13 @@
 
 (defclass steward (named-trait)
   ((tenant
-    :type tenant
+    :type (or tenant string)
     :reader tenant
     :initarg :tenant
     :initform *tenant*
     :documentation "The TENANT this STEWARD operates for.")
    (project
-    :type project
+    :type (or project string)
     :reader project
     :initarg :project
     :initform *project*

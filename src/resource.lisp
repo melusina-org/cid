@@ -19,7 +19,7 @@
 
 (defclass resource ()
   ((steward
-    :type steward
+    :type (or steward null)
     :reader steward
     :initarg :steward
     :documentation "The steward of a resource.
@@ -61,7 +61,17 @@ T meaning the resource exists and is ready or some resource lifecycle specific k
     "A text uniquely identifying the RESOURCE in the context of its STEWARD.
 Depending on the RESOURCE and the STEWARD, the identifier can be or not be
 a deterministic function of other resource properties. If and only if
-the underlying resource has not been created, the IDENTIFIER is NIL."))
+the underlying resource has not been created, the IDENTIFIER is NIL.")
+   (external
+    :type boolean
+    :initarg :external
+    :reader resource-external-p
+    :initform nil
+    :documentation
+    "A flag marking external resources.
+Unlike internal resources which are owned by the program operating on them,
+external resources have a distinct owner.  External resources must not be
+altered by the program operating on them."))
   (:documentation "The class represents the state of resources required to a component deployment.
 These resources can be created, read, updated and deleted. Resources can depend on other
 resources. For a given STEWARD, any resource is uniquely identified by its IDENTIFIER slot."))
@@ -255,6 +265,40 @@ The slot ~A of resource ~A is immutable and cannot be updated."
 	 :resource resource
 	 :description description
 	 :slot-name slot-name
+	 :explanation (when control-string
+			(apply #'format nil control-string format-arguments))))
+
+
+;;;;
+;;;; Resource is External
+;;;;
+
+(define-condition resource-is-external (resource-error)
+  nil
+  (:report describe-resource-is-external)
+  (:documentation
+   "This condition is signaled when we try to update
+an extenal resource in one of the generic functions CREATE-RESOURCE,
+UPDATE-RESOURCE-FROM-INSTANCE or DELETE-RESOURCE."))
+
+(defun describe-resource-is-external (condition stream)
+  (with-slots (name displayname steward) (resource-error-resource condition)
+    (let ((*print-circle* nil))
+      (format stream "~&Operation on resource ~A failed.
+
+The resource ~A is external and must not be altered." 
+	      (or displayname name (resource-error-resource condition))
+	      (or displayname name (resource-error-resource condition)))
+      (with-slots (explanation) condition
+	(when explanation
+	  (format stream "~&~A" explanation))))))
+
+(defun resource-is-external (operation resource description &optional control-string &rest format-arguments)
+  "Signal a RESOURCE-IS-EXTERNAL condition."
+  (error 'resource-is-external
+	 :operation operation
+	 :resource resource
+	 :description description
 	 :explanation (when control-string
 			(apply #'format nil control-string format-arguments))))
 
@@ -481,6 +525,11 @@ the RESOURCE-READY-P predicate.")
   (:method ((instance resource))
     (eq t (slot-value instance 'state))))
 
+(defgeneric resource-internal-p (resource)
+  (:documentation "Predicate recognising RESOURCES that are internal.")
+  (:method ((instance resource))
+    (not (resource-external-p instance))))
+
 (defgeneric create-resource (resource)
   (:documentation "Create a RESOURCE using its steward.
 This returns the RESOURCE instance."))
@@ -514,7 +563,15 @@ already exists."
   "Verify INSTANCE prerequisites do exist.
 When a prerequisite does not exist, an error is signaled
 in a context where a CREATE-PREREQUISITE restart is available."
-  (flet ((ensure-that-prerequisite-exists (prerequisite)
+  (flet ((ensure-that-resource-is-internal (resource)
+	   (unless (resource-internal-p resource)
+	     (resource-is-external
+	      'create-resource resource
+	      "External resources cannot be altered."
+	      "The resource ~A is marked as external and it must not be altered.
+In particuar, this resource must not be created."
+	      resource)))
+	 (ensure-that-prerequisite-exists (prerequisite)
 	   (unless (resource-exists-p prerequisite)
 	     (restart-case
 		 (resource-prerequisite-is-missing
@@ -524,6 +581,7 @@ in a context where a CREATE-PREREQUISITE restart is available."
 	       (create-missing-prerequisite ()
 		 :report "Create the missing prerequisite."
 		 (create-resource prerequisite))))))
+    (ensure-that-resource-is-internal instance)
     (loop :for prerequisite :in (reverse (resource-prerequisites instance))
 	  :do (ensure-that-prerequisite-exists prerequisite))))
 
@@ -539,6 +597,18 @@ APPLY-MODIFICATION-INSTRUCTIONS function."
 (defgeneric delete-resource (resource)
   (:documentation "Delete a RESOURCE using its steward.
 This returns the RESOURCE instance."))
+
+(defmethod delete-resource :before ((instance resource))
+  "Verify INSTANCE is internal before deleting it."
+  (flet ((ensure-that-resource-is-internal (resource)
+	   (unless (resource-internal-p resource)
+	     (resource-is-external
+	      'delete-resource resource
+	      "External resources cannot be altered."
+	      "The resource ~A is marked as external and it must not be altered.
+In particuar, this resource must not be deleted."
+	      resource))))
+    (ensure-that-resource-is-internal instance)))
 
 (defmethod delete-resource :around ((instance resource))
   "Enforce calling convention and ensure that we do not delete a resource that does not exist.
@@ -658,7 +728,15 @@ a programming logic and must be understood as a hint of a larger problem."))
 
 (defmethod update-resource-from-instance :before ((instance resource))
   "Signal errors when updating not created resources."
-  (flet ((signal-error-when-updating-not-created-resource ()
+  (flet ((ensure-that-resource-is-internal (resource)
+	   (unless (resource-internal-p resource)
+	     (resource-is-external
+	      'update-resource-from-instance resource
+	      "External resources cannot be altered."
+	      "The resource ~A is marked as external and it must not be altered.
+In particuar, this resource must not be updated."
+	      resource)))
+	 (signal-error-when-updating-not-created-resource ()
 	   (unless (resource-exists-p instance)
 	     (resource-error
 	      'update-resource-from-instance
@@ -686,6 +764,7 @@ it is therefore impossible to update the resource attached to this identifier."
 			   "Immutable slot ~A of the resource instance ~A cannot be modified. Instead the underlying resource must be deleted and recreated."
 			   slot-name instance)))))
 	       (mapc #'signal-on-update-immutable slots-spec)))))
+    (ensure-that-resource-is-internal instance)
     (signal-error-when-updating-not-created-resource)
     (signal-error-when-updating-immutable-slots)))
 

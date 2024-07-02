@@ -42,7 +42,8 @@
    #:read-persistent-object
    #:sort-resources
    #:create-resource
-   #:delete-resource)
+   #:delete-resource
+   #:resource-external-p)
   (:export
    #:configure-laboratory
    #:certificate-authority
@@ -164,14 +165,14 @@
   
 (defun make-subject-certificate (&rest initargs
 				 &key name displayname
-				      description state identifier
+				      description state identifier external
 				      certificate-authority
 				      public-key
 				      not-valid-before not-valid-after
 				      common-name)
   "Make a SUBJECT-CERTIFICATE with the given parameters."
   (declare (ignore name displayname
-		   description state identifier
+		   description state identifier external
 		   public-key
 		   not-valid-before not-valid-after
 		   common-name))
@@ -286,10 +287,10 @@ This sets *TENANT* and *PROJECT* to work on the POC."
   (:documentation "This class represents a private network."))
 
 (defun make-private-network (&rest initargs &key cloud-vendor name displayname
-						 description state identifier
+						 description state identifier external
 						 availability-zone)
   "Make a PRIVATE-NETWORK."
-  (declare (ignore name displayname description state identifier
+  (declare (ignore name displayname description state identifier external
 		   availability-zone))
   (apply #'make-instance 'private-network
 	 :steward cloud-vendor
@@ -325,10 +326,10 @@ This sets *TENANT* and *PROJECT* to work on the POC."
 
 (defun make-container-image (&rest initargs &key cloud-vendor
 						 name displayname
-						 description state identifier
+						 description state identifier external
 						 repository tag)
   "Make a CONTAINER-IMAGE."
-  (declare (ignore name displayname description state identifier repository tag))
+  (declare (ignore name displayname description state identifier external repository tag))
   (apply #'make-instance 'container-image
 	 :steward cloud-vendor
 	 (remove-property initargs :cloud-vendor)))
@@ -358,9 +359,9 @@ This sets *TENANT* and *PROJECT* to work on the POC."
 
 (defun make-container-image-registry (&rest initargs &key cloud-vendor
 							  name displayname
-							  description state identifier)
+							  description state identifier external)
   "Make a CONTAINER-IMAGE-REGISTRY."
-  (declare (ignore name displayname description state identifier))
+  (declare (ignore name displayname description state identifier external))
   (apply #'make-instance 'container-image-registry
 	 :steward cloud-vendor
 	 (remove-property initargs :cloud-vendor)))
@@ -376,7 +377,9 @@ This sets *TENANT* and *PROJECT* to work on the POC."
   "Find a container image in IMAGE-REGISTRY with the given properties."
   (make-container-image :cloud-vendor (steward image-registry)
 			:repository repository
-			:tag tag))
+			:tag tag
+			:external t
+			:state t))
 
 
 ;;;;
@@ -398,11 +401,11 @@ a cluster from one private network to the other and this slot is immutable."))
 
 (defun make-container-cluster (&rest initargs &key cloud-vendor
 						   name displayname
-						   description state identifier
+						   description state identifier external
 						   private-network)
   "Make a CONTAINER-CLUSTER."
   (declare (ignore name displayname
-		   description state identifier
+		   description state identifier external
 		   private-network))
   (apply #'make-instance 'container-cluster
 	 :steward cloud-vendor
@@ -452,12 +455,12 @@ Allowed values are one of :HTTP, :HTTPS, :TCP.")
 (defun make-container-service (&rest initargs
 			       &key cloud-vendor
 				    name displayname
-				    description state identifier
+				    description state identifier external
 				    cluster image protocol port)
   "Make a CONTAINER-SERVICE."
   (declare (ignore
 	    name displayname
-	    description state identifier
+	    description state identifier external
 	    cluster image protocol port))
   (apply #'make-instance 'container-service
 	 :steward cloud-vendor
@@ -502,14 +505,13 @@ Allowed values are one of :HTTP, :HTTPS, :TCP.")
 (defun make-public-load-balancer (&rest initargs
 				  &key cloud-vendor
 				       name displayname
-				       description state identifier
+				       description state identifier external
 				       private-network services)
   "Make a CLOUD-PUBLIC-LOADBALANCER."
-  (declare (ignore name displayname description state identifier private-network services))
+  (declare (ignore name displayname description state identifier external private-network services))
   (apply #'make-instance 'public-load-balancer
 	 :steward cloud-vendor
 	 (remove-property initargs :cloud-vendor)))
-
 
 (defmethod persistent-constructor ((class (eql 'public-load-balancer)))
   'make-public-load-balancer)
@@ -624,13 +626,14 @@ defined, provisioned and modified as a unit."))
 (defmethod create-resource ((instance infrastructure-stack))
   (with-slots (resources) instance
     (loop :for resource :in (reverse resources)
+	  :unless (resource-external-p resource)
 	  :do (create-resource resource))))
 
 (defmethod delete-resource ((instance infrastructure-stack))
   (with-slots (resources) instance
     (loop :for resource :in resources
+	  :unless (resource-external-p resource)
 	  :do (delete-resource resource))))
-
 
 
 ;;;;

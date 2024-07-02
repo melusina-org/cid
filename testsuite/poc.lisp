@@ -27,6 +27,7 @@ This is the smallest possible testcase for an infrastructure stack."
 		   :do (assert-t* (cid:resource-exists-p resource))))
 	   (check-that-resources-do-not-exist (resources)
 	     (loop :for resource :in resources
+		   :unless (cid:resource-external-p resource)
 		   :do (assert-nil (cid:resource-exists-p resource))))
 	   (stack-resources (stack)
 	     (loop :for resource :in (slot-value stack 'poc::resources)
@@ -291,6 +292,36 @@ the stack."
 	   :az-2
 	   (slot-value (stack-network resource) 'poc:availability-zone)))))))
 
+(define-testcase demonstrate-that-external-resources-are-not-altered ()
+  "Demonstrate that resources external to an infrastructure stack are not altered.
+In this testcase we build and delete infrastructure stack for software delivery.
+
+In this scenario, we see that the docker images used in service definitions,
+which are marked as external, are not deleted."
+  (with-test-environment
+    (flet ((external-resources (stack)
+	     (remove-if-not #'cid:resource-external-p
+			    (slot-value stack 'poc:resources))))
+      (let* ((cloud-vendor
+	       (poc:make-cloud-vendor
+		:credential "ThisIsNotARealCredential"))
+	     (delivery-stack
+	       (poc:make-delivery-stack
+		:cloud-vendor cloud-vendor
+		:tag *testsuite-id*)))
+	(assert< 0 (length (external-resources delivery-stack)))
+	(loop :for resource :in (external-resources delivery-stack)
+	      :do (assert-t (cid:resource-exists-p resource)))
+	(handler-bind ((cid:resource-prerequisite-is-missing
+			 #'cid:create-missing-prerequisite))
+	  (cid:create-resource delivery-stack))
+	(cid:delete-resource delivery-stack)
+	(loop :for resource :in (external-resources delivery-stack)
+	      :do (assert-condition
+		   (cid:delete-resource resource)
+		   cid:resource-is-external)
+	      :do (assert-t (cid:resource-exists-p resource)))))))
+
 (define-testcase demonstrate-that-infrastructure-errors-can-be-resumed ()
   "Demonstrate that an infrastructure errors can be resumed
 This testcase prepares an infrastructure stack value, configures
@@ -321,6 +352,7 @@ such as develelopment, staging, production.")
   (demonstrate-that-updating-an-immutable-field-recreates-the-resource)
   (demonstrate-that-updating-a-prerequisite-does-not-touch-the-main-resource)
   (demonstrate-that-prerequisites-are-recreated-at-most-once)
+  (demonstrate-that-external-resources-are-not-altered)
   (demonstrate-that-infrastructure-stacks-cannot-be-misadvertently-duplicated)
   (demonstrate-that-infrastructure-stacks-modification-can-be-reviewed-before-being-committed)
   (demonstrate-that-infrastructure-stacks-can-be-promoted-through-environments))

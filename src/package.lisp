@@ -73,6 +73,10 @@
    #:with-resource-confirmation
    #:resource-exists-p
    #:resource-ready-p
+   #:resource-external-p
+   #:resource-internal-p
+   #:resource-external
+   #:resource-is-external
    #:create-resource
    #:create-missing-prerequisite
    #:delete-resource

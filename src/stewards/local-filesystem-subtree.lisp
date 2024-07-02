@@ -76,11 +76,11 @@ In this subtree, text files can be created and updated."))
    "A text file on the local filesystem."))
 
 (defun make-local-text-file (&rest initargs &key local-filesystem-subtree name displayname description
-						 state identifier
+						 state identifier external
 						 pathname mode content external-format)
   "Make a local text file."
   (declare (ignore name displayname description
-		   state identifier
+		   state identifier external
 		   mode content external-format))
   (flet ((check-that-pathname-is-relative (pathname)
 	   (unless (or (eq nil (pathname-directory pathname))
@@ -245,11 +245,11 @@ and therefore the local text file ~A cannot be deleted." pathname instance))))
 The configuration is written in the INI format as the file content."))
 
 (defun make-local-initialization-file (&rest initargs &key local-filesystem-subtree name displayname description
-						 state identifier
+						 state identifier external
 						 pathname mode content configuration external-format)
   "Make a local text file."
   (declare (ignore name displayname description
-		   state identifier
+		   state identifier external
 		   mode external-format))
   (flet ((check-that-pathname-is-relative (pathname)
 	   (unless (or (eq nil (pathname-directory pathname))
