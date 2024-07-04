@@ -30,7 +30,7 @@
 	(tag
 	  (string-downcase confidence:*testsuite-id*))
 	(repository
-	  "cid/linux")
+	  "cid/validate-docker-image-lifecycle")
 	(name
 	  nil)
 	(context

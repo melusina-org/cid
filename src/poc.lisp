@@ -196,7 +196,7 @@
     (:initarg :common-name
      :slot-name common-name
      :immutable t)))
-  
+
 
 ;;;;
 ;;;; Cloud Vendor

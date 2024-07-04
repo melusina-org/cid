@@ -22,108 +22,120 @@
 	  :return pathname)
   "The pathname to the docker engine client used to control resources.")
 
-(clsql:def-view-class docker-engine (steward)
-  ((steward-class
-    :allocation :class
-    :initform 'docker-engine
-    :type symbol)
-   (contains
-    :db-kind :virtual
-    :allocation :class
-    :initform '(docker-image docker-container docker-volume))
-   (description
-    :allocation :class
-    :initform
-    "The class represents a provider creating resources in a docker engine.
-The target docker engine is just the docker engine configured for
-the `docker' CLI client."
-    :type string)
-   (pathname
-    :type pathname
-    :initarg :pathname
-    :initform *docker-client-pathname*
-    :documentation "The pathname to the docker engine client
-used to control resources.")
-   (version
-    :type string
-    :initarg :version
-    :initform nil
-    :documentation "The version information for the docker engine.
+(defclass docker-engine (steward)
+    ((pathname
+      :type pathname
+      :initarg :pathname
+      :initform *docker-client-pathname*
+      :documentation "The pathname to the docker engine client used to control resources.")
+     (client-version
+      :type (or string null)
+      :initarg :client-version
+      :initform nil
+      :documentation "The client version information for the docker engine.
+This version information is the text returned by the DOCKER VERSION command.")
+     (server-version
+      :type (or string null)
+      :initarg :server-version
+      :initform nil
+      :documentation "The server version information for the docker engine.
 This version information is the text returned by the DOCKER VERSION command."))
   (:default-initargs
    :name "docker-engine"
-   :displayname "Docker Engine")
+   :displayname "Docker Engine"
+   :description
+   "The class represents a provider creating resources in a docker engine.
+The target docker engine is just the docker engine configured for
+the `docker' CLI client.")
   (:documentation
    "The class represents a provider creating resources in a docker engine.
 The target docker engine is just the docker engine configured for
 the `docker' CLI client."))
 
-(defun make-docker-engine (&rest initargs &key tenant project name displayname pathname)
+(defun make-docker-engine (&rest initargs &key tenant project name displayname description pathname client-version server-version)
   "Make a docker-engine steward."
-  (declare (ignore tenant project name displayname pathname))
+  (declare (ignore tenant project name displayname description pathname client-version server-version))
   (apply #'make-instance 'docker-engine initargs))
+
+(defmethod persistent-constructor ((class (eql 'docker-engine)))
+  'make-docker-engine)
+
+(defmethod persistent-slots append ((instance docker-engine))
+  '((:initarg :pathname
+     :slot-name pathname)
+    (:initarg :client-version
+     :slot-name client-version)
+    (:initarg :server-version
+     :slot-name server-version)))
 
 
 ;;;;
-;;;; Docker Engine Command
+;;;; Docker Engine Query and command
 ;;;;
 
 (defun run-docker-engine-query (docker-engine &rest argv)
+  "Run COMMAND as a query to the docker engine and return the resulting lines."
   (uiop:run-program
-   (cons (namestring (slot-value docker-engine 'pathname)) argv)
+   (cons (namestring (slot-value docker-engine 'pathname))
+	 (loop :for arg :in argv
+	       :append (alexandria:ensure-list arg)))
    :output :lines
    :error-output :lines))
 
 (defun run-docker-engine-command (docker-engine &rest argv)
-  (flet ((accept-lists-in-argv ()
-	   (setf argv
-		 (loop :for arg :in argv
-		       :append (alexandria:ensure-list arg)))))
-    (accept-lists-in-argv)
-    (uiop:run-program
-     (cons (namestring (slot-value docker-engine 'pathname)) argv)
-     :output '(:string :stripped t)
-     :error-output :lines)))
+  (uiop:run-program 
+   (cons (namestring (slot-value docker-engine 'pathname))
+	 (loop :for arg :in argv
+	       :append (alexandria:ensure-list arg)))
+   :output '(:string :stripped t)
+   :error-output :lines
+   :ignore-error-status t))
 
-(defun docker-version (docker-engine)
-  (flet ((version (line)
-	   (multiple-value-bind (match-start match-end
-				 register-start register-end)
-	       (ppcre:scan "^\\s*Version:\\s*(.*)" line)
-	     (declare (ignore match-end))
-	     (when match-start
-	       (subseq line (aref register-start 0) (aref register-end 0))))))
-  (loop :for line :in (run-docker-engine-query docker-engine "version")
-	:for version = (version line) 
-	:until version
-	:finally (return version))))
-		 
 
 ;;;;
 ;;;; Configure
 ;;;;
 
+(defun docker-engine-version (docker-engine)
+  (extract-json-fields
+   (run-docker-engine-command docker-engine "version" "--format"
+			      "{\"client\":\"{{ .Client.Version }}\",\"server\":\"{{ .Server.Version }}\"}")
+   '((:initarg :client
+      :json-name "client"
+      :type string)
+     (:initarg :server
+      :json-name "server"
+      :type string))))
+
 (defmethod configure-steward ((instance docker-engine))
-  (with-slots (version) instance
-    (unless version
-      (setf version (docker-version instance))))
-  (values nil))
+  (with-slots (client-version server-version) instance
+    (let ((version-information
+	    (docker-engine-version instance)))
+      (setf client-version (getf version-information :client)
+	    server-version (getf version-information :server)))))
+
+(defun docker-engine-context (docker-engine)
+  (multiple-value-bind (output error-output exit-code)
+      (run-docker-engine-command docker-engine "version" "--format"
+				 "{{ .Client.Context }}")
+    (cond ((= 0 exit-code)
+	   (values output))
+	  (t
+	   (error error-output)))))
 
 
 ;;;;
 ;;;; Docker Volume
 ;;;;
 
-(clsql:def-view-class docker-volume (resource)
+(defclass docker-volume (resource)
   ((steward-class
-    :db-kind :virtual
     :type symbol
     :initform 'docker-engine
     :allocation :class)
    (volume
     :type string
-    :initarg :volume
-    :documentation "The volume name must consist of safe characters.")
+    :initarg :volume)
    (driver
     :type string
     :initarg :driver
@@ -132,13 +144,29 @@ the `docker' CLI client."))
    "A local volume belonging to a docker engine steward."))
 
 (defun make-docker-volume (&rest initargs &key docker-engine name displayname description
+					       state identifier external
 					       volume driver)
   "Make a local docker volume"
-  (declare (ignore name displayname description volume driver))
+  (declare (ignore name displayname description
+		   state identifier external
+		   volume driver))
   (check-type docker-engine docker-engine)
   (apply #'make-instance 'docker-volume
 	 :steward docker-engine
 	 (remove-property initargs :docker-engine)))
+
+(defmethod persistent-constructor ((class (eql 'docker-volume)))
+  'make-docker-volume)
+
+(defmethod persistent-slots append ((instance docker-volume))
+  '((:initarg :docker-engine
+     :slot-name steward)
+    (:initarg :volume
+     :slot-name volume
+     :immutable t)
+    (:initarg :driver
+     :slot-name driver
+     :immutable t)))
 
 (defmethod examine-resource append ((instance docker-volume))
   (with-slots (volume driver) instance
@@ -150,35 +178,48 @@ the `docker' CLI client."))
   (flet ((extract-json-fields (text)
 	   (extract-json-fields
 	    text
-	    '((:property :volume
-	       :name "Name"
+	    '((:initarg :volume
+	       :json-name "Name"
 	       :type string)
-	      (:property :driver
-	       :name "Driver"
+	      (:initarg :driver
+	       :json-name "Driver"
 	       :type string))))
 	 (inspect-volume ()
-	   (run-docker-engine-command steward "volume" "inspect" volume "--format" "{{json .}}")))
+	   (multiple-value-bind (output error-output exit-code)
+	       (run-docker-engine-command steward "volume" "inspect" "--format" "{{ json . }}" volume)
+	     (cond
+	       ((= 0 exit-code)
+		(values output))
+	       (t
+		(error error-output))))))
     (handler-case (extract-json-fields (inspect-volume))
-      (uiop/run-program:subprocess-error (condition)
+      (error (condition)
 	(declare (ignore condition))
 	(values nil)))))
 
 (defmethod list-resource-identifiers ((steward docker-engine) (resource-class (eql 'docker-volume)))
-  (nth-value 0 (run-docker-engine-query steward "volume" "list" "--format" "{{.Name}}")))
+  (nth-value 0 (run-docker-engine-query steward "volume" "list" "--format" "{{ .Name }}")))
 
 (defmethod list-resources ((steward docker-engine) (resource-class (eql 'docker-volume)))
   (flet ((make-docker-volume (text)
-	   (ppcre:register-groups-bind (volume driver) ("(.*)\\|(.*)" text)
-	     (let ((instance
-		     (make-docker-volume :docker-engine steward
-					 :volume volume
-					 :driver driver)))
-	       (with-slots (state identifier) instance
-		 (setf state t
-		       identifier volume))
-	       (values instance))))
+	   (let ((properties
+		   (extract-json-fields
+		    text
+		    '((:initarg :identifier
+		       :json-name "Name"
+		       :type string)
+		      (:initarg :volume
+		       :json-name "Name"
+		       :type string)
+		      (:initarg :driver
+		       :json-name "Driver"
+		       :type string)))))
+	     (apply #'make-docker-volume
+		    :docker-engine steward
+		    :state t
+		    properties)))
 	 (query ()
-	   (run-docker-engine-query steward "volume" "list" "--format" "{{.Name}}|{{.Driver}}")))
+	   (run-docker-engine-query steward "volume" "list" "--format" "json")))
     (loop :for line :in (query)
 	  :while line
 	  :collect (make-docker-volume line))))
@@ -250,289 +291,238 @@ therefore the docker volume ~A with the same name cannot be created." volume ins
     (delete-volume)
     (update-state-and-identifier)))
 
+(defmethod update-resource-from-instance ((instance docker-volume))
+  nil)
+
 
 ;;;;
-;;;; Docker Image
+;;;; Docker Compose Project
 ;;;;
 
-(clsql:def-view-class docker-image (resource)
+(defclass docker-project (resource)
   ((steward-class
-    :db-kind :virtual
     :type symbol
     :initform 'docker-engine
     :allocation :class)
-   (id
-    :initarg :id
-    :initform nil
+   (project
     :type string
-    :reader image-id)
-   (repository
-    :initarg :repository
-    :initform nil
-    :type string
-    :reader image-repository)
-   (tag
-    :initarg :tag
-    :initform nil
-    :type string
-    :reader image-tag)
-   (size
-    :initarg :size
-    :initform nil
-    :type string
-    :reader image-size)
-   (created
-    :initarg :created
-    :type string
-    :initform nil
-    :reader image-created)
-   (dockerfile
-    :initarg :dockerfile
+    :initarg :project)
+   (pathname
     :type pathname
-    :initform nil)
-   (context
-    :initarg :context
-    :type pathname
-    :initform nil)
-   (cache
-    :initarg :cache
-    :type boolean
-    :initform t)
-   (build-time-variables
-    :db-type :virtual
-    :initarg :build-time-variables
-    :initform nil)))
+    :initarg :pathname)
+   (volumes
+    :type list
+    :initarg :volumes
+    :initform nil
+    :documentation
+    "The list of external volumes which are consumed by the docker project.")
+   (environment
+    :type list
+    :initarg :environment
+    :initform nil
+    :documentation
+    "The environment variables used for the compose file."))
+  (:documentation
+   "A docker compose project belonging to a docker engine steward."))
 
-(defun make-docker-image (&rest initargs &key docker-engine name displayname description
-					      id repository tag size created
-					      dockerfile context cache
-					      build-time-variables)
-  "Make a docker image"
-  (declare (ignore name displayname description id repository tag size created
-		   dockerfile context cache build-time-variables))
+(defun make-docker-project (&rest initargs &key docker-engine name displayname description
+						state identifier external
+						project pathname volumes environment)
+  "Make a docker compose project."
+  (declare (ignore name displayname description
+		   state identifier external
+		   project pathname volumes environment))
   (check-type docker-engine docker-engine)
-  (apply #'make-instance 'docker-image
+  (apply #'make-instance 'docker-project
 	 :steward docker-engine
 	 (remove-property initargs :docker-engine)))
 
-(defmethod print-object ((instance docker-image) stream)
-  (print-unreadable-object (instance stream :type t :identity t)
-    (with-slots (repository tag size created) instance
-      (format stream
-	      "~@[:REPOSITORY ~S ~]~@[:TAG ~S ~]~@[:SIZE ~S ~]~@[:CREATED ~S~]"
-	      repository tag size created))))
+(defmethod persistent-constructor ((class (eql 'docker-project)))
+  'make-docker-project)
 
-(defun probe-docker-image (steward id)
-  (flet ((extract-json-fields (text)
-	   (flet ((extract-repository (repo-tags)
-		    (when repo-tags
-		      (subseq (first repo-tags) 0 (position #\: (first repo-tags)))))
-		  (extract-tag (repo-tags)
-		    (when repo-tags
-		      (subseq (first repo-tags) (1+ (position #\: (first repo-tags)))))))
-	     (extract-json-fields
-	      text
-	      `((:property :id
-		 :name "Id"
-		 :type string)
-		(:property :repository
-		 :name "RepoTags"
-		 :type (list string)
-		 :key ,#'extract-repository)
-		(:property :tag
-		 :name "RepoTags"
-		 :type (list string)
-		 :key ,#'extract-tag)
-		(:property :size
-		 :name "Size"
-		 :type integer)
-		(:property :created
-		 :name "Created"
-		 :type string)))))
-	 (inspect-image ()
-	   (run-docker-engine-command steward "image" "inspect" id "--format" "{{json .}}")))
-    (handler-case (extract-json-fields (inspect-image))
-      (uiop/run-program:subprocess-error (condition)
-	(declare (ignore condition))
-	(values nil)))))
+(defmethod persistent-slots append ((instance docker-project))
+  '((:initarg :docker-engine
+     :slot-name steward)
+    (:initarg :project
+     :slot-name project
+     :immutable t)
+    (:initarg :pathname
+     :slot-name pathname
+     :immutable t)
+    (:initarg :volumes
+     :slot-name volumes
+     :immutable t)
+    (:initarg :environment
+     :slot-name environment
+     :immutable t)))
 
-(defun image-name (image)
-  (with-slots (repository tag) image
-    (when (and repository tag)
-      (concatenate 'string repository '(#\:) tag))))
+(defmethod examine-resource append ((instance docker-project))
+  (with-slots (project pathname) instance
+    (list
+     :project project
+     :pathname pathname)))
 
-(defun image-short-id (image)
-  (with-slots (id) image
-    (when id
-      (let ((start
-	      (1+ (position #\: id)))
-	    (length
-	      12))
-      (subseq id start (+ start length))))))
+(defmethod resource-prerequisites append ((instance docker-project))
+  (slot-value instance 'volumes))
 
-(defmethod list-resource-identifiers ((steward docker-engine) (resource-class (eql 'docker-image)))
-  (flet ((unique-identifiers (list)
-	   (remove-duplicates list :test #'string=)))
-    (unique-identifiers (run-docker-engine-query steward "image" "list""--no-trunc" "--format" "{{.ID}}"))))
+(defun docker-project-status (string)
+  (flet ((status-name ()
+	   (ppcre:register-groups-bind (name) ("([a-zA-Z]+)\\([0-9]+\\)" string)
+	     (values name)))
+	 (make-keyword (name)
+	   (when (member name '("running" "stopped" "starting" "restarting")
+			 :test #'string=)
+	     (alexandria:make-keyword (string-upcase name))))
+	 (status-to-state (status)
+	   (ecase status
+	     (:running
+	      t)
+	     ((:stopped :starting :restarting)
+	      status))))
+    (status-to-state (make-keyword (status-name)))))
 
-(defmethod list-resources ((steward docker-engine) (resource-class (eql 'docker-image)))
-  (flet ((docker-image-of-json (text)
-	   (apply
-	    #'make-docker-image
-	    :docker-engine steward
-	    :name "docker-image-name"
-	    :displayname "Docker Image Name"
-	    :description "A docker image."
-	    (extract-json-fields
-	     text
-	     '((:property :id
-		:name "ID"
-		:type string)
-	       (:property :repository
-		:name "Repository"
-		:type (or string null))
-	       (:property :tag
-		:name "Tag"
-		:type (or string null))
-	       (:property :size
-		:name "Size"
-		:type string)
-	       (:property :created
-		:name "CreatedAt"
-		:type string)))))
-	 (update-state-and-identifier (instance)
-	   (with-slots (id identifier state) instance
-	     (setf state t
-		   identifier id))
-	   (values instance))
-	 (list-docker-images ()
-	   (run-docker-engine-query steward "image" "list" "--no-trunc" "--format" "{{json .}}")))
-    (loop :for line :in (list-docker-images)
-	  :while line
-	  :collect (update-state-and-identifier (docker-image-of-json line)))))
+(defun probe-docker-projects (steward)
+  (extract-json-fields
+   (run-docker-engine-command steward "compose" "ls" "--format" "json")
+   `((:initarg :project
+      :json-name "Name"
+      :type string)
+     (:initarg :state
+      :json-name "Status"
+      :type string
+      :key ,#'docker-project-status)
+     (:initarg :pathname
+      :json-name "ConfigFiles"
+      :type string
+      :key ,#'pathname))))
 
-(defmethod update-instance-from-resource ((instance docker-image))
-  (flet ((ensure-id-is-set-when-identifier-is-set ()
+(defun probe-docker-project (steward name)
+  (flet ((project-name (plist)
+	   (getf plist :project)))
+    (find name (probe-docker-projects steward)
+	  :test #'string=
+	  :key #'project-name)))
+
+(defmacro with-project-environment (project &body body)
+  (alexandria:once-only (project)
+    `(with-environment (slot-value ,project 'environment)
+       ,@body)))
+
+(defmethod list-resource-identifiers ((steward docker-engine) (resource-class (eql 'docker-project)))
+  (flet ((project-name (plist)
+	   (getf plist :project)))
+    (mapcar #'project-name (probe-docker-projects steward))))
+
+(defmethod list-resources ((steward docker-engine) (resource-class (eql 'docker-project)))
+  (loop :for properties :in (probe-docker-projects steward)
+	:collect (apply #'make-docker-project
+			:docker-engine steward
+			:identifier (getf properties :project)
+			:state t
+			properties)))
+
+(defmethod update-instance-from-resource ((instance docker-project))
+  (flet ((ensure-project-is-set-when-identifier-is-set ()
 	   (when (and (slot-boundp instance 'identifier)
 		      (slot-value instance 'identifier)
-		      (not (slot-value instance 'id)))
-	     (setf (slot-value instance 'id)
+		      (not (slot-boundp instance 'project)))
+	     (setf (slot-value instance 'project)
 		   (slot-value instance 'identifier))))
 	 (update-instance (properties)
 	   (unless properties
 	     (resource-no-longer-exists
 	      'update-instance-from-resource instance
-	      "Docker image no longer exists."))
-	   (with-slots (state id repository tag size created) instance
-	     (setf id (getf properties :id)
-		   repository (getf properties :repository)
-		   tag (getf properties :tag)
-		   size (getf properties :size)
-		   created (getf properties :created)
+	      "Docker compose project no longer exists."))
+	   (with-slots (project pathname state) instance
+	     (setf project (getf properties :project)
+		   pathname (getf properties :pathname)
 		   state t))))
-    (ensure-id-is-set-when-identifier-is-set)
-    (with-slots (steward id) instance
-      (update-instance (probe-docker-image steward id)))))
+    (ensure-project-is-set-when-identifier-is-set)
+    (with-slots (steward project) instance
+      (update-instance (probe-docker-project steward project)))))
 
-(defmethod create-resource ((instance docker-image))
-  (flet ((return-early-when-image-already-exists (instance)
-	   (with-slots (steward id) instance
-	     (when (probe-docker-image steward id)
+(defmethod create-resource ((instance docker-project))
+  (flet ((return-early-when-project-already-exists (instance)
+	   (with-slots (steward project) instance
+	     (when (probe-docker-project steward project)
 	       (resource-error 'create-resource instance
-			       "Docker image already exists."
-			       "There is already an existing docker image under the name ~S
-therefore the docker image ~A with the same name cannot be created." (image-name instance) instance))))
-	 (create-docker-image ()
-	   (with-slots (steward dockerfile context cache build-time-variables) instance
-	     (run-docker-engine-command
-	      steward
-	      "build" "--progress=plain"
-	      (unless cache
-		(list "--no-cache"))
-	      (when build-time-variables
-		(loop :for (name . value) :in build-time-variables
-		      :append (list "--build-arg" (concatenate 'string name "=" value))))
-	      "--file" (namestring dockerfile)
-	      "--tag" (image-name instance)
-	      (namestring context))))
-	 (update-identifier-and-state ()
-	   (with-slots (steward identifier state id) instance
-	     (let ((properties
-		     (probe-docker-image steward (image-name instance))))
-	       (setf id (getf properties :id)
-		     identifier (getf properties :id)
-		     state t)))))
-    (return-early-when-image-already-exists instance)
-    (create-docker-image)
-    (update-identifier-and-state)
-    (update-instance-from-resource instance)))
+			       "Docker project already exists."
+			       "There is already an existing docker compose project under the name ~S
+therefore the docker project ~A with the same name cannot be created." project instance))))
+	 (create-docker-project ()
+	   (with-slots (steward project pathname) instance
+	     (with-project-environment instance
+	       (multiple-value-bind (output error-output exit-code)
+		   (run-docker-engine-command steward "compose"
+					      "--project-name" project
+					      "--file" (namestring pathname)
+					      "up"
+					      "--detach"
+					      "--wait")
+		 (cond
+		   ((= 0 exit-code)
+		    (values output))
+		   (t
+		    (resource-error 'create-resource instance
+				    "Docker project cannot be created."
+				    "Cannot create docker project ~A
+the docker compose command terminated with code ~A and provided the
+diagnostics
 
-(defmethod delete-resource ((instance docker-image))
+~A
+
+and
+
+~A"
+				    project exit-code output error-output)))))))
+	 (update-identifier-and-state ()
+	   (with-slots (project identifier state) instance
+	     (setf identifier project
+		   state t))))
+    (return-early-when-project-already-exists instance)
+    (create-docker-project)
+    (update-identifier-and-state)))
+
+(defmethod delete-resource ((instance docker-project))
   (flet ((ensure-that-resource-still-exists ()
-	   (with-slots (steward identifier) instance
-	     (unless (probe-docker-image steward identifier)
+	   (with-slots (steward project) instance
+	     (unless (probe-docker-project steward project)
 	       (resource-no-longer-exists
 		'delete-resource instance
-		"Docker image no longer exists."))))
-	 (delete-image ()
-	   (with-slots (steward identifier) instance
-	     (let ((deleted-image
-		     (run-docker-engine-command steward "image" "rm" (image-name instance))))
-	       (flet ((compare-event (slot-reader regex)
-			(ppcre:register-groups-bind (value) (regex deleted-image)
-			  (unless (string= value (funcall slot-reader instance))
-			    (resource-error 'delete-resource instance
-					    "Docker image cannot be deleted."
-				 "Cannot delete docker image ~A" (image-name instance))))))
-		 (compare-event #'image-name "Untagged: (.*)")
-		 (compare-event #'image-id "Deleted: (.*)")))))
+		"Docker project no longer exists."))))
+	 (delete-project ()
+	   (with-slots (steward pathname project) instance
+	     (with-project-environment instance
+	       (multiple-value-bind (output error-output exit-code)
+		   (run-docker-engine-command steward "compose"
+					      "--project-name" project
+					      "--file" (namestring pathname)
+					      "down")
+		 (cond
+		   ((= 0 exit-code)
+		    (values output))
+		   (t
+		    (resource-error 'delete-resource instance
+				    "Docker project cannot be deleted."
+				    "Cannot delete docker project ~A
+the docker compose command terminated with code ~A and provided the
+diagnostics
+
+~A
+
+and
+
+~A"
+				    project exit-code output error-output)))))))
 	 (update-state-and-identifier ()
-	   (with-slots (identifier state id) instance
+	   (with-slots (identifier state) instance
 	     (setf state nil
-		   identifier nil
-		   id nil))))
+		   identifier nil))))
     (ensure-that-resource-still-exists)
-    (delete-image)
+    (delete-project)
     (update-state-and-identifier)))
 
-#| 
-(defun reclaim-images ()
-  "Reclaim docker images which are no longer in use."
-  (flet ((has-no-name-p (image)
-	   (not (image-name image)))
-	 (testsuite-p (image)
-	   (uiop:string-prefix-p "testsuite" (image-tag image))))
-    (mapcar #'delete-image
-	    (loop :for image :in (list-images)
-		  :when (or
-			 (testsuite-p image)
-			 (has-no-name-p image))
-		  :collect image))))
-|#
-
-
-#|
-(defun find-image (designator)
-  "Find image designated by DESIGNATOR."
-  (typecase designator
-    (image     
-     designator)
-    (string
-     (or
-      (find designator (list-images)
-	    :key #'image-name
-	    :test #'string=)
-      (when (= 12 (length designator))
-	(find designator (list-images)
-	      :key #'image-short-id
-	      :test #'string=))
-      (when (position #\: designator)
-	(find designator (list-images)
-	      :key #'image-id
-	      :test #'string=))
-      (find (concatenate 'string "sha256:" designator) (list-images)
-	    :key #'image-id
-	    :test #'string=)))))
-|#
+(defmethod update-resource-from-instance ((instance docker-project))
+  nil)
 
 ;;;; End of file `docker-engine.lisp'

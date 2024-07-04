@@ -371,34 +371,44 @@ list with the following entries:
   :KEY FUNCTION
     A function to apply on the field value.
 "
-  (flet ((extract-json-field (object &key name type property (key 'identity))
-	   (flet ((fetch ()
-		    (multiple-value-bind (value present-p) (gethash name object)
-		      (unless present-p
+  (labels ((extract-json-field (object &key name type property (key 'identity))
+	     (declare (ignore property))
+	     (flet ((fetch ()
+		      (multiple-value-bind (value present-p) (gethash name object)
+			(unless present-p
 			(error "Cannot read field ~A from JSON text." name))
-		      (alexandria:switch (type :test #'equal)
-			('integer
-			 (check-type value integer)
-			 (values value))
-			('string
-			 (string value))
-			('(or string null)
-			  (unless (string= "<none>" value)
-			    (string value)))
-			('(list string)
-			  (loop :for item :in value
-				:collect (string item)))
-			(t
-			 (error "Cannot extact field of type ~A from JSON text." type)))))
-		  (extract (text)
-		    (when text
-		      (funcall key text)))
-		  (pack (value)
-		    (list property value)))
-	     (pack (extract (fetch))))))
-    (loop :with object = (yason:parse string)
-	  :for field :in fields
-	  :nconc (apply #'extract-json-field object field))))
+			(alexandria:switch (type :test #'equal)
+			  ('integer
+			   (check-type value integer)
+			   (values value))
+			  ('string
+			   (string value))
+			  ('(or string null)
+			    (unless (string= "<none>" value)
+			      (string value)))
+			  ('(list string)
+			    (loop :for item :in value
+				  :collect (string item)))
+			  (t
+			   (error "Cannot extact field of type ~A from JSON text." type)))))
+		    (extract (text)
+		      (when text
+			(funcall key text))))
+	       (extract (fetch))))
+	   (extract-from-object (object)
+	     (loop :for field :in fields
+		   :collect (getf field :property)
+		   :collect (apply #'extract-json-field object field)))
+	   (extract-from-list (object)
+	     (loop :for item :in object
+		   :collect (extract-from-object item))))
+    (let ((object
+	    (yason:parse string)))
+      (etypecase object
+	(list
+	 (extract-from-list object))
+	(hash-table
+	 (extract-from-object object))))))
 
 
 ;;;;
@@ -433,5 +443,21 @@ This uses a very weak method that does not try to avoid collisions.x"
           :do (setf (aref id i)
                     (aref actual-alphabet (random alphabet-length)))
           :finally (return id))))
+
+
+;;;;
+;;;; With Environment
+;;;;
+
+(defmacro with-environment (bindings &body body)
+  (alexandria:with-gensyms (saved-environment)
+    `(let ((,saved-environment
+	     (loop :for (name . value) :in ,bindings
+		   :collect (cons name (uiop:getenv name))
+		   :do (setf (uiop:getenv name) value))))
+       (unwind-protect (progn ,@body)
+	 (loop :for (name . value) :in ,saved-environment
+	       :when value
+	       :do (setf (uiop:getenv name) value))))))
 
 ;;;; End of file `utilities.lisp'

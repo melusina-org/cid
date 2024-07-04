@@ -34,7 +34,6 @@
 		 (:module "stewards"
 		  :components ((:file "simulator")
 			       (:file "local-filesystem-subtree")
-			       #+org.melusina.cid/poc
 			       (:file "docker-engine")))
 		 (:file "entry-point")))))
 
@@ -137,7 +136,6 @@
 		 (:module "stewards"
 		  :components ((:file "simulator")
 			       (:file "local-filesystem-subtree")
-			       #+org.melusina.cid/poc
 			       (:file "docker-engine")))
 		 (:file "poc")))
    (:module "libexec"

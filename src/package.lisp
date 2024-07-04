@@ -117,8 +117,8 @@
    #:make-docker-engine
    #:docker-volume
    #:make-docker-volume
-   #:docker-image
-   #:make-docker-image
+   #:docker-project
+   #:make-docker-project
    ))
 
 (in-package #:org.melusina.cid)

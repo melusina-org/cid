@@ -157,7 +157,7 @@ Deeper hierarchies are not implemented." pathname))
     (let ((absolute-pathname
 	    (local-text-file-absolute-pathname instance)))
       (return-early-when-file-does-not-exist absolute-pathname)
-      (with-slots (pathname state mode content) instance
+      (with-slots (state pathname mode content) instance
 	(setf mode (file-mode absolute-pathname)
 	      content (file-content absolute-pathname)
 	      state t)))))
