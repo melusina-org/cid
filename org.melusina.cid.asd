@@ -17,6 +17,7 @@
   :license "MIT License"
   :depends-on (#:alexandria
 	       #:cl-ppcre
+	       #:drakma
 	       #:flexi-streams
 	       #:ironclad
 	       #:yason)
@@ -34,7 +35,8 @@
 		 (:module "stewards"
 		  :components ((:file "simulator")
 			       (:file "local-filesystem-subtree")
-			       (:file "docker-engine")))
+			       (:file "docker-engine")
+			       (:file "keycloak")))
 		 (:file "entry-point")))))
 
 (asdf:defsystem #:org.melusina.cid/poc
@@ -136,7 +138,8 @@
 		 (:module "stewards"
 		  :components ((:file "simulator")
 			       (:file "local-filesystem-subtree")
-			       (:file "docker-engine")))
+			       (:file "docker-engine")
+			       (:file "keycloak")))
 		 (:file "poc")))
    (:module "libexec"
     :components

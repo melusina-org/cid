@@ -24,8 +24,31 @@ It must be an octet array of length 32.")
 
 
 ;;;;
+;;;; Nullable String
+;;;;
+
+(deftype nullable-string ()
+  "The type of strings which are nullable or optional.
+The possible are values or strings."
+  `(or string null))
+
+
+
+;;;;
 ;;;; Property Lists
 ;;;;
+
+(defun plist-p (object &key test test-not)
+  "Predicate recognising property lists."
+  (when (and test test-not)
+    (error "The TEST and TEST-NOT arguments cannot be simultaneously provided."))
+  (flet ((test-value (value)
+	   (and (or (not test) (funcall test value))
+		(or (not test-not) (not (funcall test-not value))))))
+    (and (alexandria:proper-list-p object)
+	 (evenp (length object))
+	 (loop :for (name value . tail) :on object :by #'cddr
+	       :always (and (keywordp name) (test-value value))))))
 
 (defun sort-plist (plist)
   "Sort the provided PLIST so that its keys are in ascending order."
@@ -40,29 +63,15 @@ It must be an octet array of length 32.")
 
 (defun remove-property (plist property)
   "Return a copy from PLIST with PROPERTY removed."
-  (loop :for (name value . tail) :on plist
-	:for property-p = t :then (not property-p)
-	:when (and property-p (not (eq property name)))
+  (loop :for (name value . tail) :on plist :by #'cddr
+	:unless (eq property name)
 	:append (list name value)))
 
 (defun remove-properties (plist &rest properties)
   "Return a copy from PLIST with PROPERTIES removed."
-  (loop :for (name value . tail) :on plist
-	:for property-p = t :then (not property-p)
-	:when (and property-p (not (member name properties)))
+  (loop :for (name value . tail) :on plist :by #'cddr
+	:unless (member name properties)
 	:append (list name value)))
-
-(defun plist-p (object &key test test-not)
-  "Predicate recognising property lists."
-  (when (and test test-not)
-    (error "The TEST and TEST-NOT arguments cannot be simultaneously provided."))
-  (flet ((test-value (value)
-	   (and (or (not test) (funcall test value))
-		(or (not test-not) (not (funcall test-not value))))))
-    (and (alexandria:proper-list-p object)
-	 (evenp (length object))
-	 (loop :for (name value . tail) :on object :by #'cddr
-	       :always (and (keywordp name) (test-value value))))))
 
 
 ;;;;
@@ -365,30 +374,41 @@ list with the following entries:
     The NAME of the object field where the value is stored.
   :TYPE SYMBOL
     The TYPE of the value. This is one of
-      'INTEGER, 'STRING, '(OR STRING NULL), '(LIST STRING)
+      'INTEGER, 'STRING, 'NULLABLE-STRING, '(LIST STRING), 'BOOLEAN
   :PROPERTY KEYWORD
     The name of the PROPERTY where the value is to be stored.
   :KEY FUNCTION
     A function to apply on the field value.
 "
-  (labels ((extract-json-field (object &key name type property (key 'identity))
-	     (declare (ignore property))
+  (labels ((extract-json-field (object &key type json-name (key 'identity) &allow-other-keys)
 	     (flet ((fetch ()
-		      (multiple-value-bind (value present-p) (gethash name object)
-			(unless present-p
-			(error "Cannot read field ~A from JSON text." name))
+		      (multiple-value-bind (value present-p) (gethash json-name object)
+			(unless (or present-p
+				    (eq type 'nullable-string))
+			  (error "Cannot read field ~A from JSON text." json-name))
 			(alexandria:switch (type :test #'equal)
 			  ('integer
 			   (check-type value integer)
 			   (values value))
 			  ('string
 			   (string value))
-			  ('(or string null)
-			    (unless (string= "<none>" value)
-			      (string value)))
+			  ('nullable-string
+			    (cond
+			      ((string= "<none>" value)
+			       nil)
+			      ((stringp value)
+			       (string value))
+			      ((eq nil value)
+			       nil)
+			      (t
+			       (error "Cannot read field ~A from JSON text as a string." json-name))))
 			  ('(list string)
 			    (loop :for item :in value
 				  :collect (string item)))
+			  ('boolean
+			   (and value t))
+			  ('authorization
+			   (if value :allow :deny))
 			  (t
 			   (error "Cannot extact field of type ~A from JSON text." type)))))
 		    (extract (text)
@@ -397,13 +417,19 @@ list with the following entries:
 	       (extract (fetch))))
 	   (extract-from-object (object)
 	     (loop :for field :in fields
-		   :collect (getf field :property)
+		   :collect (getf field :initarg)
 		   :collect (apply #'extract-json-field object field)))
 	   (extract-from-list (object)
 	     (loop :for item :in object
 		   :collect (extract-from-object item))))
     (let ((object
-	    (yason:parse string)))
+	    (etypecase string
+	      (string
+	       (yason:parse string))
+	      (hash-table
+	       string)
+	      (list
+	       string))))
       (etypecase object
 	(list
 	 (extract-from-list object))

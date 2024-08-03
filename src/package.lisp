@@ -119,6 +119,22 @@
    #:make-docker-volume
    #:docker-project
    #:make-docker-project
+   ;; Keycloak
+   #:keycloak-admin
+   #:make-keycloak-admin
+   #:get-keycloak-admin-token
+   #:keycloak-realm
+   #:make-keycloak-realm
+   #:realm
+   #:displayname
+   #:displayname-html
+   #:enabled
+   #:brute-force-protected
+   #:registration
+   #:login-with-email
+   #:duplicate-emails
+   #:reset-password
+   #:edit-username
    ))
 
 (in-package #:org.melusina.cid)

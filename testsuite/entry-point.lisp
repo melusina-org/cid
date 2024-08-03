@@ -29,7 +29,8 @@
 (define-testcase component-tests ()
   (check-that-the-testsuite-runs-on-a-test-docker-context)
   (docker-component-test)
-  (build-component-test))
+  (build-component-test)
+  (keycloak-component-test))
 
 (define-testcase integration-tests ()
   (check-that-the-testsuite-runs-on-a-test-docker-context)

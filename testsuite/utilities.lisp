@@ -265,7 +265,11 @@ reply than the last *HTTP-REPLY*."
 ;;;;
 
 (define-testcase check-structural-equality (object1 object2)
-  (when (assert-equal (type-of object1) (type-of object2))
+  (when
+      (or (and (stringp object1)
+	       (stringp object2))
+	  (and (assert-type object1 (type-of object2))
+	       (assert-type object2 (type-of object1))))
     (etypecase object1
       (integer
        (assert-equal object1 object2))
