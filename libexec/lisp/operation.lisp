@@ -14,7 +14,6 @@
 (defpackage #:org.melusina.cid/operation
   (:use #:cl)
   (:local-nicknames
-   (#:atelier #:org.melusina.atelier)
    (#:docker #:org.melusina.cid/docker)
    (#:cid #:org.melusina.cid))
   (:export

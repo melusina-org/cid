@@ -14,7 +14,6 @@
 (defpackage #:org.melusina.cid/development
   (:use #:cl)
   (:local-nicknames
-   (#:atelier #:org.melusina.atelier)
    (#:cid #:org.melusina.cid)
    (#:build #:org.melusina.cid/build)
    (#:colima #:org.melusina.cid/colima))
