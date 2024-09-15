@@ -44,6 +44,8 @@
    #:configure-project
    #:dump-project
    #:restore-project
+   #:save-project
+   #:load-project
    #:list-git-repositories
    #:create-git-repository
    #:delete-git-repository
@@ -249,6 +251,25 @@
     (with-slots (name tag) instance
       (format stream ":NAME ~S :TAG ~S :URL ~S" name tag (project-url instance)))))
 
+(defmethod cid:persistent-constructor ((class (eql 'project)))
+  'make-project)
+
+(defmethod cid:persistent-slots append ((instance project))
+  '((:initarg :name
+     :slot-name name)
+    (:initarg :hostname
+     :slot-name hostname)
+    (:initarg :http-port
+     :slot-name http-port)
+    (:initarg :https-port
+     :slot-name https-port)
+    (:initarg :ssh-port
+     :slot-name ssh-port)
+    (:initarg :docker-compose
+     :slot-name docker-compose)
+    (:initarg :tag
+     :slot-name tag)))
+
 (defun list-projects ()
   (flet ((project-name (volume-name)
 	   (multiple-value-bind (match-start match-end reg-starts reg-ends)
@@ -396,6 +417,43 @@
       (setf status nil)))
   (values project))
 
+(defun project-filename (&optional (designator *project*))
+  (let ((project-name
+	  (etypecase designator
+	    (string
+	     designator)
+	    (project
+	     (slot-value designator 'name)))))
+    (cid:user-data-relative-pathname
+     project-name
+     "project.lisp")))
+
+(defun save-project ()
+  "Save *PROJECT* under PATHNAME."
+  (let ((filename
+	  (project-filename *project*)))
+    (ensure-directories-exist filename) 
+    (with-open-file (stream filename
+                            :direction :output
+                            :if-exists :supersede
+                            :if-does-not-exist :create)
+      (let ((*print-readably* t)
+            (*print-circle* t)
+            (*package* (find-package :keyword)))
+	(cid:write-persistent-object *project* stream)
+	(terpri stream))
+      (finish-output stream))
+    (values *project* filename)))
+
+(defun load-project (designator)
+  (let ((filename
+	  (project-filename designator)))
+    (assert (probe-file filename) () 'file-does-not-exist)
+    (with-open-file (stream filename :direction :input)
+      (values
+       (setf *project* (cid:read-persistent-object stream))
+       filename))))
+
 
 ;;;;
 ;;;; Run Program
@@ -454,7 +512,8 @@ by the PROJECT."
 ;;;;
 
 (defun dump-project (&optional (project *project*))
-  "Dump a PROJECT."
+  "Dump PROJECT data.
+This is not to be confused with SAVE-PROJECT."
   (run-console-program
    (list "/bin/sh" "/opt/cid/bin/cid_dump" "-p" (project-name project))
    :project project))
