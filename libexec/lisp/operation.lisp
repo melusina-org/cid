@@ -49,6 +49,7 @@
    #:list-git-repositories
    #:create-git-repository
    #:delete-git-repository
+   #:list-trac-environments
    ))
 
 (in-package #:org.melusina.cid/operation)
@@ -582,5 +583,21 @@ This is not to be confused with SAVE-PROJECT."
   (run-console-program
    (list "/bin/sh" "/opt/cid/bin/cid_repository" "-t" trac-environment "rm" name)
    :project project))
-  
+
+
+;;;;
+;;;; Administration of Trac Environments
+;;;;
+
+(defun list-trac-environments (&optional (project *project*))
+  "List trac environments."
+  (flet ((reserved-name-p (string)
+	   (position string '("git" "www" "sites") :test #'string=))
+	 (list-trac-directory ()
+	   (run-console-program
+	    (list "/bin/ls" "/var/trac")
+	    :project project
+	    :output :lines)))
+    (remove-if #'reserved-name-p (list-trac-directory))))
+
 ;;;; End of file `operation.lisp'
