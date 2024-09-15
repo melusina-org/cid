@@ -428,11 +428,33 @@
      project-name
      "project.lisp")))
 
+(defun save-encryption-key ()
+  (unless cid:*encryption-key*
+    (error "No encryption key."))
+  (uiop:run-program
+   (list "/usr/bin/security" "add-generic-password" "-U"
+	 "-T" ""
+	 "-s" "org.melusina.cid"
+	 "-a" (slot-value *project* 'name)
+	 "-w" (ironclad:byte-array-to-hex-string cid:*encryption-key*))))
+
+(defun load-encryption-key ()
+  (flet ((find-encryption-key ()
+	   (uiop:run-program
+	    (list "/usr/bin/security" "find-generic-password"
+		  "-s" "org.melusina.cid"
+		  "-a" (slot-value *project* 'name)
+		  "-w")
+	    :output '(:string :stripped t))))
+    (setf cid:*encryption-key*
+	  (ironclad:hex-string-to-byte-array (find-encryption-key)))))
+
 (defun save-project ()
   "Save *PROJECT* under PATHNAME."
   (let ((filename
 	  (project-filename *project*)))
-    (ensure-directories-exist filename) 
+    (ensure-directories-exist filename)
+    (save-encryption-key)
     (with-open-file (stream filename
                             :direction :output
                             :if-exists :supersede
@@ -450,9 +472,9 @@
 	  (project-filename designator)))
     (assert (probe-file filename) () 'file-does-not-exist)
     (with-open-file (stream filename :direction :input)
-      (values
-       (setf *project* (cid:read-persistent-object stream))
-       filename))))
+      (setf *project* (cid:read-persistent-object stream)))
+    (load-encryption-key)
+    (values *project* filename)))
 
 
 ;;;;
