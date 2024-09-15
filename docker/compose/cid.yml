@@ -19,8 +19,18 @@
 #
 # cid_project (local):
 #  The project name to use when forming volume names.
-
-version: '3'
+#
+# cid_http_port (80):
+#  The port to bind the HTTP listener to.
+#
+# cid_https_port (443):
+#  The port to bind the HTTPS listener to.
+#
+# cid_hostname (localhost):
+#  The configured hostname for the system.
+#
+# cid_keycloak_password (Administrator):
+#  The administrator password for Keycloak.
 
 services:
  reverseproxy:
@@ -32,6 +42,22 @@ services:
   ports:
    - "127.0.0.1:${cid_http_port:-80}:80"
    - "127.0.0.1:${cid_https_port:-443}:443"
+  volumes:
+   - cid-ssl:/etc/ssl/private
+
+ keycloak:
+  image: quay.io/keycloak/keycloak:25.0.4
+  environment:
+   KEYCLOAK_ADMIN: 'Administrator'
+   KEYCLOAK_ADMIN_PASSWORD: ${cid_keycloak_password:-Administrator}
+   KC_HTTP_RELATIVE_PATH: '/authorization'
+   KC_PROXY_HEADERS: 'xforwarded'
+   KC_HTTP_ENABLED: 'true'
+   KC_METRICS_ENABLED: 'true'
+   KC_HEALTH_ENABLED: 'true'
+  command: start-dev
+  networks:
+   - service
 
  gitserver:
   image: cid/gitserver:${cid_image_tag:-latest}
@@ -58,6 +84,9 @@ networks:
  service:
 
 volumes:
+  cid-ssl:
+    name: cid-${cid_project:-local}-ssl
+    external: true
   cid-trac:
     name: cid-${cid_project:-local}-trac
     external: true

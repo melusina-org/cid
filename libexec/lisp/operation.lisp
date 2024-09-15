@@ -17,11 +17,6 @@
    (#:docker #:org.melusina.cid/docker)
    (#:cid #:org.melusina.cid))
   (:export
-   #:lint
-   #+quicklisp
-   #:reload
-   #:build
-   
    ;; Project
    #:*project*
    #:project
@@ -42,6 +37,7 @@
    #:update-project
    #:start-project
    #:stop-project
+   #:restart-project
    #:find-project
    #:delete-project
    #:project-configuration
@@ -208,6 +204,7 @@
      (append
       (when (service-enabled-p :trac project)
 	(list
+	 (cons (make-volume "ssl" project) #p"/etc/ssl/private")
 	 (cons (make-volume "trac" project) #p"/var/trac")
 	 (cons (make-volume "www" project) #p"/var/www")
 	 (cons (make-volume "git" project) #p"/var/git")))
@@ -225,13 +222,18 @@
 
 (defmethod initialize-instance :after ((instance project) &rest initargs &key &allow-other-keys)
   (declare (ignore initargs))
-  (with-slots (name pathname volumes) instance
-    (setf volumes
- 	  (loop :for system :in '("trac" "git" "www" "jenkins")
-		:collect (docker:make-volume
-			  :name (concatenate 'string "cid-" name "-" system))))
-    (setf pathname
-	  (cid:user-data-relative-pathname (concatenate 'string name "/")))))
+  (macrolet ((initialize-slot-from-configuration-file (slot-name designator)
+	       `(unless (slot-value instance ,slot-name)
+		  (setf (slot-value instance ,slot-name)
+			(project-configuration ,designator instance)))))
+    (with-slots (name pathname volumes http-port https-port ssh-port) instance
+      (setf volumes
+ 	    (loop :for system :in '("ssl" "trac" "git" "www" "jenkins")
+		  :collect (docker:make-volume
+			    :name (concatenate 'string "cid-" name "-" system))))
+      (setf pathname
+	    (cid:user-data-relative-pathname (concatenate 'string name "/")))
+      (initialize-slot-from-configuration-file 'hostname '(:project :hostname)))))
 
 (defun make-project (&rest initargs &key name status hostname http-port https-port ssh-port docker-compose tag)
   (declare (ignore name hostname http-port https-port ssh-port  status docker-compose tag))
@@ -371,6 +373,10 @@
 	   "down")
      :output t
      :error-output t)))
+
+(defun restart-project (&optional (project *project*))
+  (stop-project project)
+  (start-project project))
 
 (defun delete-project (&optional (project *project*))
   (with-project-environment project

@@ -26,6 +26,7 @@
 : ${gnupgdir:=/home/cid/.gnupg}
 : ${sshdir:=/home/cid/.ssh}
 : ${wwwdir:=/var/www}
+: ${ssldir:=/etc/ssl}
 
 . "${subrdir}/stdlib.sh"
 . "${subrdir}/config.sh"
@@ -89,6 +90,66 @@ configure_ssh()
     fi
 }
 
+# configure_ssl
+#  Create a self-signed certificate.
+
+configure_ssl()
+{
+  if [ -d "${configdir}/ssl" ]; then
+      (
+	  set -e
+	  cd "${config_dir}/ssl"
+	  find . | cpio -dump --owner 'cid:cid' "${ssldir}"
+        )
+  else
+    generate_self_signed_certificate
+  fi
+
+  find "${ssldir}" -type f -exec chmod go= '{}' ';'
+  find "${ssldir}" -type f -exec chown haproxy:haproxy '{}' ';'
+}
+
+generate_self_signed_certificate()
+(
+  local hostname
+  hostname="$(configure_config project.hostname)"
+
+  field()
+  {
+    printf '/%s=%s' "$@"
+  }
+  
+  subject()
+  {
+    field 'C' 'FR'
+    field 'ST' 'Isle-de-France'
+    field 'L' 'Paris'
+    field 'O' 'Melusina'
+    field 'OU' 'Melusina Development'
+    field 'CN' 'Melusina Development Platform'
+  }
+  
+  openssl genrsa -out "${ssldir}/private/${hostname}.key" 2048
+  openssl req\
+        -new\
+	-subj "$(subject)"\
+	-addext "subjectAltName = DNS:${hostname}"\
+	-key "${ssldir}/private/${hostname}.key"\
+	-out "${ssldir}/private/${hostname}.csr"
+  openssl x509\
+        -req -days 365\
+        -in "${ssldir}/private/${hostname}.csr"\
+        -signkey "${ssldir}/private/${hostname}.key"\
+        -out "${ssldir}/private/${hostname}.crt"
+  cat\
+      "${ssldir}/private/${hostname}.key"\
+      "${ssldir}/private/${hostname}.crt"\
+      > "${ssldir}/private/${hostname}.pem"
+  cp\
+        "${ssldir}/private/${hostname}.pem"\
+	"${ssldir}/private/localhost.pem"
+)
+
 configure_batch()
 {
     local service
@@ -103,6 +164,7 @@ configure_batch()
 
 config_setup
 configure_assert
+configure_ssl
 configure_batch
 
 # End of file `cid_configure.sh'
