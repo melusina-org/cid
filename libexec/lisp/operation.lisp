@@ -106,6 +106,15 @@
     :initform 22
     :reader project-ssh-port
     :documentation "The SSH PORT to the deployment of the project.")
+   (keycloak-admin-password
+    :initarg :keycloak-admin-password
+    :initform (ironclad:byte-array-to-hex-string (ironclad:random-data 64)))
+   (resources
+    :initarg :resources
+    :initform nil
+    :reader project-resources
+    :documentation
+    "The resources associated to the project.")
    (volumes
     :initform nil)))
 
@@ -241,14 +250,48 @@ files used by git."
 	    (cid:user-data-relative-pathname (concatenate 'string name "/")))
       (initialize-slot-from-configuration-file 'hostname '(:project :hostname)))))
 
-(defun make-project (&rest initargs &key name status hostname http-port https-port ssh-port docker-compose tag)
-  (declare (ignore name hostname http-port https-port ssh-port  status docker-compose tag))
+(defun make-project (&rest initargs &key name status hostname http-port https-port
+  ssh-port docker-compose keycloak-admin-password tag resources)
+  (declare (ignore name hostname http-port https-port ssh-port status docker-compose keycloak-admin-password tag resources))
   (apply #'make-instance 'project initargs))
 
+(defun make-project-resources (project)
+  (let* ((cid:*tenant*
+	   (cid:make-tenant :name "melusina"
+			    :displayname "Melusina"))
+	 (cid:*project*
+	   (cid:make-project :name "local"
+			     :displayname "Local Laboratory"
+			     :tenant cid:*tenant*))
+	 (keycloak-admin
+	   (with-slots (keycloak-admin-password hostname) project
+	     (cid:make-keycloak-admin :name "keycloak-admin"
+				      :displayname "Keycloak Admin"
+				      :description "The interface to the Keycloak instance
+  providing identitiy services to the deployment."
+				      :username "Administrator"
+				      :location (concatenate
+						 'string
+						 "https://"
+						 hostname
+						 "/authorization")
+				      :password keycloak-admin-password)))
+	 (keycloak-renaissance-realm
+	   (cid:make-keycloak-realm :keycloak-admin keycloak-admin
+				    :name "renaissance"
+				    :displayname "Common Lisp Renaissance"
+				    :description "The Keycloak realm for Common Lisp Renaissance"
+				    :realm "renaissance"
+				    :brute-force-protected t
+				    :login-with-email :allow
+				    :reset-password :allow
+				    :edit-username :deny)))
+    (list :realms (list keycloak-renaissance-realm))))
+
 (defun project-url (object)
-  (with-slots (hostname http-port) object
-    (format nil "http://~A~@[:~A~]"
-	    hostname (unless (= http-port 80) http-port))))
+  (with-slots (hostname https-port) object
+    (format nil "https://~A~@[:~A~]"
+	    hostname (unless (= https-port 443) https-port))))
 
 (defmethod print-object ((instance project) stream)
   (print-unreadable-object (instance stream :type t :identity t)
@@ -272,7 +315,12 @@ files used by git."
     (:initarg :docker-compose
      :slot-name docker-compose)
     (:initarg :tag
-     :slot-name tag)))
+     :slot-name tag)
+    (:initarg :keycloak-admin-password
+     :slot-name keycloak-admin-password
+     :confidential t)
+    (:initarg :resources
+     :slot-name resources)))
 
 (defun list-projects ()
   (flet ((project-name (volume-name)
@@ -310,6 +358,17 @@ files used by git."
 	  :do (docker:update-volume volume))
     (values project)))
 
+(defun project-resources (project)
+  (loop :for (key resource) :on (slot-value project 'resources)
+	:when (listp resource)
+	:append resource
+	:unless (listp resource)
+	:collect resource))
+
+(defun project-stewards (project)
+  (delete-duplicates
+   (mapcar #'cid:steward (project-resources project))))
+
 (defun create-project (&key project name tag hostname http-port https-port ssh-port (docker-compose *docker-compose*))
   (unless (or name tag project)
     (setf project *project*))
@@ -333,13 +392,9 @@ files used by git."
 	       :http-port http-port
 	       :https-port https-port
 	       :ssh-port ssh-port))))
-  (with-slots (volumes status) project
+  (with-slots (resources volumes status) project
     (when status
       (return-from create-project project))
-    (loop :for volume :in volumes
-	  :do (docker:create-volume
-	       :name (docker:volume-name volume)
-	       :driver (docker:volume-driver volume)))
     (dolist (pathname (list (project-pathname project)
 			    (project-backup-directory project)))
       (ensure-directories-exist pathname))
@@ -349,6 +404,14 @@ files used by git."
 	(uiop:copy-file
 	 (system-relative-pathname "example/cid.conf")
 	 project-configuration-file)))
+    (loop :for volume :in volumes
+	  :do (docker:create-volume
+	       :name (docker:volume-name volume)
+	       :driver (docker:volume-driver volume)))
+    (dolist (steward (project-stewards project))
+      (cid:configure-steward steward))
+    (dolist (resource (project-resources project))
+      (cid:create-resource resource))
     (setf status t)
     (values project)))
 
@@ -377,7 +440,9 @@ files used by git."
 	       (cons "cid_image_tag"
 		     (project-tag ,project))
 	       (cons "cid_project"
-		     (project-name ,project)))
+		     (project-name ,project))
+	       (cons "cid_keycloak_password"
+		     (slot-value ,project 'keycloak-admin-password)))
        ,@body)))
 
 (defun start-project (&optional (project *project*))
@@ -445,16 +510,22 @@ files used by git."
 	 "-a" (slot-value *project* 'name)
 	 "-w" (ironclad:byte-array-to-hex-string cid:*encryption-key*))))
 
-(defun load-encryption-key ()
-  (flet ((find-encryption-key ()
-	   (uiop:run-program
-	    (list "/usr/bin/security" "find-generic-password"
-		  "-s" "org.melusina.cid"
-		  "-a" (slot-value *project* 'name)
-		  "-w")
-	    :output '(:string :stripped t))))
-    (setf cid:*encryption-key*
-	  (ironclad:hex-string-to-byte-array (find-encryption-key)))))
+(defun load-encryption-key (&optional (designator *project*))
+  (let ((project-name
+	  (etypecase designator
+	    (string
+	     designator)
+	    (project
+	     (slot-value designator 'name)))))
+    (flet ((find-encryption-key ()
+	     (uiop:run-program
+	      (list "/usr/bin/security" "find-generic-password"
+		    "-s" "org.melusina.cid"
+		    "-a" project-name
+		    "-w")
+	      :output '(:string :stripped t))))
+      (setf cid:*encryption-key*
+	    (ironclad:hex-string-to-byte-array (find-encryption-key))))))
 
 (defun save-project ()
   "Save *PROJECT* under PATHNAME."
@@ -478,9 +549,9 @@ files used by git."
   (let ((filename
 	  (project-filename designator)))
     (assert (probe-file filename) () 'file-does-not-exist)
+    (load-encryption-key designator)
     (with-open-file (stream filename :direction :input)
       (setf *project* (cid:read-persistent-object stream)))
-    (load-encryption-key)
     (values *project* filename)))
 
 
