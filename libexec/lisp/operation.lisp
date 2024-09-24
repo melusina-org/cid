@@ -121,6 +121,9 @@
 	 (namestring (project-configuration-file project)))))
 
 (defun project-configuration-key (designator)
+  "The configuration key for DESIGNATOR.
+This is a string which can be used as a configuration key in configuration
+files used by git."
   (flet ((key-component (object)
 	   (etypecase object
 	     (string
@@ -198,7 +201,7 @@
 
 (defun make-volume (name project)
   (docker:make-volume
-   :name (concatenate 'string "cid-" (project-name project) "-" name)))
+   :name (concatenate 'string "cid" "-" (project-name project) "-" name)))
 
 (defun volume-database (project)
   (flet ((volume-name (binding)
