@@ -34,6 +34,7 @@
 
 services:
  reverseproxy:
+  hostname: ${cid_hostname}
   restart: unless-stopped
   image: cid/reverseproxy:${cid_image_tag:-latest}
   networks:
@@ -50,6 +51,7 @@ services:
   environment:
    KEYCLOAK_ADMIN: 'Administrator'
    KEYCLOAK_ADMIN_PASSWORD: ${cid_keycloak_password:-Administrator}
+   KC_HOSTNAME: https://${cid_hostname}/authorization
    KC_HTTP_RELATIVE_PATH: '/authorization'
    KC_PROXY_HEADERS: 'xforwarded'
    KC_HTTP_ENABLED: 'true'

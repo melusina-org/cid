@@ -366,15 +366,18 @@ files used by git."
 (defmacro with-project-environment (project &body body)
   (alexandria:once-only (project)
     `(with-environment
-	 (list (cons "cid_hostname" (project-hostname ,project))
-	       (cons "cid_http_port" (write-to-string
-				      (project-http-port ,project)))
-	       (cons "cid_https_port" (write-to-string
-				      (project-https-port ,project)))
-	       (cons "cid_ssh_port" (write-to-string
-				     (project-ssh-port ,project)))
-	       (cons "cid_image_tag" (project-tag ,project))
-	       (cons "cid_project" (project-name ,project)))
+	 (list (cons "cid_hostname"
+		     (project-hostname ,project))
+	       (cons "cid_http_port"
+		     (write-to-string (project-http-port ,project)))
+	       (cons "cid_https_port"
+		     (write-to-string (project-https-port ,project)))
+	       (cons "cid_ssh_port"
+		     (write-to-string (project-ssh-port ,project)))
+	       (cons "cid_image_tag"
+		     (project-tag ,project))
+	       (cons "cid_project"
+		     (project-name ,project)))
        ,@body)))
 
 (defun start-project (&optional (project *project*))
