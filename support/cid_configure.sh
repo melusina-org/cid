@@ -165,6 +165,8 @@ configure_batch()
 config_setup
 configure_assert
 configure_ssl
+configure_gpg
+configure_ssh
 configure_batch
 
 # End of file `cid_configure.sh'
