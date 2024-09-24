@@ -13,11 +13,9 @@
 # you should have received as part of this distribution. The terms
 # are also available at https://opensource.org/licenses/MIT
 
-set -e
-
 run_apache()
 {
-    /usr/sbin/apache2ctl -DFOREGROUND
+    exec /usr/sbin/apache2ctl -DFOREGROUND
 }
 
 if [ $# -gt 0 ]; then
