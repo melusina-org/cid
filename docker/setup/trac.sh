@@ -15,6 +15,7 @@ env DEBIAN_FRONTEND=noninteractive apt-get install -y\
  apache2\
  git\
  git-core\
+ libapache2-mod-auth-openidc\
  libapache2-mod-wsgi-py3\
  openssh-server\
  pwgen\
