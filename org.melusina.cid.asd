@@ -20,7 +20,8 @@
 	       #:drakma
 	       #:flexi-streams
 	       #:ironclad
-	       #:yason)
+	       #:yason
+	       #:uuid)
   :components
   ((:module "src"
     :components ((:file "package")

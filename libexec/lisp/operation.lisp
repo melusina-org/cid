@@ -716,7 +716,7 @@ This is not to be confused with SAVE-PROJECT."
 (defun list-trac-environments (&optional (project *project*))
   "List trac environments."
   (flet ((reserved-name-p (string)
-	   (position string '("git" "www" "sites") :test #'string=))
+	   (position string '("ssl" "git" "www" "sites") :test #'string=))
 	 (list-trac-directory ()
 	   (run-console-program
 	    (list "/bin/ls" "/var/trac")

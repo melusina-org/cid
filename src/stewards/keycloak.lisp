@@ -166,7 +166,9 @@ For instance in a laboratory, http://localhost:8080.")
    (uri
     :initarg :uri)
    (status-text
-    :initarg :status-text)))
+    :initarg :status-text)
+   (method
+    :initarg :method)))
 
 (defun keycloak-admin-request (instance location &key (method :get) content)
   (declare (optimize debug safety))
@@ -227,8 +229,12 @@ For instance in a laboratory, http://localhost:8080.")
 		    :status-code status-code
 		    :body (flexi-streams:octets-to-string
 			   body
-			   :external-format :utf-8)))))))))
-	  
+			   :external-format :utf-8)
+		    :method
+		    (if content
+			(list method content)
+			method)))))))))
+
 
 ;;;;
 ;;;; Keycloak Realm
@@ -322,7 +328,7 @@ Possibles values are :ALLOW and :DENY."
 	     (let ((constructor-keys
 		     (append
 		      '(name displayname description 
-			state identifier external)
+			state identifier parent external)
 		      (loop :for spec :in +keycloak-realm-model+
 			    :for slot-name = (getf spec :slot-name)
 			    :unless (member slot-name '(displayname))
@@ -403,25 +409,28 @@ Possibles values are :ALLOW and :DENY."
   (flet ((return-early-when-realm-already-exists (instance)
 	   (with-slots (steward realm) instance
 	     (when (probe-keycloak-realm steward realm)
-	       (resource-error 'create-resource instance
-			       "Keycloak realm already exists."
-			       "There is already an existing keycloak realm under the name ~S
-therefore the keycloak realm ~A with the same name cannot be created." realm instance))))
+	       (resource-error
+		'create-resource instance
+		"Keycloak realm already exists."
+		"~@<There is already an existing keycloak realm under the name ~A therefore an additional keycloak realm with the same name cannot be created.~:@>" realm))))
 	 (create-keycloak-realm ()
 	   (with-slots (steward realm) instance
 	     (let ((content
 		     (make-hash-table :test 'equal)))
 	       (loop :for spec :in +keycloak-realm-model+
 		     :for slot-name = (getf spec :slot-name)
-		     :for name = (getf spec :json-name)
-		     :for value = (ecase (getf spec :type)
-				    ((boolean string nullable-string)
-				     (slot-value instance slot-name))
-				    (authorization
-				     (ecase (slot-value instance slot-name)
-				       (:allow 'yason:true)
-				       (:deny 'yason:false))))
-		     :do (setf (gethash name content) value))
+		     :unless (eq :virtual (getf spec :kind))
+		     :do (let ((name
+				 (getf spec :json-name))
+			       (value
+				 (ecase (getf spec :type)
+				   ((boolean string nullable-string)
+				    (slot-value instance slot-name))
+				   (authorization
+				    (ecase (slot-value instance slot-name)
+				      (:allow 'yason:true)
+				      (:deny 'yason:false))))))
+			   (setf (gethash name content) value)))
 	       (keycloak-admin-request steward "/admin/realms"
 				       :method :post
 				       :content content))))
@@ -479,242 +488,407 @@ therefore the keycloak realm ~A with the same name cannot be created." realm ins
     (update-keycloak-realm)))
 
 
-#|
-
-(defmethod update-resource-from-instance ((instance docker-volume))
-  nil)
-
 
 ;;;;
-;;;; Docker Compose Project
+;;;; Keycloak Client
 ;;;;
 
-(defclass docker-project (resource)
-  ((steward-class
-    :type symbol
-    :initform 'keycloak-admin
-    :allocation :class)
-   (project
-    :type string
-    :initarg :project)
-   (pathname
-    :type pathname
-    :initarg :pathname)
-   (volumes
-    :type list
-    :initarg :volumes
-    :initform nil
-    :documentation
-    "The list of external volumes which are consumed by the docker project.")
-   (environment
-    :type list
-    :initarg :environment
-    :initform nil
-    :documentation
-    "The environment variables used for the compose file."))
-  (:documentation
-   "A docker compose project belonging to a docker engine steward."))
+(alexandria:define-constant +keycloak-client-model+
+    '((:slot-name parent
+       :type keycloak-realm
+       :initarg :parent
+       :kind :virtual
+       :documentation "The Keycloak realm of the client.")
+      (:slot-name client
+       :type string
+       :initarg :client
+       :json-name "clientId"
+       :documentation
+       "The client identifier registered with the identity provider.")
+      (:slot-name identifier
+       :type string
+       :initarg :identifier
+       :json-name "id"
+       :documentation
+       "The unique identifier for the client.")
+      (:slot-name displayname
+       :type nullable-string
+       :initarg :displayname
+       :initform nil
+       :json-name "name"
+       :documentation
+       "Specifies display name of the client. For example 'My Client'.
+Supports keys for localized values as well. For example: ${my_client}")
+      (:slot-name description
+       :type nullable-string
+       :initarg :description
+       :initform nil
+       :json-name "description"
+       :documentation
+       "Specifies description of the client. For example 'My Client for TimeSheets'.
+Supports keys for localized values as well. For example: ${my_client_description}")
+      (:slot-name root-url
+       :type nullable-string
+       :initarg :root-url
+       :initform nil
+       :json-name "rootUrl"
+       :documentation "Root URL appended to relative URLs.")
+      (:slot-name admin-url
+       :type nullable-string
+       :initarg :admin-url
+       :initform nil
+       :json-name "adminUrl"
+       :documentation "URL to the admin interface of the client.
+Set this if the client supports the adapter REST API. This REST API allows
+the auth server to push revocation policies and other administrative tasks.
+Usually this is set to the base URL of the client.")
+      (:slot-name home-url
+       :type nullable-string
+       :initarg :home-url
+       :initform nil
+       :json-name "baseUrl"
+       :documentation "Default URL to use when the auth server needs to redirect or link back to the client.")
+      (:slot-name enabled
+       :type boolean
+       :initarg :enabled
+       :initform nil
+       :json-name "enabled"
+       :documentation "Disabled clients cannot initiate a login or have obtained access tokens.")
+      (:slot-name public-client
+       :type boolean
+       :initarg :public-client
+       :initform t
+       :json-name "publicClient"
+       :documentation "This defines the type of the OIDC client.
+When it's NIL, the OIDC type is set to confidential access type. When it's T, it is set
+to public access type.")
+      (:slot-name always-display-in-console
+       :type boolean
+       :initarg :always-display-in-console
+       :initform nil
+       :json-name "alwaysDisplayInConsole"
+       :documentation "Always list this client in the Account UI
+even if the user does not have an active session.")
+      (:slot-name client-authenticator-type
+       :type string
+       :initarg :client-authenticator-type
+       :initform "client-secret"
+       :json-name "clientAuthenticatorType"
+       :documentation "Client Authenticator used for authentication of this client
+against Keycloak server.")
+      (:slot-name default-roles
+       :type (list string)
+       :initarg :default-roles
+       :initform nil
+       :json-name "defaultRoles"
+       :kind :optional
+       :documentation "Always list this client in the Account UI
+even if the user does not have an active session.")
+      (:slot-name redirect-uris
+       :type (list string)
+       :initarg :redirect-uris
+       :initform nil
+       :json-name "redirectUris"
+       :documentation
+       "Valid URI pattern a browser can redirect to after a successful login.
+Simple wildcards are allowed such as 'http://example.com/*'. Relative path can
+be specified too such as /my/relative/path/*. Relative paths are relative to
+the client root URL, or if none is specified the auth server root URL is used.
+For SAML, you must set valid URI patterns if you are relying on the consumer
+service URL embedded with the login request.")
+      (:slot-name web-origins
+       :type (list string)
+       :initarg :web-origins
+       :initform nil
+       :json-name "webOrigins"
+       :documentation
+       "Allowed CORS origins.
+To permit all origins of Valid Redirect URIs, add '+'. This does not include
+the '*' wildcard though. To permit all origins, explicitly add '*'.")
+      (:slot-name bearer-only
+       :type boolean
+       :initarg :bearer-only
+       :initform nil
+       :json-name "bearerOnly")
+      (:slot-name consent-required
+       :type boolean
+       :initarg :consent-required
+       :initform nil
+       :json-name "consentRequired")
+      (:slot-name standard-flow-enabled
+       :type boolean
+       :initarg :standard-flow-enabled
+       :initform t
+       :json-name "standardFlowEnabled"
+       :documentation
+       "This enables standard OpenID Connect redirect based authentication with authorization code.
+In terms of OpenID Connect or OAuth2 specifications, this enables support
+of 'Authorization Code Flow' for this client.")
+      (:slot-name implict-flow-enabled
+       :type boolean
+       :initarg :implict-flow-enabled
+       :initform nil
+       :json-name "implicitFlowEnabled"
+       :documentation
+       "This enables support for OpenID Connect redirect based authentication without authorization code.
+In terms of OpenID Connect or OAuth2 specifications, this enables support
+of 'Implicit Flow' for this client.")
+      (:slot-name direct-access-grants-enabled
+       :type boolean
+       :initarg :direct-access-grants-enabled
+       :initform t
+       :json-name "directAccessGrantsEnabled"
+       :documentation "This enables support for Direct Access Grants,
+which means that client has access to username/password of user and exchange it directly
+with Keycloak server for access token. In terms of OAuth2 specification, this enables
+support of 'Resource Owner Password Credentials Grant' for this client.")
+      (:slot-name service-accounts-enabled
+       :type boolean
+       :initarg :service-accounts-enabled
+       :initform nil
+       :json-name "serviceAccountsEnabled"
+       :documentation "Allows you to authenticate this client to Keycloak and retrieve access token dedicated to this client.
+In terms of OAuth2 specification, this enables support of 'Client Credentials Grant' for this client.")
+      (:slot-name protocol
+       :type string
+       :initarg :protocol
+       :initform "openid-connect"
+       :json-name "protocol")
+      (:slot-name default-client-scopes
+       :type (list string)
+       :initarg :default-client-scopes
+       :initform '("web-origins" "acr" "roles" "profile" "basic" "email")
+       :json-name "defaultClientScopes")
+      (:slot-name optional-client-scopes
+       :type (list string)
+       :initarg :optional-client-scopes
+       :initform '("address" "phone" "offline_access" "microprofile-jwt")
+       :json-name "optionalClientScopes"))
+  :test 'equal)
 
-(defun make-docker-project (&rest initargs &key keycloak-admin name displayname description
-						state identifier external
-						project pathname volumes environment)
-  "Make a docker compose project."
-  (declare (ignore name displayname description
-		   state identifier external
-		   project pathname volumes environment))
-  (check-type keycloak-admin keycloak-admin)
-  (apply #'make-instance 'docker-project
-	 :steward keycloak-admin
-	 (remove-property initargs :keycloak-admin)))
+(macrolet ((define-class ()
+	     (labels ((slot-definition (spec)
+			(append
+			 (list
+			  (getf spec :slot-name)
+			  :initarg (getf spec :initarg)
+			  :reader (getf spec :slot-name))
+			 (unless (eq :not-found
+				     (getf spec :initform :not-found))
+			   (list
+			    :initform (getf spec :initform)))
+			 (list
+			  :documentation (getf spec :documentation))))
+		      (slot-definitions ()
+			(cons
+			 '(steward-class
+			   :type symbol
+			   :initform 'keycloak-admin
+			   :allocation :class)
+			 (loop :for spec :in +keycloak-client-model+
+			       :unless (member
+					(getf spec :slot-name)
+					'(displayname description parent))
+			       :collect (slot-definition spec)))))
+	       `(defclass keycloak-client (resource) ,(slot-definitions))))
+	   (define-constructor ()
+	     (let ((constructor-keys
+		     (append
+		      '(name displayname description 
+			state identifier parent external)
+		      (loop :for spec :in +keycloak-client-model+
+			    :for slot-name = (getf spec :slot-name)
+			    :unless (member slot-name '(identifier displayname description parent))
+			    :collect slot-name))))
+	       `(defun make-keycloak-client (&rest initargs &key keycloak-admin ,@constructor-keys)
+		  "Make a keycloak client."
+		  (declare (ignore ,@constructor-keys))
+		  (check-type keycloak-admin keycloak-admin)
+		  (apply #'make-instance 'keycloak-client
+			 :steward keycloak-admin
+			 (remove-property initargs :keycloak-admin))))))
+  (progn
+    (define-class)
+    (define-constructor)))
 
-(defmethod persistent-constructor ((class (eql 'docker-project)))
-  'make-docker-project)
+(defmethod persistent-constructor ((class (eql 'keycloak-client)))
+  'make-keycloak-client)
 
-(defmethod persistent-slots append ((instance docker-project))
-  '((:initarg :keycloak-admin
-     :slot-name steward)
-    (:initarg :project
-     :slot-name project
-     :immutable t)
-    (:initarg :pathname
-     :slot-name pathname
-     :immutable t)
-    (:initarg :volumes
-     :slot-name volumes
-     :immutable t)
-    (:initarg :environment
-     :slot-name environment
-     :immutable t)))
+(macrolet ((define-persistent-slots ()
+	     (labels ((persistence-definition (spec)
+			(list
+			 :slot-name (getf spec :slot-name)
+			 :initarg (getf spec :initarg)))
+		      (persistence-definitions ()
+			(cons
+			 (list :slot-name 'steward
+			       :initarg :keycloak-admin)
+			 (loop :for spec :in +keycloak-client-model+
+			       :collect (persistence-definition spec)))))
+	       `(defmethod persistent-slots append ((instance keycloak-client))
+		  (quote ,(persistence-definitions))))))
+  (define-persistent-slots))
 
-(defmethod examine-resource append ((instance docker-project))
-  (with-slots (project pathname) instance
-    (list
-     :project project
-     :pathname pathname)))
+(macrolet ((define-examine-resource ()
+	     (let ((slot-names
+		     (loop :for spec :in +keycloak-client-model+
+			   :collect (getf spec :slot-name)))
+		   (properties
+		     (loop :for spec :in +keycloak-client-model+
+			   :collect (getf spec :initarg)
+			   :collect (getf spec :slot-name))))
+	       `(defmethod examine-resource append ((instance keycloak-client))
+		  (with-slots ,slot-names instance
+		    (list ,@properties))))))
+  (define-examine-resource))
 
-(defmethod resource-prerequisites append ((instance docker-project))
-  (slot-value instance 'volumes))
+(defun probe-keycloak-client (steward client &key parent)
+  (flet ((extract-json-fields (object)
+	   (extract-json-fields object +keycloak-client-model+))
+	 (get-client ()
+	   (keycloak-admin-request
+	    steward
+	    (concatenate 'string
+			 "/admin/realms/"
+			 (name parent)
+			 "/clients/"
+			 client)
+	    :method :get)))
+    (handler-case (extract-json-fields (get-client))
+      (error (condition)
+	(declare (ignore condition))
+	(values nil)))))
 
-(defun docker-project-status (string)
-  (flet ((status-name ()
-	   (ppcre:register-groups-bind (name) ("([a-zA-Z]+)\\([0-9]+\\)" string)
-	     (values name)))
-	 (make-keyword (name)
-	   (when (member name '("running" "stopped" "starting" "restarting")
-			 :test #'string=)
-	     (alexandria:make-keyword (string-upcase name))))
-	 (status-to-state (status)
-	   (ecase status
-	     (:running
-	      t)
-	     ((:stopped :starting :restarting)
-	      status))))
-    (status-to-state (make-keyword (status-name)))))
-
-(defun probe-docker-projects (steward)
-  (extract-json-fields
-   (run-keycloak-admin-command steward "compose" "ls" "--format" "json")
-   `((:property :project
-      :name "Name"
-      :type string)
-     (:property :state
-      :name "Status"
-      :type string
-      :key ,#'docker-project-status)
-     (:property :pathname
-      :name "ConfigFiles"
-      :type string
-      :key ,#'pathname))))
-
-(defun probe-docker-project (steward name)
-  (flet ((project-name (plist)
-	   (getf plist :project)))
-    (find name (probe-docker-projects steward)
-	  :test #'string=
-	  :key #'project-name)))
-
-(defmacro with-project-environment (project &body body)
-  (alexandria:once-only (project)
-    `(with-environment (slot-value ,project 'environment)
-       ,@body)))
-
-(defmethod list-resource-identifiers ((steward keycloak-admin) (resource-class (eql 'docker-project)))
-  (flet ((project-name (plist)
-	   (getf plist :project)))
-    (mapcar #'project-name (probe-docker-projects steward))))
-
-(defmethod list-resources ((steward keycloak-admin) (resource-class (eql 'docker-project)))
-  (loop :for properties :in (probe-docker-projects steward)
-	:collect (apply #'make-docker-project
-			:keycloak-admin steward
-			:identifier (getf properties :project)
-			:state t
-			properties)))
-
-(defmethod update-instance-from-resource ((instance docker-project))
-  (flet ((ensure-project-is-set-when-identifier-is-set ()
-	   (when (and (slot-boundp instance 'identifier)
-		      (slot-value instance 'identifier)
-		      (not (slot-boundp instance 'project)))
-	     (setf (slot-value instance 'project)
-		   (slot-value instance 'identifier))))
-	 (update-instance (properties)
+(defmethod update-instance-from-resource ((instance keycloak-client))
+  (flet ((update-instance (properties)
 	   (unless properties
 	     (resource-no-longer-exists
 	      'update-instance-from-resource instance
-	      "Docker compose project no longer exists."))
-	   (with-slots (project pathname state) instance
-	     (setf project (getf properties :project)
-		   pathname (getf properties :pathname)
-		   state t))))
-    (ensure-project-is-set-when-identifier-is-set)
-    (with-slots (steward project) instance
-      (update-instance (probe-docker-project steward project)))))
+	      "Keycloak Client no longer exists."))
+	   (loop :for spec :in +keycloak-client-model+
+		 :for indicator = (getf spec :initarg)
+		 :always (getf properties indicator))
+	   (loop :for spec :in +keycloak-client-model+
+		 :for slot-name = (getf spec :slot-name)
+		 :for indicator = (getf spec :initarg)
+		 :unless (eq :virtual (getf spec :kind))
+		 :do (setf (slot-value instance slot-name)
+			   (getf properties indicator)))
+	   (setf (slot-value instance 'state) t)))
+    (with-slots (steward parent identifier) instance
+      (update-instance (probe-keycloak-client steward identifier :parent parent)))))
 
-(defmethod create-resource ((instance docker-project))
-  (flet ((return-early-when-project-already-exists (instance)
-	   (with-slots (steward project) instance
-	     (when (probe-docker-project steward project)
+(defmethod create-resource ((instance keycloak-client))
+  (flet ((return-early-when-client-already-exists (instance)
+	   (with-slots (steward parent identifier) instance
+	     (when (and identifier (probe-keycloak-client steward identifier :parent parent))
 	       (resource-error 'create-resource instance
-			       "Docker project already exists."
-			       "There is already an existing docker compose project under the name ~S
-therefore the docker project ~A with the same name cannot be created." project instance))))
-	 (create-docker-project ()
-	   (with-slots (steward project pathname) instance
-	     (with-project-environment instance
-	       (multiple-value-bind (output error-output exit-code)
-		   (run-keycloak-admin-command steward "compose"
-					      "--project-name" project
-					      "--file" (namestring pathname)
-					      "up"
-					      "--detach"
-					      "--wait")
-		 (cond
-		   ((= 0 exit-code)
-		    (values output))
-		   (t
-		    (resource-error 'create-resource instance
-				    "Docker project cannot be created."
-				    "Cannot create docker project ~A
-the docker compose command terminated with code ~A and provided the
-diagnostics
+			       "Keycloak client already exists."
+			       "There is already an existing keycloak client under the name ~S
+therefore the keycloak client ~A with the same name cannot be created." parent instance))))
+	 (create-keycloak-client ()
+	   (with-slots (steward client parent identifier) instance
+	     (let ((content
+		     (make-hash-table :test 'equal))
+		   (uuid
+		     (string-downcase
+		      (with-output-to-string (buffer)
+			(print-object (uuid:make-v1-uuid) buffer)))))
+	       (setf identifier uuid)
+	       (loop :for spec :in +keycloak-client-model+
+		     :for slot-name = (getf spec :slot-name)
+		     :for slot-type = (getf spec :type)
+		     :unless (eq :virtual (getf spec :kind))
+		     :do (let ((name
+				 (getf spec :json-name))
+			       (value
+				 (cond
+				   ((member slot-type
+					    '(boolean string nullable-string
+					      (list string))
+					    :test #'equal)
+				    (slot-value instance slot-name))
+				   ((eq slot-type 'authorization)
+				    (ecase (slot-value instance slot-name)
+				      (:allow 'yason:true)
+				      (:deny 'yason:false)))
+				   (t
+				    (error "Cannot handle slot type ~A" slot-type)))))
+			   (setf (gethash name content) value)))
+	       (let ((endpoint
+		       (concatenate 'string
+				    "/admin/realms/"
+				    (name parent)
+				    "/clients")))
+		 (keycloak-admin-request steward endpoint
+					 :method :post
+					 :content content)))))
+	 (update-state ()
+	   (with-slots (state client) instance
+	     (setf state t))))
+    (return-early-when-client-already-exists instance)
+    (create-keycloak-client)
+    (update-state)))
 
-~A
-
-and
-
-~A"
-				    project exit-code output error-output)))))))
-	 (update-identifier-and-state ()
-	   (with-slots (project identifier state) instance
-	     (setf identifier project
-		   state t))))
-    (return-early-when-project-already-exists instance)
-    (create-docker-project)
-    (update-identifier-and-state)))
-
-(defmethod delete-resource ((instance docker-project))
+(defmethod delete-resource ((instance keycloak-client))
   (flet ((ensure-that-resource-still-exists ()
-	   (with-slots (steward project) instance
-	     (unless (probe-docker-project steward project)
+	   (with-slots (steward parent identifier) instance
+	     (unless (and identifier (probe-keycloak-client steward identifier :parent parent))
 	       (resource-no-longer-exists
 		'delete-resource instance
-		"Docker project no longer exists."))))
-	 (delete-project ()
-	   (with-slots (steward pathname project) instance
-	     (with-project-environment instance
-	       (multiple-value-bind (output error-output exit-code)
-		   (run-keycloak-admin-command steward "compose"
-					      "--project-name" project
-					      "--file" (namestring pathname)
-					      "down")
-		 (cond
-		   ((= 0 exit-code)
-		    (values output))
-		   (t
-		    (resource-error 'delete-resource instance
-				    "Docker project cannot be deleted."
-				    "Cannot delete docker project ~A
-the docker compose command terminated with code ~A and provided the
-diagnostics
-
-~A
-
-and
-
-~A"
-				    project exit-code output error-output)))))))
+		"Keycloak client no longer exists."))))
+	 (delete-client ()
+	   (with-slots (steward realm identifier) instance
+	     (keycloak-admin-request
+	      steward
+	      (concatenate 'string
+			   "/admin/realms/"
+			   (name realm)
+			   "/clients/" identifier)
+	      :method :delete)))
 	 (update-state-and-identifier ()
 	   (with-slots (identifier state) instance
 	     (setf state nil
 		   identifier nil))))
     (ensure-that-resource-still-exists)
-    (delete-project)
+    (delete-client)
     (update-state-and-identifier)))
 
-(defmethod update-resource-from-instance ((instance docker-project))
-  nil)
-
-|#
+(defmethod update-resource-from-instance ((instance keycloak-client))
+  (declare (optimize debug))
+  (flet ((update-keycloak-client ()
+	   (with-slots (steward client parent identifier) instance
+	     (let ((content
+		     (make-hash-table :test 'equal))
+		   (client-endpoint
+		     (concatenate 'string
+				  "/admin/realms/"
+				  (name parent)
+				  "/clients/" identifier)))
+	       (loop :for spec :in +keycloak-client-model+
+		     :for slot-name = (getf spec :slot-name)
+		     :for slot-type = (getf spec :type)
+		     :unless (eq :virtual (getf spec :kind))
+		     :do (let ((name
+				 (getf spec :json-name))
+			       (value
+				 (cond
+				   ((member slot-type
+					    '(boolean string nullable-string
+					      (list string))
+					    :test #'equal)
+				    (slot-value instance slot-name))
+				   ((eq slot-type 'authorization)
+				    (ecase (slot-value instance slot-name)
+				      (:allow 'yason:true)
+				      (:deny 'yason:false)))
+				   (t
+				    (error "Cannot handle slot type ~A" slot-type)))))
+			   (setf (gethash name content) value)))
+	       (keycloak-admin-request steward
+				       client-endpoint
+				       :method :put
+				       :content content)))))
+    (update-keycloak-client)))
 
 ;;;; End of file `keycloak-admin.lisp'

@@ -32,6 +32,12 @@
 	       (list
 		(cid:make-docker-volume
 		 :docker-engine steward
+		 :name "ssl"
+		 :displayname "SSL"
+		 :description "Docker volume holding SSL artifacts."
+		 :volume (volume-name "ssl"))
+		(cid:make-docker-volume
+		 :docker-engine steward
 		 :name "git"
 		 :displayname "GIT"
 		 :description "Docker volume holding git repositories."

@@ -144,11 +144,11 @@ the `docker' CLI client."))
    "A local volume belonging to a docker engine steward."))
 
 (defun make-docker-volume (&rest initargs &key docker-engine name displayname description
-					       state identifier external
+					       state identifier parent external
 					       volume driver)
   "Make a local docker volume"
   (declare (ignore name displayname description
-		   state identifier external
+		   state identifier parent external
 		   volume driver))
   (check-type docker-engine docker-engine)
   (apply #'make-instance 'docker-volume
@@ -326,11 +326,11 @@ therefore the docker volume ~A with the same name cannot be created." volume ins
    "A docker compose project belonging to a docker engine steward."))
 
 (defun make-docker-project (&rest initargs &key docker-engine name displayname description
-						state identifier external
+						state identifier parent external
 						project pathname volumes environment)
   "Make a docker compose project."
   (declare (ignore name displayname description
-		   state identifier external
+		   state identifier parent external
 		   project pathname volumes environment))
   (check-type docker-engine docker-engine)
   (apply #'make-instance 'docker-project

@@ -71,6 +71,7 @@
    #:resource-slot-is-immutable
    #:resource-confirmation
    #:with-resource-confirmation
+   #:resource-parent
    #:resource-exists-p
    #:resource-ready-p
    #:resource-external-p
@@ -125,6 +126,8 @@
    #:get-keycloak-admin-token
    #:keycloak-realm
    #:make-keycloak-realm
+   #:keycloak-client
+   #:make-keycloak-client
    #:realm
    #:displayname
    #:displayname-html

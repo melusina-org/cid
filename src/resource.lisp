@@ -62,6 +62,12 @@ T meaning the resource exists and is ready or some resource lifecycle specific k
 Depending on the RESOURCE and the STEWARD, the identifier can be or not be
 a deterministic function of other resource properties. If and only if
 the underlying resource has not been created, the IDENTIFIER is NIL.")
+   (parent
+    :initarg :parent
+    :reader resource-parent
+    :initform nil
+    :documentation
+    "A parent resource.")
    (external
     :type boolean
     :initarg :external
@@ -104,7 +110,9 @@ resources. For a given STEWARD, any resource is uniquely identified by its IDENT
     (:initarg :state
      :slot-name state)
     (:initarg :identifier
-     :slot-name identifier)))
+     :slot-name identifier)
+    (:initarg :parent
+     :slot-name parent)))
 
 (defmethod print-object ((instance resource) stream)
   (flet ((print-readably ()
@@ -167,19 +175,25 @@ the resource, so that it is usually unsafe to publish this EXPLANATION."))
 
 (defun describe-resource-error (condition stream)
   (with-slots (name displayname steward) (resource-error-resource condition)
-    (let ((*print-circle* nil))
-      (format stream "~&Operation on resource ~A failed.
-
-The steward ~A trying to ~A the resource ~A met an error condition.
-~A" 
-	      (or displayname name (resource-error-resource condition))
+    (let ((*print-circle*
+	    nil)
+	  (effective-displayname
+	    (or displayname name (resource-error-resource condition))))
+      (format stream "~A" (resource-error-description condition))
+      (start-new-paragraph stream)
+      (format stream "~@<The steward ~A trying to ~A the resource ~A met an error condition.~:@>"
 	      (slot-value steward 'name)
-	      (resource-error-operation condition)
-	      (or displayname name (resource-error-resource condition))
-	      (resource-error-description condition))
+	      (case (resource-error-operation condition)
+		(create-resource "create")
+		(delete-resource "delete")
+		(import-resource "import")
+		(t
+		 (resource-error-operation condition)))
+	      effective-displayname)
       (with-slots (explanation) condition
 	(when explanation
-	  (format stream "~&~A" explanation))))))
+	  (start-new-paragraph stream)
+ 	  (format stream "~A" explanation))))))
 
 (defun resource-error (operation resource description &optional control-string &rest format-arguments)
   "Signal a RESOURCE-ERROR."
@@ -205,20 +219,26 @@ to the resource handle indicates that the underlying resource exists."))
 
 (defun describe-resource-no-longer-exists (condition stream)
   (with-slots (name displayname steward) (resource-error-resource condition)
-    (let ((*print-circle* nil))
-      (format stream "~&Operation on resource ~A failed.
-
-The steward ~A trying to ~A the resource ~A realised that
-the underlying resource ~A no longer exists while the last
-known state indicates the underlying resource was existing." 
-	      (or displayname name (resource-error-resource condition))
+    (let ((*print-circle*
+	    nil)
+	  (effective-displayname
+	    (or displayname name (resource-error-resource condition))))
+      (format stream "~&Resource ~A no longer exists." effective-displayname)
+      (start-new-paragraph stream)
+      (format stream "~@<The steward ~A trying to ~A the resource ~A realised that the underlying resource ~A no longer exists while the last known state indicates the underlying resource was existing.~:@>"
 	      (slot-value steward 'name)
-	      (resource-error-operation condition)
-	      (or displayname name (resource-error-resource condition))
-	      (resource-error-description condition))
+	      (case (resource-error-operation condition)
+		(create-resource "create")
+		(delete-resource "delete")
+		(import-resource "import")
+		(t
+		 (resource-error-operation condition)))
+	      effective-displayname
+	      effective-displayname)
       (with-slots (explanation) condition
 	(when explanation
-	  (format stream "~&~A" explanation))))))
+	  (start-new-paragraph stream)
+	  (format stream "~A" explanation))))))
 
 (defun resource-no-longer-exists (operation resource description &optional control-string &rest format-arguments)
   "Signal a RESOURCE-NO-LONGER-EXISTS."
@@ -683,7 +703,7 @@ keywords are sorted in ascending order."))
      :description description
      :state state)))
 
-(defun import-resource (steward resource-class &key displayname description identifier)
+(defun import-resource (steward resource-class &key displayname description identifier parent)
   "Import a RESOURCE based on its IDENTIFIER into its STEWARD.
 This assumes a resource has been created in STEWARD by a third party and
 imports it into the current system by creating a resource for it."
@@ -692,7 +712,8 @@ imports it into the current system by creating a resource for it."
 			 :steward steward
 			 :displayname displayname
 			 :description description
-			 :identifier identifier)))
+			 :identifier identifier
+			 :parent parent)))
     (update-instance-from-resource instance)
     (unless (resource-exists-p instance)
       (resource-error
@@ -710,7 +731,8 @@ instead of the expected state as specified by RESOURCE."
   (import-resource (steward resource) (type-of resource)
 		   :displayname (displayname resource)
 		   :description (description resource)
-		   :identifier (resource-identifier resource)))
+		   :identifier (resource-identifier resource)
+		   :parent (resource-parent resource)))
 
 (defgeneric update-resource-from-instance (instance)
   (:documentation "Update resource attributes to reflect INSTANCE.

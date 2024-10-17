@@ -123,6 +123,15 @@ The possible are values or strings."
 
 
 ;;;;
+;;;; Pretty-printing
+;;;;
+
+(defun start-new-paragraph (stream)
+  (format stream "~&~%"))
+
+
+
+;;;;
 ;;;; Write and read persistent Object
 ;;;;
 
@@ -370,8 +379,8 @@ The items of the FIELDS specification describe how to extract fields
 from the text.  Each item in the FIELDS specification is a property
 list with the following entries:
 
-  :NAME STRING
-    The NAME of the object field where the value is stored.
+  :JSON-NAME STRING
+    The NAME of the JSON object field where the value is stored.
   :TYPE SYMBOL
     The TYPE of the value. This is one of
       'INTEGER, 'STRING, 'NULLABLE-STRING, '(LIST STRING), 'BOOLEAN
@@ -379,45 +388,60 @@ list with the following entries:
     The name of the PROPERTY where the value is to be stored.
   :KEY FUNCTION
     A function to apply on the field value.
-"
-  (labels ((extract-json-field (object &key type json-name (key 'identity) &allow-other-keys)
+  :KIND [ :MANDATORY, :OPTIONAL, :VIRTUAL]
+    A :MANDATORY field must be present in a concrete representation.
+    An :OPTIONAL field must not be present in a concrete representation.
+    A :VIRTUAL field is omitted from concrete representations. "
+  (labels ((extract-json-field (object &key type json-name (key 'identity) (kind :mandatory) &allow-other-keys)
 	     (flet ((fetch ()
+		      (when (eq kind :virtual)
+			(return-from fetch (values nil nil)))
 		      (multiple-value-bind (value present-p) (gethash json-name object)
 			(unless (or present-p
+				    (eq kind :optional)
 				    (eq type 'nullable-string))
 			  (error "Cannot read field ~A from JSON text." json-name))
+			(when (and (not present-p) (eq kind :optional))
+			  (return-from fetch (values nil nil)))
 			(alexandria:switch (type :test #'equal)
 			  ('integer
 			   (check-type value integer)
-			   (values value))
+			   (values value t))
 			  ('string
-			   (string value))
+			   (values (string value) t))
 			  ('nullable-string
 			    (cond
 			      ((string= "<none>" value)
-			       nil)
+			       (values nil t))
 			      ((stringp value)
-			       (string value))
+			       (values (string value) t))
 			      ((eq nil value)
-			       nil)
+			       (values nil t))
 			      (t
 			       (error "Cannot read field ~A from JSON text as a string." json-name))))
 			  ('(list string)
-			    (loop :for item :in value
-				  :collect (string item)))
+			    (values
+			     (loop :for item :in value
+				   :collect (string item))
+			     t))
 			  ('boolean
-			   (and value t))
+			   (values (and value t) t))
 			  ('authorization
-			   (if value :allow :deny))
+			   (values (if value :allow :deny) t))
 			  (t
-			   (error "Cannot extact field of type ~A from JSON text." type)))))
-		    (extract (text)
-		      (when text
-			(funcall key text))))
-	       (extract (fetch))))
+			   (error "Cannot extact field of type ~A from JSON text." type))))))
+	       (multiple-value-bind (value present-p) (fetch)
+		 (if present-p
+		     (values (funcall key value) t)
+		     (values nil nil)))))
 	   (extract-from-object (object)
 	     (loop :for field :in fields
+		   :for kind = (or (getf field :kind) :mandatory)
+		   :for (value present-p) = (multiple-value-list
+					     (apply #'extract-json-field object field))
+		   :when present-p
 		   :collect (getf field :initarg)
+		   :when present-p
 		   :collect (apply #'extract-json-field object field)))
 	   (extract-from-list (object)
 	     (loop :for item :in object

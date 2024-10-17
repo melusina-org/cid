@@ -64,9 +64,9 @@ new resources."))
 
 (defun make-simulation (&rest initargs
 			&key simulator name displayname description 
-			     state identifier external)
+			     state identifier parent external)
   "Make a simulator resource."
-  (declare (ignore name displayname description state identifier external))
+  (declare (ignore name displayname description state identifier parent external))
   (apply #'make-instance 'simulation
 	 :steward simulator
 	 (remove-property initargs :simulator)))
