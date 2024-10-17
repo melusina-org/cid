@@ -28,6 +28,7 @@
    #:project-https-port
    #:project-ssh-port
    #:project-pathname
+   #:project-resources
    #:project-configuration-file
    #:edit-project-configuration-file
    #:project-backup-directory
@@ -50,6 +51,9 @@
    #:create-git-repository
    #:delete-git-repository
    #:list-trac-environments
+   #:pbcopy-keycloak-admin-password
+   #:project-resources
+   #:project-stewards
    ))
 
 (in-package #:org.melusina.cid/operation)
@@ -112,7 +116,6 @@
    (resources
     :initarg :resources
     :initform nil
-    :reader project-resources
     :documentation
     "The resources associated to the project.")
    (volumes
@@ -255,7 +258,7 @@ files used by git."
   (declare (ignore name hostname http-port https-port ssh-port status docker-compose keycloak-admin-password tag resources))
   (apply #'make-instance 'project initargs))
 
-(defun make-project-resources (project)
+(defun make-project-resources (&optional (project *project*))
   (let* ((cid:*tenant*
 	   (cid:make-tenant :name "melusina"
 			    :displayname "Melusina"))
@@ -265,28 +268,54 @@ files used by git."
 			     :tenant cid:*tenant*))
 	 (keycloak-admin
 	   (with-slots (keycloak-admin-password hostname) project
-	     (cid:make-keycloak-admin :name "keycloak-admin"
-				      :displayname "Keycloak Admin"
-				      :description "The interface to the Keycloak instance
+	     (cid:make-keycloak-admin
+	      :name "keycloak-admin"
+	      :displayname "Keycloak Admin"
+	      :description "The interface to the Keycloak instance
   providing identitiy services to the deployment."
-				      :username "Administrator"
-				      :location (concatenate
-						 'string
-						 "https://"
-						 hostname
-						 "/authorization")
-				      :password keycloak-admin-password)))
+	      :username "Administrator"
+	      :location (concatenate
+			 'string
+			 "https://"
+			 hostname
+			 "/authorization")
+	      :password keycloak-admin-password)))
 	 (keycloak-renaissance-realm
-	   (cid:make-keycloak-realm :keycloak-admin keycloak-admin
-				    :name "renaissance"
-				    :displayname "Common Lisp Renaissance"
-				    :description "The Keycloak realm for Common Lisp Renaissance"
-				    :realm "renaissance"
-				    :brute-force-protected t
-				    :login-with-email :allow
-				    :reset-password :allow
-				    :edit-username :deny)))
-    (list :realms (list keycloak-renaissance-realm))))
+	   (cid:make-keycloak-realm
+	    :keycloak-admin keycloak-admin
+	    :name "renaissance"
+	    :displayname "Common Lisp Renaissance"
+	    :description "The Keycloak realm for Common Lisp Renaissance"
+	    :realm "renaissance"
+	    :brute-force-protected t
+	    :login-with-email :allow
+	    :reset-password :allow
+	    :edit-username :deny))
+	 (keycloak-renaissance-trac
+	   (with-slots (hostname) project
+	     (cid:make-keycloak-client
+	      :keycloak-admin keycloak-admin
+	      :realm keycloak-renaissance-realm
+	      :client "trac"
+	      :name "Renaissance Trac"
+	      :displayname "Renaissance Trac"
+	      :description "The OpenID Connect client providing authorisation for the Apache OIDC Module in Renaissance Trac."
+	      :home-url (concatenate
+			 'string
+			 "https://"
+			 hostname
+			 "/trac/renaissance")
+	      :redirect-uris
+	      (list (concatenate
+			 'string
+			 "https://"
+			 hostname
+			 "/trac/renaissance/*"))
+	      :web-origins
+	      (list (concatenate 'string "https://" hostname))
+	      :public-client nil))))
+    (list :realms (list keycloak-renaissance-realm)
+	  :clients (list keycloak-renaissance-trac))))
 
 (defun project-url (object)
   (with-slots (hostname https-port) object
@@ -358,14 +387,21 @@ files used by git."
 	  :do (docker:update-volume volume))
     (values project)))
 
-(defun project-resources (project)
-  (loop :for (key resource) :on (slot-value project 'resources)
+(defun project-resources (&optional (project *project*))
+  (loop :for (key resource) :on (slot-value project 'resources) :by #'cddr
 	:when (listp resource)
 	:append resource
 	:unless (listp resource)
 	:collect resource))
 
-(defun project-stewards (project)
+(defun (setf project-resources) (new-value &optional (project *project*))
+  (setf (slot-value project 'resources) new-value))
+
+(defun project-stewards (&optional (project *project*))
+  (delete-duplicates
+   (mapcar #'cid:steward (project-resources project))))
+
+(defun project-stewards (&optional (project *project*))
   (delete-duplicates
    (mapcar #'cid:steward (project-resources project))))
 
@@ -661,6 +697,17 @@ This is not to be confused with SAVE-PROJECT."
    (list "/bin/sh" "/opt/cid/bin/cid_repository" "-t" trac-environment "rm" name)
    :project project))
 
+
+;;;;
+;;;; Convenience
+;;;;
+
+(defun pbcopy-keycloak-admin-password (&optional (project *project*))
+  "Copy keycloak admin password in the pasteboard."
+  (with-input-from-string (password (slot-value project 'keycloak-admin-password))
+    (uiop:run-program
+     (list "/usr/bin/pbcopy")
+     :input password)))
 
 ;;;;
 ;;;; Administration of Trac Environments
