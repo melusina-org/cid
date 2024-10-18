@@ -22,6 +22,7 @@
    #:instance-memory-size
    #:instance-disk-size
    
+   #:make-laboratory-instance
    #:list-instances
    #:find-instance
    #:start-instance
@@ -62,6 +63,11 @@ This can be one of the values :AARCH64 or :X86_64.")
     :initform 60
     :reader instance-disk-size
     :documentation "The size of instance disk storage in GB.")))
+
+(defun make-laboratory-instance ()
+  (make-instance 'instance
+		 :name "laboratory"
+		 :memory-size 4))
 
 (defmethod print-object ((instance instance) stream)
   (print-unreadable-object (instance stream :type t :identity t)
