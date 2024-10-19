@@ -23,7 +23,7 @@
   (let ((hostname
 	  (operation:project-hostname project))
 	(port
-	  (operation:project-http-port project)))
+	  (operation:project-https-port project)))
     (labels ((trac-location (&rest location)
 	       (apply
 		#'concatenate
@@ -37,7 +37,8 @@
 	       (with-http-reply
 		   ((trac-location trac-location)
 		    :hostname hostname
-		    :port port)
+		    :port port
+		    :verify nil)
 		 (assert-http-status http-status)
 		 (assert-http-body http-body)))
 	     (validate-location (trac-location http-body &optional (http-status 200))
@@ -81,6 +82,8 @@
     (loop :for volume :in (enumerate-volumes :project name)
 	  :do (ensure-that-volume-exists volume))
     (assert-t* (operation:find-project name))
+    (setf (operation:project-configuration "project.hostname" project)
+	  "localhost")
     (operation:configure-project project)
     (operation:start-project project)
     (ensure-that-trac-instance-is-available project "example1")

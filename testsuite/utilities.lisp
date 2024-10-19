@@ -79,19 +79,20 @@
                           parameters
                           external-format-out
                           additional-headers
-                          real-host)
+                          real-host
+			  verify)
   "Send a HTTP request to an ACCEPTOR and returns its reply.
 This uses `DRAKMA:HTTP-REQUEST' to perform the request."
   (declare (ignore protocol method content content-type content-length
 		   range cookie-jar basic-authorization parameters
-		   external-format-out additional-headers real-host))
+		   external-format-out additional-headers real-host verify))
   (let ((drakma:*text-content-types*
           '(("text" . nil)
             ("application" . "json")))
 	(http-reply
 	  (make-instance 'http-reply))
 	(actual-url
-	  (format nil "http://~A:~A~A" hostname port uri-path))
+	  (format nil "https://~A:~A~A" hostname port uri-path))
 	(actual-args
 	  (loop :with filter-out = '(:hostname :port)
 		:for args-part = args :then (cddr args-part)
@@ -136,12 +137,13 @@ This uses `DRAKMA:HTTP-REQUEST' to perform the request."
 				 external-format-out
 				 accept
 				 additional-headers
-				 real-host)
+				 real-host
+				 verify)
 			   &body body-forms)
   (declare (ignore protocol method hostname port
 		   content content-type content-length
 		   range cookie-jar basic-authorization parameters
-		   external-format-out accept additional-headers real-host))
+		   external-format-out accept additional-headers real-host verify))
   `(let ((*http-reply*
 	   (http-request ,uri-path ,@args)))
      ,@body-forms))
