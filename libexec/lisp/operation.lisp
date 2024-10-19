@@ -129,7 +129,7 @@
 
 (defun edit-project-configuration-file (&optional (project *project*))
   (uiop:run-program
-   (list "open" "-a" "EmacsMac"
+   (list "open" "-a" "Emacs"
 	 (namestring (project-configuration-file project)))))
 
 (defun project-configuration-key (designator)
