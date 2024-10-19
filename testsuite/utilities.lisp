@@ -277,9 +277,9 @@ reply than the last *HTTP-REPLY*."
        (assert-equal object1 object2))
       (string
        (assert-string= object1 object2))
-      (symbol
-       (assert-eq object1 object2))
       (null
+       (assert-eq object1 object2))
+      (symbol
        (assert-eq object1 object2))
       (pathname
        (assert-equal object1 object2))
