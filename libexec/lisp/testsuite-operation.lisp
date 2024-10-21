@@ -14,10 +14,10 @@
 (in-package #:org.melusina.cid/testsuite)
 
 (define-testcase ensure-that-volume-exists (volume)
-  (assert-t* (docker:find-volume volume)))
+  (assert-t* (docker:find-volume (slot-value volume 'cid::volume))))
 
 (define-testcase ensure-that-volume-does-not-exist (volume)
-  (assert-nil (docker:find-volume (docker:volume-name volume))))
+  (assert-nil (docker:find-volume (slot-value volume 'cid::volume))))
 
 (define-testcase ensure-that-trac-instance-is-available (project instance)
   (let ((hostname
@@ -67,7 +67,7 @@
 	     (+ first-unprivilieged-port
 		(random (- first-invalid-port first-unprivilieged-port)))))
 	 (project
-	   (operation:create-project
+	   (operation:make-project
 	    :name name
 	    :tag tag
 	    :hostname "localhost"
@@ -79,18 +79,16 @@
 	  :do (progn
 		(ensure-that-image-exists image)
 		(ensure-that-image-is-valid image)))
-    (loop :for volume :in (enumerate-volumes :project name)
+    (operation:create-project :project project)
+    (loop :for volume :in (enumerate-volumes :project project)
 	  :do (ensure-that-volume-exists volume))
     (assert-t* (operation:find-project name))
-    (setf (operation:project-configuration "project.hostname" project)
-	  "localhost")
-    (operation:configure-project project)
-    (operation:start-project project)
     (ensure-that-trac-instance-is-available project "example1")
     (ensure-that-trac-instance-is-available project "example-2-fancy-name")
-    (operation:stop-project project)
-    (operation:delete-project project)
-    (loop :for volume :in (enumerate-volumes :project name)
+    (handler-bind
+	((cid:resource-no-longer-exists #'continue))
+      (operation:delete-project project))
+    (loop :for volume :in (enumerate-volumes :project project)
 	  :do (ensure-that-volume-does-not-exist volume))
     (loop :for image :in (enumerate-images :tag tag)
 	  :do (progn

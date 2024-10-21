@@ -54,6 +54,10 @@
    #:pbcopy-keycloak-admin-password
    #:project-resources
    #:project-stewards
+   #:enable-service
+   #:disable-service
+   #:service-enabled-p
+   #:service-disabled-p
    ))
 
 (in-package #:org.melusina.cid/operation)
@@ -118,8 +122,11 @@
     :initform nil
     :documentation
     "The resources associated to the project.")
-   (volumes
-    :initform nil)))
+   (enable
+    :initarg :enable
+    :initform '(:trac :gitserver :jenkins)
+    :documentation
+    "The services to enable for the project.")))
 
 (defun project-backup-directory (&optional (project *project*))
   (merge-pathnames #p"backups/" (project-pathname project)))
@@ -192,70 +199,69 @@ files used by git."
     (string= text "no")))
 
 (defun service-enabled-p (service &optional (project *project*))
-  (is-yes-p
-   (project-configuration (list service :service :enable) project)))
+  (and (member service (slot-value project 'enable)) t))
 
 (defun service-disabled-p (service &optional (project *project*))
-  (is-no-p
-   (project-configuration (list service :service :enable) project)))
+  (not (service-enabled-p service project)))
 
 (defun enable-service (service &optional (project *project*))
-  (setf
-   (project-configuration (list service :service :enable) project)
-   "yes")
-  t)
+  (pushnew service (slot-value project 'enable))
+  (values t))
 
 (defun disable-service (service &optional (project *project*))
-  (setf
-   (project-configuration (list service :service :enable) project)
-   "no")
+  (setf (slot-value project 'enable)
+	(delete service (slot-value project 'enable)))
   nil)
 
-(defun make-volume (name project)
-  (docker:make-volume
-   :name (concatenate 'string "cid" "-" (project-name project) "-" name)))
-
-(defun volume-database (project)
-  (flet ((volume-name (binding)
-	   (docker:volume-name (car binding))))
-    (remove-duplicates
-     (append
-      (when (service-enabled-p :trac project)
+(defun project-volume-database (&optional (project *project*))
+  "The specification for Docker volumes consumed by PROJECT."
+  (flet ((volume-name (name)
+	   (concatenate 'string "cid" "-" (project-name project) "-" name)))
+    (append
+     (when (service-enabled-p :trac project)
+       (list
 	(list
-	 (cons (make-volume "ssl" project) #p"/etc/ssl/private")
-	 (cons (make-volume "trac" project) #p"/var/trac")
-	 (cons (make-volume "www" project) #p"/var/www")
-	 (cons (make-volume "git" project) #p"/var/git")))
-      (when (service-enabled-p :gitserver project)
+	 :name "ssl"
+	 :displayname "SSL"
+	 :description "This volume holds TLS/SSL cryptographic artefacts."
+	 :mount-point #p"/etc/ssl/private"
+	 :volume (volume-name "ssl"))
 	(list
-	 (cons (make-volume "git" project) #p"/var/git")))
-      (when (service-enabled-p :jenkins project)
+	 :name "trac"
+	 :displayname "Trac"
+	 :description "This volume holds Trac assets and database."
+	 :mount-point #p"/var/trac"
+	 :volume (volume-name "trac"))
 	(list
-	 (cons (make-volume "jenkins" project) #p"/var/lib/jenkins"))))
-     :test #'string=
-     :key #'volume-name)))
+	 :name "www"
+	 :displayname "WWW"
+	 :description "This volume holds Apache site definitions for Trac."
+	 :mount-point #p"/var/www"
+	 :volume (volume-name "www"))))
+     (when (or (service-enabled-p :trac project)
+	       (service-enabled-p :gitserver project))
+       (list
+	(list
+	 :name "git"
+	 :displayname "GIT"
+	 :description "This volume holds GIT repositories."
+	 :mount-point #p"/var/git"
+	 :volume (volume-name "git"))))
+     (when (service-enabled-p :jenkins project)
+       (list
+	(list
+	 :name "jenkins"
+	 :displayname "Jenkins"
+	 :description "This volume holds Jenkins configuration."
+	 :mount-point #p"/var/lib/jenkins"
+	 :volume (volume-name "jenkins")))))))
 
 (defun project-created-p (project)
   (slot-value project 'status))
 
-(defmethod initialize-instance :after ((instance project) &rest initargs &key &allow-other-keys)
-  (declare (ignore initargs))
-  (macrolet ((initialize-slot-from-configuration-file (slot-name designator)
-	       `(unless (slot-value instance ,slot-name)
-		  (setf (slot-value instance ,slot-name)
-			(project-configuration ,designator instance)))))
-    (with-slots (name pathname volumes http-port https-port ssh-port) instance
-      (setf volumes
- 	    (loop :for system :in '("ssl" "trac" "git" "www" "jenkins")
-		  :collect (docker:make-volume
-			    :name (concatenate 'string "cid-" name "-" system))))
-      (setf pathname
-	    (cid:user-data-relative-pathname (concatenate 'string name "/")))
-      (initialize-slot-from-configuration-file 'hostname '(:project :hostname)))))
-
 (defun make-project (&rest initargs &key name status hostname http-port https-port
-  ssh-port docker-compose keycloak-admin-password tag resources)
-  (declare (ignore name hostname http-port https-port ssh-port status docker-compose keycloak-admin-password tag resources))
+  ssh-port docker-compose keycloak-admin-password tag resources pathname)
+  (declare (ignore name hostname http-port https-port ssh-port status docker-compose keycloak-admin-password tag resources pathname))
   (apply #'make-instance 'project initargs))
 
 (defun make-project-resources (&optional (project *project*))
@@ -267,7 +273,7 @@ files used by git."
 			     :displayname "Local Laboratory"
 			     :tenant cid:*tenant*))
 	 (keycloak-admin
-	   (with-slots (keycloak-admin-password hostname) project
+	   (with-slots (keycloak-admin-password hostname https-port) project
 	     (cid:make-keycloak-admin
 	      :name "keycloak-admin"
 	      :displayname "Keycloak Admin"
@@ -278,6 +284,8 @@ files used by git."
 			 'string
 			 "https://"
 			 hostname
+			 ":"
+			 (write-to-string https-port)
 			 "/authorization")
 	      :password keycloak-admin-password)))
 	 (keycloak-renaissance-realm
@@ -295,7 +303,7 @@ files used by git."
 	   (with-slots (hostname) project
 	     (cid:make-keycloak-client
 	      :keycloak-admin keycloak-admin
-	      :realm keycloak-renaissance-realm
+	      :parent keycloak-renaissance-realm
 	      :client "trac"
 	      :name "Renaissance Trac"
 	      :displayname "Renaissance Trac"
@@ -313,9 +321,47 @@ files used by git."
 			 "/trac/renaissance/*"))
 	      :web-origins
 	      (list (concatenate 'string "https://" hostname))
-	      :public-client nil))))
+	      :public-client nil)))
+	 (docker-engine
+	   (cid:make-docker-engine
+	    :name "docker-engine"
+	    :displayname "Docker Engine"
+	    :description "The interface to the docker engine running the deployment."))
+	 (docker-volumes
+	   (flet ((make-docker-volume (&key name displayname description volume &allow-other-keys)
+		    (cid:make-docker-volume
+		     :docker-engine docker-engine
+		     :name name
+		     :displayname displayname
+		     :description description
+		     :volume volume)))
+	     (loop :for spec :in (project-volume-database project)
+		    :collect (apply #'make-docker-volume spec))))
+	 )
     (list :realms (list keycloak-renaissance-realm)
-	  :clients (list keycloak-renaissance-trac))))
+	  :clients (list keycloak-renaissance-trac)
+	  :docker-volumes docker-volumes)))
+
+(defmethod initialize-instance :after ((instance project) &rest initargs &key &allow-other-keys)
+  (declare (ignore initargs))
+  (flet ((initialize-pathname ()
+	   (with-slots (name pathname) instance
+	     (setf pathname
+		   (cid:user-data-relative-pathname
+		    (concatenate 'string name "/")))))
+	 (initialize-slots-from-configuration-file ()
+	   (macrolet ((initialize-slot-from-configuration-file (slot-name designator)
+			`(unless (slot-value instance ,slot-name)
+			   (setf (slot-value instance ,slot-name)
+				 (project-configuration ,designator instance)))))
+	     (initialize-slot-from-configuration-file 'hostname '(:project :hostname))))
+	 (initialize-resources ()
+	   (with-slots (resources) instance
+	     (unless resources
+	       (setf resources (make-project-resources instance))))))
+    (initialize-pathname)
+    (initialize-slots-from-configuration-file)
+    (initialize-resources)))
 
 (defun project-url (object)
   (with-slots (hostname https-port) object
@@ -373,26 +419,15 @@ files used by git."
 	   :key #'project-name
 	   :test #'string=))))
 
-(defun update-project (&optional (project *project*))
-  "Update PROJECT slots from its actual state."
-  (let ((actual-state
-	  (find-project (project-name project))))
-    (unless actual-state
-      (setf (slot-value project 'status) nil)
-      (return-from update-project project))
-    (loop :for slot-name :in '(status volumes)
-	  :do (setf (slot-value project slot-name)
-		    (slot-value actual-state slot-name)))
-    (loop :for volume :in (slot-value project 'volumes)
-	  :do (docker:update-volume volume))
-    (values project)))
-
 (defun project-resources (&optional (project *project*))
-  (loop :for (key resource) :on (slot-value project 'resources) :by #'cddr
-	:when (listp resource)
-	:append resource
-	:unless (listp resource)
-	:collect resource))
+  "Project resources sorted in dependency order."
+  (sort
+   (loop :for (key resource) :on (slot-value project 'resources) :by #'cddr
+	 :when (listp resource)
+	 :append resource
+	 :unless (listp resource)
+	 :collect resource)
+   #'cid:resource-require-p)) 
 
 (defun (setf project-resources) (new-value &optional (project *project*))
   (setf (slot-value project 'resources) new-value))
@@ -401,54 +436,18 @@ files used by git."
   (delete-duplicates
    (mapcar #'cid:steward (project-resources project))))
 
-(defun project-stewards (&optional (project *project*))
-  (delete-duplicates
-   (mapcar #'cid:steward (project-resources project))))
-
-(defun create-project (&key project name tag hostname http-port https-port ssh-port (docker-compose *docker-compose*))
-  (unless (or name tag project)
-    (setf project *project*))
-  (if project
-      (setf name (project-name project)
-	    docker-compose (project-docker-compose project)
-	    tag (project-tag project)
-	    hostname (project-hostname project)
-	    http-port (project-http-port project)
-	    https-port (project-https-port project)
-	    ssh-port (project-ssh-port project))
-      (progn
-	(unless name
-	  (error "A project requires a NAME."))
-	(setf project
-	      (make-project
-	       :name name
-	       :docker-compose docker-compose
-	       :tag tag
-	       :hostname hostname
-	       :http-port http-port
-	       :https-port https-port
-	       :ssh-port ssh-port))))
-  (with-slots (resources volumes status) project
-    (when status
-      (return-from create-project project))
-    (dolist (pathname (list (project-pathname project)
-			    (project-backup-directory project)))
-      (ensure-directories-exist pathname))
-    (let ((project-configuration-file
-	    (project-configuration-file project)))
-      (unless (probe-file project-configuration-file)
-	(uiop:copy-file
-	 (system-relative-pathname "example/cid.conf")
-	 project-configuration-file)))
-    (loop :for volume :in volumes
-	  :do (docker:create-volume
-	       :name (docker:volume-name volume)
-	       :driver (docker:volume-driver volume)))
-    (dolist (steward (project-stewards project))
-      (cid:configure-steward steward))
-    (dolist (resource (project-resources project))
-      (cid:create-resource resource))
-    (setf status t)
+(defun update-project (&optional (project *project*))
+  "Update PROJECT slots from its actual state."
+  (let ((actual-state
+	  (find-project (project-name project))))
+    (unless actual-state
+      (setf (slot-value project 'status) nil)
+      (return-from update-project project))
+    (loop :for slot-name :in '(status)
+	  :do (setf (slot-value project slot-name)
+		    (slot-value actual-state slot-name)))
+    (loop :for resource :in (project-resources project)
+	  :do (cid:update-instance-from-resource resource))
     (values project)))
 
 (defmacro with-environment (bindings &body body)
@@ -507,23 +506,141 @@ files used by git."
   (stop-project project)
   (start-project project))
 
+(defun create-project (&key project name tag hostname http-port https-port ssh-port (docker-compose *docker-compose*))
+  (unless (or name tag project)
+    (setf project *project*))
+  (if project
+      (setf name (project-name project)
+	    docker-compose (project-docker-compose project)
+	    tag (project-tag project)
+	    hostname (project-hostname project)
+	    http-port (project-http-port project)
+	    https-port (project-https-port project)
+	    ssh-port (project-ssh-port project))
+      (progn
+	(unless name
+	  (error "A project requires a NAME."))
+	(setf project
+	      (make-project
+	       :name name
+	       :docker-compose docker-compose
+	       :tag tag
+	       :hostname hostname
+	       :http-port http-port
+	       :https-port https-port
+	       :ssh-port ssh-port))))
+  (flet ((return-early-when-project-resources-already-exist ()
+	   (with-slots (status) project
+	     (when status
+	       (return-from create-project project))))
+	 (create-project-directories ()
+	   (dolist (pathname (list (project-pathname project)
+				   (project-backup-directory project)))
+	     (ensure-directories-exist pathname)))
+	 (create-project-configuration-file ()
+	   (let ((project-configuration-file
+		   (project-configuration-file project)))
+	     (unless (probe-file project-configuration-file)
+	       (uiop:copy-file
+		(system-relative-pathname "example/cid.conf")
+		project-configuration-file))
+	     (setf (project-configuration "project.hostname" project)
+		   (slot-value project 'hostname))))
+	 (create-docker-resources ()
+	   (let ((docker-engine
+		   (find 'cid:docker-engine (project-stewards project)
+			 :key #'type-of
+			 :test #'eq))
+		 (docker-volumes
+		   (flet ((docker-volume-p (resource)
+			    (eq (type-of resource) 'cid:docker-volume)))
+		     (remove-if-not #'docker-volume-p
+				    (project-resources project)))))
+	     (cid:configure-steward docker-engine)
+	     (dolist (resource docker-volumes)
+	       (cid:create-resource resource))))
+	 (wait-for-services-to-be-ready ()
+	   (sleep 60))
+	 (create-keycloak-resources ()
+	   (let ((keycloak-admin
+		   (find 'cid:keycloak-admin (project-stewards project)
+			 :key #'type-of
+			 :test #'eq))
+		 (keycloak-resources
+		   (flet ((keycloak-resource-p (resource)
+			    (member (type-of resource)
+				    '(cid:keycloak-realm cid:keycloak-client)
+				    :test #'eq)))
+		     (remove-if-not #'keycloak-resource-p
+				    (project-resources project)))))
+	     (cid:configure-steward keycloak-admin)
+	     (dolist (resource keycloak-resources)
+	       (cid:create-resource resource))))
+	 (update-project-status ()
+	   (with-slots (status) project
+	     (setf status t))))
+    (return-early-when-project-resources-already-exist)
+    (create-project-directories)
+    (create-project-configuration-file)
+    (create-docker-resources)
+    (configure-project project)
+    (start-project project)
+    (wait-for-services-to-be-ready)
+    (create-keycloak-resources)
+    (update-project-status)
+    (values project)))
+
 (defun delete-project (&optional (project *project*))
-  (with-project-environment project
-    (uiop:run-program
-     (list "docker" "compose"
-	   "--project-name" (project-name project)
-	   "--file" (namestring
+  (flet ((delete-keycloak-resources ()
+	   (let ((keycloak-admin
+		   (find 'cid:keycloak-admin (project-stewards project)
+			 :key #'type-of
+			 :test #'eq))
+		 (keycloak-resources
+		   (flet ((keycloak-resource-p (resource)
+			    (member (type-of resource)
+				    '(cid:keycloak-realm cid:keycloak-client)
+				    :test #'eq)))
+		     (remove-if-not #'keycloak-resource-p
+				    (project-resources project)))))
+	     (cid:configure-steward keycloak-admin)
+	     (dolist (resource keycloak-resources)
+	       (cid:delete-resource resource))))
+	 (delete-containers-and-internal-volumes ()
+	   (with-project-environment project
+	     (uiop:run-program
+	      (list "docker" "compose"
+		    "--project-name" (project-name project)
+		    "--file" (namestring
 		     (project-docker-compose project))
-	   "rm" "--volumes" "--force")
-     :output t
-     :error-output t)
-    (with-slots (pathname) project
-      (uiop:delete-file-if-exists pathname))
-    (with-slots (volumes status) project
-      (loop :for volume :in volumes
-	    :do (docker:delete-volume volume))
-      (setf status nil)))
-  (values project))
+		    "rm" "--stop" "--volumes" "--force")
+	      :output t
+	      :error-output t)))
+	 (delete-docker-resources ()
+	   (let ((docker-engine
+		   (find 'cid:docker-engine (project-stewards project)
+			 :key #'type-of
+			 :test #'eq))
+		 (docker-volumes
+		   (flet ((docker-volume-p (resource)
+			    (eq (type-of resource) 'cid:docker-volume)))
+		     (remove-if-not #'docker-volume-p
+				    (project-resources project)))))
+	     (cid:configure-steward docker-engine)
+	     (dolist (resource docker-volumes)
+	       (cid:delete-resource resource))))
+	 (delete-project-configuration-file ()
+	   (uiop:delete-file-if-exists
+	    (project-configuration-file project)))
+	 (update-project-status ()
+	   (with-slots (status) project
+	     (setf status nil))))
+    (delete-keycloak-resources)
+    (delete-containers-and-internal-volumes)
+    (delete-docker-resources)
+    (delete-project-configuration-file)
+    (update-project-status)
+    (values project)))
 
 (defun project-filename (&optional (designator *project*))
   (let ((project-name
@@ -602,12 +719,16 @@ files used by git."
 	    (format nil "type=bind,src=~A,dst=~A"
 		    (namestring source)
 		    (namestring destination))))
-	 (docker-volume (binding)
-	   (list
-	    "--mount"
-	    (format nil "type=volume,src=~A,dst=~A"
-		    (docker:volume-name (car binding))
-		    (namestring (cdr binding)))))
+	 (docker-volume (spec)
+	   (let ((volume
+		   (getf spec :volume))
+		 (mount-point
+		   (getf spec :mount-point)))
+	     (list
+	      "--mount"
+	      (format nil "type=volume,src=~A,dst=~A"
+		      volume
+		      (namestring mount-point)))))
 	 (docker-image ()
 	   (list (concatenate 'string
 			      "cid/console:"
@@ -615,8 +736,8 @@ files used by git."
     (uiop:run-program
      (append
       (list "docker" "run" "-i" "--rm")
-      (loop :for binding :in (volume-database project)
-	    :append (docker-volume binding))
+      (loop :for spec :in (project-volume-database project)
+	    :append (docker-volume spec))
       (docker-bind
        (project-backup-directory project)
        "/opt/cid/var/backups")

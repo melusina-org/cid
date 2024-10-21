@@ -29,9 +29,9 @@
 	:collect image))
 
 (defun enumerate-volumes (&key project)
-  (loop :for system :in '("trac" "git" "www")
-	:collect (docker:make-volume
-		  :name (concatenate 'string "cid-" project "-" system))))
+  (flet ((docker-volume-p (resource)
+	   (eq 'cid:docker-volume (type-of resource))))
+    (remove-if-not #'docker-volume-p (operation:project-resources project))))
 
 (defmacro with-test-environment (&body body)
   "Run BODY with an appropriate test environment."
