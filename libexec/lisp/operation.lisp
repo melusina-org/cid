@@ -551,13 +551,14 @@ files used by git."
 		   (find 'cid:docker-engine (project-stewards project)
 			 :key #'type-of
 			 :test #'eq))
-		 (docker-volumes
-		   (flet ((docker-volume-p (resource)
-			    (eq (type-of resource) 'cid:docker-volume)))
-		     (remove-if-not #'docker-volume-p
+		 (docker-resources
+		   (flet ((docker-resource-p (resource)
+			    (eq (type-of (cid:steward resource))
+				'cid:docker-engine)))
+		     (remove-if-not #'docker-resource-p
 				    (project-resources project)))))
 	     (cid:configure-steward docker-engine)
-	     (dolist (resource docker-volumes)
+	     (dolist (resource docker-resources)
 	       (cid:create-resource resource))))
 	 (wait-for-services-to-be-ready ()
 	   (sleep 60))
@@ -568,11 +569,8 @@ files used by git."
 			 :test #'eq))
 		 (keycloak-resources
 		   (flet ((keycloak-resource-p (resource)
-			    (member (type-of resource)
-				    '(cid:keycloak-realm cid:keycloak-client)
-				    :test #'eq)))
-		     (remove-if-not #'keycloak-resource-p
-				    (project-resources project)))))
+			    (eq (type-of (cid:steward resource))
+				'cid:keycloak-admin))))))
 	     (cid:configure-steward keycloak-admin)
 	     (dolist (resource keycloak-resources)
 	       (cid:create-resource resource))))
@@ -598,9 +596,8 @@ files used by git."
 			 :test #'eq))
 		 (keycloak-resources
 		   (flet ((keycloak-resource-p (resource)
-			    (member (type-of resource)
-				    '(cid:keycloak-realm cid:keycloak-client)
-				    :test #'eq)))
+			    (eq (type-of (cid:steward resource))
+				'cid:keycloak-admin)))
 		     (remove-if-not #'keycloak-resource-p
 				    (project-resources project)))))
 	     (cid:configure-steward keycloak-admin)
@@ -621,14 +618,29 @@ files used by git."
 		   (find 'cid:docker-engine (project-stewards project)
 			 :key #'type-of
 			 :test #'eq))
-		 (docker-volumes
-		   (flet ((docker-volume-p (resource)
-			    (eq (type-of resource) 'cid:docker-volume)))
-		     (remove-if-not #'docker-volume-p
+		 (docker-resources
+		   (flet ((docker-resource-p (resource)
+			    (eq (type-of (cid:steward resource))
+				'cid:docker-engine)))
+		     (remove-if-not #'docker-resource-p
 				    (project-resources project)))))
 	     (cid:configure-steward docker-engine)
-	     (dolist (resource docker-volumes)
+	     (dolist (resource docker-resources)
 	       (cid:delete-resource resource))))
+	 (delete-docker-networks ()
+	   (let ((docker-engine
+		   (find 'cid:docker-engine (project-stewards project)
+			 :key #'type-of
+			 :test #'eq))
+		 (docker-networks
+		   (loop :for network :in '("frontend" "service")
+			 :collect (concatenate
+				   'string
+				   (project-name project)
+				   "_"
+				   network))))
+	     (apply #'cid::run-docker-engine-command
+		    docker-engine "network" "rm" docker-networks)))
 	 (delete-project-configuration-file ()
 	   (uiop:delete-file-if-exists
 	    (project-configuration-file project)))
@@ -638,6 +650,7 @@ files used by git."
     (delete-keycloak-resources)
     (delete-containers-and-internal-volumes)
     (delete-docker-resources)
+    (delete-docker-networks)
     (delete-project-configuration-file)
     (update-project-status)
     (values project)))
