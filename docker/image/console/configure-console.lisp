@@ -1,4 +1,4 @@
-;;;; build-console.lisp — Build the Administration Console Program
+;;;; configure-console.lisp — Build the Administration Console Program
 
 ;;;; El Cid (https://github.com/melusina-org/cid)
 ;;;; This file is part of El Cid.
@@ -20,8 +20,6 @@
 
 (ql:quickload '#:org.melusina.cid/console)
 
-;(swank-loader:init)
-
 (handler-case
     (progn
       (require '#:asdf)
@@ -32,6 +30,6 @@
     (format *trace-output* "~&Failure: ~A~&" c)
     (quit :unix-status 1)))
 
-(asdf:operate 'asdf:program-op '#:org.melusina.cid/console)
+(org.melusina.cid/console:configure-console)
 
-;;;; End of file `build-console.lisp'
+;;;; End of file `configure-console.lisp'

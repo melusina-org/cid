@@ -75,13 +75,15 @@
 		  "org.melusina.cid/user"
 		  "org.melusina.cid/poc")))
 
-(defun build (&key (tag "latest") (cache t))
-  (dolist (image-name
-	   '("linux" "console" "reverseproxy" "gitserver" "trac"))
+(defun build (&key (tag "latest") (cache t) images)
+  (unless images
+    (setf images '("linux" "console" "reverseproxy" "gitserver" "trac")))
+  (dolist (image-name images)
     (let ((image
 	    (build:find-image (uiop:strcat "cid/" image-name))))
       (setf (build:image-tag image) tag)
       (build:build-image image :cache cache))))
+
 
 
 ;;;;

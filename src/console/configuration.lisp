@@ -1,4 +1,4 @@
-;;;; package.lisp — Package for El Cid Administration Console
+;;;; configuration.lisp — Configuration for El Cid Administration Console
 
 ;;;; El Cid (https://github.com/melusina-org/cid)
 ;;;; This file is part of El Cid.
@@ -11,15 +11,17 @@
 ;;;; you should have received as part of this distribution. The terms
 ;;;; are also available at https://opensource.org/licenses/MIT
 
-(defpackage #:org.melusina.cid/console
-  (:use #:common-lisp)
-  (:local-nicknames
-   (#:cid #:org.melusina.cid)
-   (#:development #:org.melusina.cid/development)
-   (#:operation #:org.melusina.cid/operation))
-  (:export
-   #:entry-point))
 
 (in-package #:org.melusina.cid/console)
 
-;;;; End of file `package.lisp'
+(defparameter *swank-port* 4005
+  "The port of the SWANK listener.")
+
+(defparameter *server-address*
+  #.(flet ((docker-p ()
+	     (member :linux *features*)))
+      (if (docker-p)
+	  "0.0.0.0"
+	  "127.0.0.1")))
+
+;;;; End of file `configuration.lisp'

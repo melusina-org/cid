@@ -13,8 +13,25 @@
 
 (in-package #:org.melusina.cid/console)
 
+(defun idle-loop ()
+  (loop (sleep 5)))
+
+(defun load-project ()
+  (let ((pathname
+	  #p"/opt/cid/var/config/project.lisp"))
+    (assert (probe-file pathname) () 'file-does-not-exist)
+    (let ((cid:*encryption-key*
+	    (ironclad:hex-string-to-byte-array
+	     (uiop:getenv "CID_ENCRYPTION_KEY"))))
+      (with-open-file (stream pathname :direction :input)
+	(values
+	 (cid:read-persistent-object stream)
+	 pathname)))))
+
 (defun entry-point ()
   (format t "Administration Console for El Cid.~%")
+  (start-swank)
+  (idle-loop)
   (uiop:quit 0))
 
 ;;;; End of file `entry-point.lisp'

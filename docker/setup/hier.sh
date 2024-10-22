@@ -15,6 +15,7 @@
 
 hier_directories='
  bin
+ etc
  lib
  libexec
  man

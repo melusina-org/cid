@@ -58,6 +58,7 @@
    #:disable-service
    #:service-enabled-p
    #:service-disabled-p
+   #:run-console-server
    ))
 
 (in-package #:org.melusina.cid/operation)
@@ -570,7 +571,9 @@ files used by git."
 		 (keycloak-resources
 		   (flet ((keycloak-resource-p (resource)
 			    (eq (type-of (cid:steward resource))
-				'cid:keycloak-admin))))))
+				'cid:keycloak-admin)))
+		     (remove-if-not #'keycloak-resource-p
+				    (project-resources project)))))
 	     (cid:configure-steward keycloak-admin)
 	     (dolist (resource keycloak-resources)
 	       (cid:create-resource resource))))
@@ -725,7 +728,7 @@ files used by git."
 ;;;; Run Program
 ;;;;
 
-(defun run-console-program (command &key (project *project*) volumes (output t))
+(defun run-console-program (command &key (project *project*) volumes publish (output t) environment name hostname)
   (flet ((docker-bind (source destination)
 	   (list
 	    "--mount"
@@ -745,12 +748,21 @@ files used by git."
 	 (docker-image ()
 	   (list (concatenate 'string
 			      "cid/console:"
-			      (project-tag project)))))
+			      (project-tag project))))
+	 (docker-environment (name value)
+	   (list "--env"
+		 (concatenate 'string name "=" value))))
     (uiop:run-program
      (append
       (list "docker" "run" "-i" "--rm")
+      (when hostname
+	(list "--hostname" hostname))
+      (when name
+	(list "--name" name))
       (loop :for spec :in (project-volume-database project)
 	    :append (docker-volume spec))
+      (loop :for (name . value) :in environment
+	    :append (docker-environment name value))
       (docker-bind
        (project-backup-directory project)
        "/opt/cid/var/backups")
@@ -758,9 +770,27 @@ files used by git."
        (project-pathname project)
        "/opt/cid/var/config")
       volumes
+      (when publish
+	(loop :for spec :in publish
+	      :collect "--publish"
+	      :collect spec))
       (docker-image)
       command)
      :output output :error-output t)))
+
+(defun run-console-server (&key (project *project*))
+  (run-console-program
+   nil
+   :project project
+   :name (concatenate 'string (project-name project) "-console-server")
+   :hostname (concatenate 'string "console." (project-hostname project))
+   :publish '("127.0.0.1:14005:4005")
+   :environment
+   (when cid:*encryption-key*
+     (list
+      (cons "CID_ENCRYPTION_KEY"
+	    (ironclad:byte-array-to-hex-string
+	     cid:*encryption-key*))))))
 
 
 ;;;;

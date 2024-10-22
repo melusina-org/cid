@@ -53,6 +53,10 @@
   :description "Administration Console for El Cid"
   :author "Michaël Le Barbier"
   :license "MIT License"
+  :depends-on (#:swank
+	       #:org.melusina.cid
+	       #:org.melusina.cid/development
+	       #:org.melusina.cid/operation)
   :build-operation program-op
   :build-pathname "console"
   :entry-point "org.melusina.cid/console:entry-point"
@@ -60,6 +64,8 @@
   ((:module "src/console"
     :components ((:file "package")
 		 (:file "utilities")
+		 (:file "configuration")
+		 (:file "swank")
 		 (:file "entry-point")))))
 
 (asdf:defsystem #:org.melusina.cid/colima

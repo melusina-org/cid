@@ -283,6 +283,23 @@ CID/USER> (operation:create-git-repository "trac-environment" "repository-name")
 CID/USER> (operation:delete-git-repository "trac-environment" "repository-name")
 ~~~
 
+### Start a Console Server
+
+The Console server is a special Lisp image running a Swank server and
+preloaded with some useful systems.  It is useful to use the Console
+server to develop the El Cid Console subsystem.
+
+~~~
+CID/USER> (operation:run-console-server)
+~~~
+
+Then in Slime/Emacs, use `M-x slime-connect` to connect to localhost,
+port 14005. (Do not close the previous Slime connection, so that you
+can develop two Lisp images simulatenously.)
+
+Also see the file `libexec/elisp/slime-filename-translations.el` to
+support `M-.` navigation in Slime/Emacs.
+
 ## Free software
 
 El Cid is free software: copying it and redistributing it is very

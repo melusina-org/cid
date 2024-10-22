@@ -18,7 +18,8 @@ COPY ./docker/setup/trac.sh /root/setup/
 RUN sh /root/setup/trac.sh
 
 RUN env DEBIAN_FRONTEND=noninteractive apt-get install -y\
- cpio
+ cpio\
+ clang
 
 ENV PATH="/opt/cid/bin:/opt/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
@@ -41,13 +42,26 @@ ADD ./support /opt/cid/var/src/cid/support
 RUN chown -R cid:cid /opt/cid/var/src/cid/support
 RUN sh /root/setup/support.sh
 
-ADD ./ /opt/cid/var/quicklisp/local-projects/cid/
+USER cid
+COPY ./docker/image/console/preload-systems.lisp /root/setup/
+RUN sbcl\
+ --load /opt/cid/var/quicklisp/setup.lisp\
+ --load /root/setup/preload-systems.lisp
+
+ADD --chown=cid:cid ./ /opt/cid/var/quicklisp/local-projects/cid/
 RUN sbcl\
  --load /opt/cid/var/quicklisp/setup.lisp\
  --load /opt/cid/var/quicklisp/local-projects/cid/docker/image/console/build-console.lisp\
  --batch
+
+USER root
 RUN install -m 755 -o root -g root\
  /opt/cid/var/quicklisp/local-projects/cid/console\
  /opt/cid/bin/console
+
+COPY ./docker/image/console/sudoers-console /etc/sudoers.d/console
+COPY ./docker/image/console/entrypoint /opt/cid/bin/entrypoint
+ENTRYPOINT ["/opt/cid/bin/entrypoint"]
+#VOLUME ["/opt/cid/share/console"]
 
 # End of file `Dockerfile'
