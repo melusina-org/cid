@@ -170,6 +170,8 @@ For instance in a laboratory, http://localhost:8080.")
    (method
     :initarg :method)))
 
+(defparameter *trace-keycloak-admin-request* nil)
+
 (defun keycloak-admin-request (instance location &key (method :get) content)
   (declare (optimize debug safety))
   (with-slots (access-token (base-url location)) instance
@@ -220,6 +222,11 @@ For instance in a laboratory, http://localhost:8080.")
 	       (cond ((string= response "")
 		      nil)
 		     (t
+		      (when *trace-keycloak-admin-request*
+			(format *trace-keycloak-admin-request*
+				"Keycloak Admin Request: ~A ~A~&"
+				method location)
+			(write-string response *trace-keycloak-admin-request*))
 		      (yason:parse response)))))
 	    ((<= 400 status-code 599)
 	     (error 'keycloak-admin-error
