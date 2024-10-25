@@ -576,6 +576,13 @@ even if the user does not have an active session.")
        :json-name "clientAuthenticatorType"
        :documentation "Client Authenticator used for authentication of this client
 against Keycloak server.")
+      (:slot-name secret
+       :type string
+       :initarg :secret
+       :initform nil
+       :json-name "secret"
+       :documentation "Client secret, when the OIDC type is set to confidential access."
+       :confidential t)
       (:slot-name default-roles
        :type (list string)
        :initarg :default-roles
@@ -718,7 +725,8 @@ In terms of OAuth2 specification, this enables support of 'Client Credentials Gr
 	     (labels ((persistence-definition (spec)
 			(list
 			 :slot-name (getf spec :slot-name)
-			 :initarg (getf spec :initarg)))
+			 :initarg (getf spec :initarg)
+			 :confidential (getf spec :confidential)))
 		      (persistence-definitions ()
 			(cons
 			 (list :slot-name 'steward
@@ -743,6 +751,7 @@ In terms of OAuth2 specification, this enables support of 'Client Credentials Gr
   (define-examine-resource))
 
 (defun probe-keycloak-client (steward client &key parent)
+  (check-type client string)
   (flet ((extract-json-fields (object)
 	   (extract-json-fields object +keycloak-client-model+))
 	 (get-client ()
