@@ -25,16 +25,16 @@
 FROM debian:bookworm
 ARG DEBIAN_MIRROR=none
 
-RUN install -d -o root -g root -m 700 /root/setup
+RUN install -d -o root -g root -m 755 /opt/cid/var/setup
 
-COPY ./docker/setup/apt.sh /root/setup/
-RUN sh -x /root/setup/apt.sh
+COPY ./docker/setup/apt.sh /opt/cid/var/setup/
+RUN sh -x /opt/cid/var/setup/apt.sh
 
-COPY ./docker/setup/hier.sh /root/setup
-RUN env PACKAGE=cid sh -x /root/setup/hier.sh
+COPY ./docker/setup/hier.sh /opt/cid/var/setup
+RUN env PACKAGE=cid sh -x /opt/cid/var/setup/hier.sh
 
-COPY ./docker/setup/users.sh /root/setup
-COPY ./docker/image/linux/users.conf /root/setup/
-RUN env PACKAGE=cid sh -x /root/setup/users.sh
+COPY ./docker/setup/users.sh /opt/cid/var/setup
+COPY ./docker/image/linux/users.conf /opt/cid/var/setup/
+RUN env PACKAGE=cid sh -x /opt/cid/var/setup/users.sh
 
 # End of file `Dockerfile'

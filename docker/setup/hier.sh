@@ -53,6 +53,7 @@ hier_prefix()
 
     for directory in ${hier_directories}; do
         install -d -m 755 "${prefix}/${directory}";
+        install -d -m 755 "${prefix}/${directory}/${hier_package}";
     done
 
     if [ -f /etc/login.defs ]; then

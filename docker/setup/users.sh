@@ -12,7 +12,7 @@
 # are also available at https://opensource.org/licenses/MIT
 
 : ${users_package:=${PACKAGE}}
-: ${users_configfile:=/root/setup/users.conf}
+: ${users_configfile:=/opt/${users_package}/var/setup/users.conf}
 
 users_secure_variables='
  BLOCKSIZE
@@ -115,8 +115,7 @@ users_make()
 {
     local username comment homedir createhome system shell
     local additionalusers additionalgroups
-    local systemflag createhomeflag
-    local additional
+    local additionaluser
     local __varname__
 
     username="$1"
@@ -136,20 +135,31 @@ users_make()
         systemflag=''
     fi
 
+    set -- --comment "${comment:-I am too lazy to document my users}"
+    set -- "$@" --user-group
+    set -- "$@" --home-dir "${homedir:-/home/$1}"
 
-    useradd\
-        --comment "${comment:-I am too lazy to document my users}"\
-        --user-group\
-        --home-dir "${homedir:-/home/$1}"\
-        ${systemflag}\
-        ${createhomeflag}\
-        --shell "${shell:-/bin/bash}"\
-        ${additionalgroups:+--groups }${additionalgroups}\
-        "${username}"
+    if is_true "${system}"; then
+      set -- "$@" '--system'
+    fi
+
+    if is_true "${createhome}"; then
+      set -- "$@" '--create-home'
+    fi
+
+    set -- "$@" --shell "${shell:-/bin/bash}"
+
+    useradd "$@" "${username}"
+
+    if [ -n "${additionalgroups}" ]; then
+        for additionalgroup in ${additionalgroups}; do
+            usermod -G "${additionalgroup}" -a "${username}"
+        done
+    fi
 
     if [ -n "${additionalusers}" ]; then
-        for additional in ${additionalusers}; do
-            usermod -G "${username}" -a "${additional}"
+        for additionaluser in ${additionalusers}; do
+            usermod -G "${username}" -a "${additionaluser}"
         done
     fi
 }

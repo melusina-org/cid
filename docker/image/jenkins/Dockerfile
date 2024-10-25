@@ -14,20 +14,20 @@
 ARG CID_LINUX_REFERENCE=latest
 FROM cid/linux:${CID_LINUX_REFERENCE}
 
-COPY ./docker/setup/jenkins.sh /root/setup/
-RUN sh /root/setup/jenkins.sh
+COPY ./docker/setup/jenkins.sh /opt/cid/var/setup/
+RUN sh /opt/cid/var/setup/jenkins.sh
 
-COPY ./docker/setup/docker.sh /root/setup/
-RUN sh /root/setup/docker.sh
+COPY ./docker/setup/docker.sh /opt/cid/var/setup/
+RUN sh /opt/cid/var/setup/docker.sh
 
-COPY ./docker/setup/sbcl.sh /root/setup/
-RUN sh /root/setup/sbcl.sh
+COPY ./docker/setup/sbcl.sh /opt/cid/var/setup/
+RUN sh /opt/cid/var/setup/sbcl.sh
 
-COPY ./docker/setup/java.sh /root/setup/
-RUN sh /root/setup/java.sh
+COPY ./docker/setup/java.sh /opt/cid/var/setup/
+RUN sh /opt/cid/var/setup/java.sh
 
-COPY ./docker/setup/quicklisp.sh /root/setup/
-RUN env PACKAGE=cid sh /root/setup/quicklisp.sh -o jenkins -g jenkins -i
+COPY ./docker/setup/quicklisp.sh /opt/cid/var/setup/
+RUN env PACKAGE=cid sh /opt/cid/var/setup/quicklisp.sh -o jenkins -g jenkins -i
 
 RUN usermod -a -G docker jenkins
 

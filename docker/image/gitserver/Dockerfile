@@ -17,24 +17,24 @@ FROM cid/linux:${CID_LINUX_REFERENCE}
 RUN env DEBIAN_FRONTEND=noninteractive apt-get install -y\
  cpio
 
-COPY ./docker/setup/trac.sh /root/setup/
-RUN sh /root/setup/trac.sh
+COPY ./docker/setup/trac.sh /opt/cid/var/setup/
+RUN sh /opt/cid/var/setup/trac.sh
 
-COPY ./docker/setup/gitserver.sh /root/setup/
-RUN sh /root/setup/gitserver.sh
+COPY ./docker/setup/gitserver.sh /opt/cid/var/setup/
+RUN sh /opt/cid/var/setup/gitserver.sh
 
-COPY ./docker/setup/bsdowl.sh /root/setup/
-RUN sh /root/setup/bsdowl.sh
+COPY ./docker/setup/bsdowl.sh /opt/cid/var/setup/
+RUN sh /opt/cid/var/setup/bsdowl.sh
 
-COPY ./docker/image/console/subr.sh /root/setup/
+COPY ./docker/image/console/subr.sh /opt/cid/var/setup/
 ADD ./subr /opt/cid/var/src/cid/subr
 RUN chown -R cid:cid /opt/cid/var/src/cid/subr
-RUN sh /root/setup/subr.sh
+RUN sh /opt/cid/var/setup/subr.sh
 
-COPY ./docker/image/console/support.sh /root/setup/
+COPY ./docker/image/console/support.sh /opt/cid/var/setup/
 ADD ./support /opt/cid/var/src/cid/support
 RUN chown -R cid:cid /opt/cid/var/src/cid/support
-RUN sh /root/setup/support.sh
+RUN sh /opt/cid/var/setup/support.sh
 
 COPY ./docker/image/gitserver/sudoers-gitserver /etc/sudoers.d/gitserver
 COPY ./docker/image/gitserver/entrypoint /usr/local/bin/entrypoint
