@@ -66,6 +66,8 @@
 		 (:file "utilities")
 		 (:file "configuration")
 		 (:file "swank")
+		 (:file "oidc")
+		 (:file "trac")
 		 (:file "entry-point")))))
 
 (asdf:defsystem #:org.melusina.cid/colima

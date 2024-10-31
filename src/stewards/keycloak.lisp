@@ -64,9 +64,9 @@ For instance in a laboratory, http://localhost:8080.")
    :name "keycloak-admin"
    :displayname "Keycloak Admin"
    :description
-   "The class represents a provider creating resources in a Keycloak installation.")
+   "The class represents a steward creating resources in a Keycloak installation.")
   (:documentation
-   "The class represents a provider creating resources in a Keycloak installation."))
+   "The class represents a steward creating resources in a Keycloak installation."))
 
 (defun make-keycloak-admin (&rest initargs &key tenant project name displayname description 
 						location username password)

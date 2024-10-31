@@ -56,11 +56,14 @@ RUN sbcl\
  --batch
 
 USER root
+RUN sbcl\
+ --load /opt/cid/var/quicklisp/setup.lisp\
+ --load /opt/cid/var/quicklisp/local-projects/cid/docker/image/console/configure-console.lisp\
+ --batch
 RUN install -m 755 -o root -g root\
  /opt/cid/var/quicklisp/local-projects/cid/console\
  /opt/cid/bin/console
 
-COPY ./docker/image/console/sudoers-console /etc/sudoers.d/console
 COPY ./docker/image/console/entrypoint /opt/cid/bin/entrypoint
 ENTRYPOINT ["/opt/cid/bin/entrypoint"]
 #VOLUME ["/opt/cid/share/console"]

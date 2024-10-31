@@ -16,17 +16,73 @@
 (defun idle-loop ()
   (loop (sleep 5)))
 
+(defun configure-console ()
+  "Configure the Console environment.
+This includes the following tasks:
+ - Write sudoers file.
+"
+  (flet ((write-sudoers-file ()
+	   (with-output-to-file (sudoers #p"/etc/sudoers.d/console"
+					 :owner "root"
+					 :mode #o600)
+	     (write-trac-sudoers-policy sudoers))))
+    (write-sudoers-file)))
+
 (defun load-project ()
   (let ((pathname
 	  #p"/opt/cid/var/config/project.lisp"))
     (assert (probe-file pathname) () 'file-does-not-exist)
-    (let ((cid:*encryption-key*
-	    (ironclad:hex-string-to-byte-array
-	     (uiop:getenv "CID_ENCRYPTION_KEY"))))
-      (with-open-file (stream pathname :direction :input)
-	(values
-	 (cid:read-persistent-object stream)
-	 pathname)))))
+    (let* ((cid:*encryption-key*
+	     (ironclad:hex-string-to-byte-array
+	      (uiop:getenv "CID_ENCRYPTION_KEY")))
+	   (project
+	     (with-open-file (stream pathname :direction :input)
+	       (cid:read-persistent-object stream))))
+      (when project
+	(values project pathname)))))
+
+(defun create-apache-trac (&optional project)
+  (unless project
+    (setf project (load-project)))
+  (let* ((project-resources
+	   (operation:project-resources project))
+	 (keycloak-client
+	   (find 'cid:keycloak-client project-resources
+		 :key #'type-of))
+	 (provider-metadata-url
+	   "https://forge.melusina.local/authorization/realms/melusina/.well-known/openid-configuration")
+	 (redirect-uri
+	   "https://forge.melusina.local/trac/login-with-oidc")
+	 (oidc-configuration
+	   (with-slots
+		 ((client-id cid::client)
+		  (client-secret cid::secret)
+		  (client-displayname cid::displayname))
+	       keycloak-client
+	     (make-oidc-configuration
+	      :client-id client-id
+	      :auth-name client-displayname
+	      :provider-metadata-url provider-metadata-url
+	      :client-secret client-secret
+	      :redirect-uri redirect-uri
+	      :ssl-validate-server nil))))
+    (make-apache-trac
+     :name "trac-apache"
+     :displayname "Trac/Apache Configuration."
+     :tenant (cid:tenant keycloak-client)
+     :project (cid:project keycloak-client)
+     :description "Trac/Apache Configuration"
+     :oidc-configuration oidc-configuration)))
+
+(defun configure-apache-trac (&optional apache-trac)
+  (unless apache-trac
+    (setf apache-trac (create-apache-trac)))
+  (let ((oidc-conf
+	  (merge-pathnames #p"sites/00-oidc.conf" *trac-data-directory*)))
+    (with-output-to-file (oidc oidc-conf :owner "www-data"
+					 :group "www-data"
+					 :mode #o600)
+      (write-apache-oidc-configuration (slot-value apache-trac 'oidc-configuration) oidc))))
 
 (defun entry-point ()
   (format t "Administration Console for El Cid.~%")

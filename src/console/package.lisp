@@ -18,7 +18,9 @@
    (#:development #:org.melusina.cid/development)
    (#:operation #:org.melusina.cid/operation))
   (:export
-   #:entry-point))
+   #:entry-point
+   #:configure-console
+   #:configure-apache-trac))
 
 (in-package #:org.melusina.cid/console)
 

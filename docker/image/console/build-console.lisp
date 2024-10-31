@@ -20,8 +20,6 @@
 
 (ql:quickload '#:org.melusina.cid/console)
 
-;(swank-loader:init)
-
 (handler-case
     (progn
       (require '#:asdf)
