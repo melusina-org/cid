@@ -41,7 +41,7 @@ This includes the following tasks:
       (when project
 	(values project pathname)))))
 
-(defun create-apache-trac (&optional project)
+(defun make-apache-trac* (&optional project)
   (unless project
     (setf project (load-project)))
   (let* ((project-resources
@@ -76,7 +76,7 @@ This includes the following tasks:
 
 (defun configure-apache-trac (&optional apache-trac)
   (unless apache-trac
-    (setf apache-trac (create-apache-trac)))
+    (setf apache-trac (make-apache-trac*)))
   (let ((oidc-conf
 	  (merge-pathnames #p"sites/00-oidc.conf" *trac-data-directory*)))
     (with-output-to-file (oidc oidc-conf :owner "www-data"
@@ -84,6 +84,34 @@ This includes the following tasks:
 					 :mode #o600)
       (write-apache-oidc-configuration (slot-value apache-trac 'oidc-configuration) oidc))))
 
+
+(defun make-trac-environment* (name &key apache-trac project)
+  (unless project
+    (setf project (load-project)))
+  (unless apache-trac
+    (setf apache-trac (make-apache-trac* project)))
+  (let* ((project
+	   (or project (load-project)))
+	 (apache-trac
+	   (or (setf apache-trac (make-apache-trac* project)))))
+    (make-trac-environment
+     :name name
+     :displayname (format nil "~A Trac environment" (string-capitalize name))
+     :description "A Trac environment."
+     :apache-trac apache-trac
+     :location (concatenate 'string "/trac/" name))))
+
+
+(defun configure-apache-trac-environment (environment)
+  (with-output-to-file (conf (trac-environment-site-pathname environment)
+			     :owner "www-data"
+			     :group "www-data"
+			     :mode #o644)
+    (write-string
+     (trac-environment-apache-configuration-document environment)
+     conf)))
+    
+			     
 (defun entry-point ()
   (format t "Administration Console for El Cid.~%")
   (start-swank)
