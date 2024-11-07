@@ -21,6 +21,7 @@
   (steward-unit-test)
   (simulator-unit-test)
   (local-filesystem-subtree-unit-test)
+  (colima-unit-test)
   (progn
     (check-that-the-testsuite-runs-on-a-test-docker-context)
     (docker-engine-unit-test))

@@ -36,6 +36,7 @@
 		 (:module "stewards"
 		  :components ((:file "simulator")
 			       (:file "local-filesystem-subtree")
+			       (:file "colima")
 			       (:file "docker-engine")
 			       (:file "keycloak")))
 		 (:file "entry-point")))))
@@ -147,6 +148,7 @@
 		 (:module "stewards"
 		  :components ((:file "simulator")
 			       (:file "local-filesystem-subtree")
+			       (:file "colima")
 			       (:file "docker-engine")
 			       (:file "keycloak")))
 		 (:file "poc")))

@@ -113,6 +113,11 @@
    #:local-initialization-file
    #:make-local-initialization-file
    #:configuration
+   ;; Colima
+   #:colima-tool
+   #:make-colima-tool
+   #:colima-instance
+   #:make-colima-instance
    ;; Docker Engine
    #:docker-engine
    #:make-docker-engine
