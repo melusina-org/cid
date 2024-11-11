@@ -94,7 +94,6 @@
   :description "Build tools for El Cid"
   :author "Michaël Le Barbier"
   :license "MIT License"
-  :depends-on (#:org.melusina.cid/docker)
   :components
   ((:module "libexec/lisp"
     :components ((:file "build")))))
@@ -116,8 +115,7 @@
   :license "MIT License"
   :depends-on (#:cl-ppcre
 	       #:org.melusina.atelier
-	       #:org.melusina.cid
-	       #:org.melusina.cid/docker)
+	       #:org.melusina.cid)
   :components
   ((:module "libexec/lisp"
     :components ((:file "operation")))))
@@ -134,8 +132,7 @@
 	       #:org.melusina.cid/development
 	       #:org.melusina.cid/operation
 	       #:org.melusina.cid/build
-	       #:org.melusina.cid/console
-	       #:org.melusina.cid/docker)
+	       #:org.melusina.cid/console)
   :components
   ((:module "testsuite"
     :components ((:file "package")
@@ -156,8 +153,7 @@
     :components
     ((:module "lisp"
       :components
-      ((:file "testsuite-docker")
-       (:file "testsuite-build")
+      ((:file "testsuite-build")
        (:file "testsuite-operation")))))
    (:file "testsuite/entry-point")))
 
@@ -169,7 +165,6 @@
 	       #:org.melusina.cid
 	       #:org.melusina.cid/poc
 	       #:org.melusina.cid/colima
-	       #:org.melusina.cid/docker
 	       #:org.melusina.cid/console
 	       #:org.melusina.cid/build
 	       #:org.melusina.cid/development

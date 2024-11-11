@@ -15,6 +15,7 @@
   (:use #:common-lisp)
   (:export
    
+   #:*docker-context*
    ;; Docker Volume
    #:volume
    #:volume-name
@@ -47,6 +48,8 @@
    ))
 
 (in-package #:org.melusina.cid/docker)
+
+(defparameter *docker-context* "colima-laboratory")
 
 
 ;;;;
@@ -91,7 +94,8 @@
   (with-input-from-string
       (volume-list
        (uiop:run-program
-	'("docker" "volume" "list" "--format" "json")
+	(list "docker" "--context" *docker-context*
+	      "volume" "list" "--format" "json")
 	:output :string))
     (loop :for line = (read-line volume-list nil nil)
 	  :while line
@@ -130,7 +134,8 @@
       (return-from create-volume existing-volume)))
   (let ((created-volume
 	  (uiop:run-program
-	   (list "docker" "volume" "create" "--driver" driver name)
+	   (list "docker" "--context" *docker-context*
+		 "volume" "create" "--driver" driver name)
 	   :output :string)))
     (setf created-volume
 	  (string-trim '(#\Newline) created-volume))
@@ -142,7 +147,8 @@
   (with-slots (driver name) volume
     (let ((deleted-volume
 	    (uiop:run-program
-	     (list "docker" "volume" "rm" name)
+	     (list "docker"  "--context" *docker-context*
+		   "volume" "rm" name)
 	     :output :string)))
       (setf deleted-volume
 	    (string-trim '(#\Newline) deleted-volume))
@@ -234,7 +240,8 @@
   (with-input-from-string
       (image-list
        (uiop:run-program
-	'("docker" "image" "list" "--no-trunc" "--format" "json")
+	(list "docker" "--context" *docker-context*
+	      "image" "list" "--no-trunc" "--format" "json")
 	:output :string))
     (loop :for line = (read-line image-list nil nil)
 	  :while line
@@ -286,7 +293,8 @@
 	  (concatenate 'string repository '(#\:) tag)))
     (uiop:run-program
      (append
-      (list "docker" "image" "build")
+      (list "docker" "--context" *docker-context*
+	    "image" "build")
       (unless cache
 	(list "--no-cache"))
       (when build-time-variables
@@ -295,14 +303,17 @@
       (list "--file" (namestring dockerfile))
       (list "--tag" image-tag)
       (list (namestring context)))
-     :output t
-     :error-output t)
+     :output *standard-output*
+     :error-output *trace-output*)
+    (finish-output *standard-output*)
+    (finish-output *trace-output*)
     (find-image image-tag)))
 
 (defun delete-image (image)
   (let ((deleted-image
 	  (uiop:run-program
-	   (list "docker" "image" "rm"
+	   (list "docker" "--context" *docker-context*
+		 "image" "rm"
 		 (or (image-name image)
 		     (image-id image)))
 	   :output :string)))
@@ -333,7 +344,8 @@
   "Retrieve docker info."
   (yason:parse
    (uiop:run-program
-    '("docker" "info" "--format" "json")
+    (list "docker" "--context" *docker-context*
+	  "info" "--format" "json")
     :output :string)))
  
 ;;;; End of file `docker.lisp'

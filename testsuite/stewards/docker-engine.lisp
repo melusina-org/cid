@@ -21,7 +21,8 @@
 	     (cid:make-docker-engine
 	      :tenant "testsuite"
 	      :project "testproject"
-	      :name "local-docker-engine"))
+	      :name "local-docker-engine"
+	      :context "colima-laboratory"))
 	   (port-base
 	     (+ 16384 (random 32768)))
 	   (docker-project-volumes
@@ -91,7 +92,8 @@
 	(unwind-protect
 	     (progn
 	       (development:build
-		:tag (string-downcase *testsuite-id*))
+		:tag (string-downcase *testsuite-id*)
+		:docker-engine steward)
 	       (dolist (volume docker-project-volumes)
 		 (cid:create-resource volume))
 	       (resource-unit-test

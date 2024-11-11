@@ -27,7 +27,13 @@
       :type pathname
       :initarg :pathname
       :initform *docker-client-pathname*
-      :documentation "The pathname to the docker engine client used to control resources.")
+      :documentation "The pathname to the docker engine client used to control
+    resources.")
+     (context
+      :type string
+      :initarg :context
+      :initform "default"
+      :documentation "The docker context to use.")
      (client-version
       :type (or string null)
       :initarg :client-version
@@ -52,9 +58,9 @@ the `docker' CLI client.")
 The target docker engine is just the docker engine configured for
 the `docker' CLI client."))
 
-(defun make-docker-engine (&rest initargs &key tenant project name displayname description pathname client-version server-version)
+(defun make-docker-engine (&rest initargs &key tenant project name displayname description pathname context client-version server-version)
   "Make a docker-engine steward."
-  (declare (ignore tenant project name displayname description pathname client-version server-version))
+  (declare (ignore tenant project name displayname description pathname context client-version server-version))
   (apply #'make-instance 'docker-engine initargs))
 
 (defmethod persistent-constructor ((class (eql 'docker-engine)))
@@ -63,6 +69,8 @@ the `docker' CLI client."))
 (defmethod persistent-slots append ((instance docker-engine))
   '((:initarg :pathname
      :slot-name pathname)
+    (:initarg :context
+     :slot-name context)
     (:initarg :client-version
      :slot-name client-version)
     (:initarg :server-version
@@ -70,23 +78,27 @@ the `docker' CLI client."))
 
 
 ;;;;
-;;;; Docker Engine Query and command
+;;;; Docker Engine Query and Command
 ;;;;
 
 (defun run-docker-engine-query (docker-engine &rest argv)
   "Run COMMAND as a query to the docker engine and return the resulting lines."
   (uiop:run-program
-   (cons (namestring (slot-value docker-engine 'pathname))
-	 (loop :for arg :in argv
-	       :append (alexandria:ensure-list arg)))
+   (list*
+    (namestring (slot-value docker-engine 'pathname))
+    "--context" (slot-value docker-engine 'context)
+    (loop :for arg :in argv
+	  :append (alexandria:ensure-list arg)))
    :output :lines
    :error-output :lines))
 
 (defun run-docker-engine-command (docker-engine &rest argv)
   (uiop:run-program 
-   (cons (namestring (slot-value docker-engine 'pathname))
-	 (loop :for arg :in argv
-	       :append (alexandria:ensure-list arg)))
+   (list*
+    (namestring (slot-value docker-engine 'pathname))
+    "--context" (slot-value docker-engine 'context)
+    (loop :for arg :in argv
+	  :append (alexandria:ensure-list arg)))
    :output '(:string :stripped t)
    :error-output :lines
    :ignore-error-status t))

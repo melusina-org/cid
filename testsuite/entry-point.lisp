@@ -22,19 +22,14 @@
   (simulator-unit-test)
   (local-filesystem-subtree-unit-test)
   (colima-unit-test)
-  (progn
-    (check-that-the-testsuite-runs-on-a-test-docker-context)
-    (docker-engine-unit-test))
+  (docker-engine-unit-test)
   (validate-poc))
 
 (define-testcase component-tests ()
-  (check-that-the-testsuite-runs-on-a-test-docker-context)
-  (docker-component-test)
   (build-component-test)
   (keycloak-component-test))
 
 (define-testcase integration-tests ()
-  (check-that-the-testsuite-runs-on-a-test-docker-context)
   (project-integration-test))
 
 (define-testcase run-all-tests ()

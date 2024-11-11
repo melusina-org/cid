@@ -17,7 +17,6 @@
    (#:cid #:org.melusina.cid)
    (#:poc #:org.melusina.cid/poc)
    (#:colima #:org.melusina.cid/colima)
-   (#:docker #:org.melusina.cid/docker)
    (#:build #:org.melusina.cid/build)
    (#:console #:org.melusina.cid/console)
    (#:development #:org.melusina.cid/development)

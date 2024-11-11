@@ -14,7 +14,6 @@
 (defpackage #:org.melusina.cid/operation
   (:use #:cl)
   (:local-nicknames
-   (#:docker #:org.melusina.cid/docker)
    (#:cid #:org.melusina.cid))
   (:export
    ;; Project
@@ -35,11 +34,9 @@
    #:make-project
    #:list-projects
    #:create-project
-   #:update-project
    #:start-project
    #:stop-project
    #:restart-project
-   #:find-project
    #:delete-project
    #:project-configuration
    #:configure-project
@@ -59,6 +56,8 @@
    #:service-enabled-p
    #:service-disabled-p
    #:run-console-server
+   #:project-docker-engine
+   #:project-docker-context
    ))
 
 (in-package #:org.melusina.cid/operation)
@@ -327,7 +326,11 @@ files used by git."
 	   (cid:make-docker-engine
 	    :name "docker-engine"
 	    :displayname "Docker Engine"
-	    :description "The interface to the docker engine running the deployment."))
+	    :description "The interface to the docker engine running the deployment."
+	    :context
+	    (if (string= "testsuite" (subseq (project-name project) 0 9))
+		"colima-laboratory"
+		(format nil "colima-~A" (project-name project)))))
 	 (docker-volumes
 	   (flet ((make-docker-volume (&key name displayname description volume &allow-other-keys)
 		    (cid:make-docker-volume
@@ -398,28 +401,6 @@ files used by git."
     (:initarg :resources
      :slot-name resources)))
 
-(defun list-projects ()
-  (flet ((project-name (volume-name)
-	   (multiple-value-bind (match-start match-end reg-starts reg-ends)
-	       (ppcre:scan "cid-([^-]+)-git" volume-name)
-	     (declare (ignore match-end))
-	     (when match-start
-	       (subseq volume-name (aref reg-starts 0) (aref reg-ends 0))))))
-    (loop :for volume :in (docker:list-volumes)
-	  :for project-name = (project-name (docker:volume-name volume))
-	  :when project-name
-	  :collect (make-project :name project-name :status t))))
-
-(defun find-project (designator)
-  "Find project designated by DESIGNATOR."
-  (typecase designator
-    (project     
-     designator)
-    (string
-     (find designator (list-projects)
-	   :key #'project-name
-	   :test #'string=))))
-
 (defun project-resources (&optional (project *project*))
   "Project resources sorted in dependency order."
   (sort
@@ -437,19 +418,15 @@ files used by git."
   (delete-duplicates
    (mapcar #'cid:steward (project-resources project))))
 
-(defun update-project (&optional (project *project*))
-  "Update PROJECT slots from its actual state."
-  (let ((actual-state
-	  (find-project (project-name project))))
-    (unless actual-state
-      (setf (slot-value project 'status) nil)
-      (return-from update-project project))
-    (loop :for slot-name :in '(status)
-	  :do (setf (slot-value project slot-name)
-		    (slot-value actual-state slot-name)))
-    (loop :for resource :in (project-resources project)
-	  :do (cid:update-instance-from-resource resource))
-    (values project)))
+(defun project-docker-engine (&optional (project *project*))
+  (find 'cid:docker-engine (project-stewards project)
+	:key #'type-of))
+
+(defun project-docker-context (&optional (project *project*))
+  (let ((docker-engine
+	  (project-docker-engine project)))
+    (when docker-engine
+      (slot-value docker-engine 'cid::context))))
 
 (defmacro with-environment (bindings &body body)
   (alexandria:with-gensyms (saved-environment)
@@ -484,7 +461,8 @@ files used by git."
 (defun start-project (&optional (project *project*))
   (with-project-environment project
     (uiop:run-program
-     (list "docker" "compose"
+     (list "docker" "--context" (project-docker-context project)
+	   "compose"
 	   "--project-name" (project-name project)
 	   "--file" (namestring
 		     (project-docker-compose project))
@@ -495,7 +473,8 @@ files used by git."
 (defun stop-project (&optional (project *project*))
   (with-project-environment project
     (uiop:run-program
-     (list "docker" "compose"
+     (list "docker" "--context" (project-docker-context project)
+	   "compose"
 	   "--project-name" (project-name project)
 	   "--file" (namestring
 		     (project-docker-compose project))
@@ -609,7 +588,8 @@ files used by git."
 	 (delete-containers-and-internal-volumes ()
 	   (with-project-environment project
 	     (uiop:run-program
-	      (list "docker" "compose"
+	      (list "docker" "--context" (project-docker-context project)
+		    "compose"
 		    "--project-name" (project-name project)
 		    "--file" (namestring
 		     (project-docker-compose project))
@@ -754,7 +734,8 @@ files used by git."
 		 (concatenate 'string name "=" value))))
     (uiop:run-program
      (append
-      (list "docker" "run" "-i" "--rm")
+      (list "docker" "--context" (project-docker-context project)
+	    "run" "-i" "--rm")
       (when hostname
 	(list "--hostname" hostname))
       (when name

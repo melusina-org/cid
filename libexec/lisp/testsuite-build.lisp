@@ -13,25 +13,38 @@
 
 (in-package #:org.melusina.cid/testsuite)
 
-(define-testcase ensure-that-image-exists (image)
-  (let ((docker-image
-	  (docker:find-image (build:image-name image))))
-    (assert-t* docker-image)
-    (assert-string= (build:image-name image)
-		    (docker:image-name docker-image))))
+(defun list-docker-images (&key docker-engine)
+  (check-type docker-engine (or cid:docker-engine null))
+  (uiop:run-program
+   (append
+    '("docker")
+    (when docker-engine
+      (list "--context" (slot-value docker-engine 'cid::context)))
+    (list "image" "list" "--no-trunc" "--format" "{{.Repository}}:{{.Tag}}"))
+   :output :lines))
 
-(define-testcase ensure-that-image-does-not-exist (image)
-  (let ((docker-image
-	  (docker:find-image (build:image-name image))))
-    (assert-nil docker-image)))
+(define-testcase ensure-that-image-exists (image &key docker-engine)
+  (check-type docker-engine (or cid:docker-engine null))
+  (assert-t* (member (build:image-name image)
+		     (list-docker-images :docker-engine docker-engine)
+		     :test #'string=)))
 
-(define-testcase ensure-that-image-is-valid (image)
-  (assert-t (build:validate-image image)))
+(define-testcase ensure-that-image-does-not-exist (image &key docker-engine)
+  (check-type docker-engine (or cid:docker-engine null))
+  (assert-nil (member (build:image-name image)
+		      (list-docker-images :docker-engine docker-engine)
+		      :test #'string=)))
+
+(define-testcase ensure-that-image-is-valid (image &key docker-engine)
+  (check-type docker-engine (or cid:docker-engine null))
+  (assert-t (build:validate-image image :docker-engine docker-engine)))
 
 (define-testcase ensure-that-image-can-be-built (image)
-  (build:build-image image)
-  (ensure-that-image-exists image)
-  (ensure-that-image-is-valid image))
+  (let ((docker-engine
+	  (cid:make-docker-engine :context "colima-laboratory")))
+    (build:build-image image :docker-engine docker-engine)
+    (ensure-that-image-exists image :docker-engine docker-engine)
+    (ensure-that-image-is-valid image :docker-engine docker-engine)))
 
 (define-testcase ensure-that-every-image-can-be-built ()
   (loop :for image :in (enumerate-images :tag (string-downcase confidence:*testsuite-id*))

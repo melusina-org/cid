@@ -13,11 +13,25 @@
 
 (in-package #:org.melusina.cid/testsuite)
 
-(define-testcase ensure-that-volume-exists (volume)
-  (assert-t* (docker:find-volume (slot-value volume 'cid::volume))))
+(defun list-docker-volumes (&key docker-engine)
+  (check-type docker-engine (or cid:docker-engine null))
+  (uiop:run-program
+   (append
+    '("docker")
+    (when docker-engine
+      (list "--context" (slot-value docker-engine 'cid::context)))
+    (list "volume" "list" "--format" "{{.Name}}"))
+   :output :lines))
 
-(define-testcase ensure-that-volume-does-not-exist (volume)
-  (assert-nil (docker:find-volume (slot-value volume 'cid::volume))))
+(define-testcase ensure-that-volume-exists (volume &key docker-engine)
+  (assert-t* (member (slot-value volume 'cid::volume)
+		     (list-docker-volumes :docker-engine docker-engine)
+		     :test #'string=)))
+
+(define-testcase ensure-that-volume-does-not-exist (volume &key docker-engine)
+  (assert-nil (member (slot-value volume 'cid::volume)
+		      (list-docker-volumes :docker-engine docker-engine)
+		      :test #'string=)))
 
 (define-testcase ensure-that-trac-instance-is-available (project instance)
   (let ((hostname
@@ -73,29 +87,24 @@
 	    :hostname "localhost"
 	    :http-port random-unprivileged-port
 	    :https-port (+ 1 random-unprivileged-port)
-	    :ssh-port (+ 2 random-unprivileged-port))))
-    (development:build :tag tag)
+	    :ssh-port (+ 2 random-unprivileged-port)))
+	 (docker-engine
+	   (operation:project-docker-engine project)))
+    (development:build :tag tag :docker-engine docker-engine)
     (loop :for image :in (enumerate-images :tag tag)
 	  :do (progn
-		(ensure-that-image-exists image)
-		(ensure-that-image-is-valid image)))
+		(ensure-that-image-exists image :docker-engine docker-engine)
+		(ensure-that-image-is-valid image :docker-engine docker-engine)))
     (operation:create-project :project project)
     (loop :for volume :in (enumerate-volumes :project project)
-	  :do (ensure-that-volume-exists volume))
-    (assert-t* (operation:find-project name))
+	  :do (ensure-that-volume-exists volume :docker-engine docker-engine))
     (ensure-that-trac-instance-is-available project "example1")
     (ensure-that-trac-instance-is-available project "example-2-fancy-name")
     (handler-bind
 	((cid:resource-no-longer-exists #'continue))
       (operation:delete-project project))
     (loop :for volume :in (enumerate-volumes :project project)
-	  :do (ensure-that-volume-does-not-exist volume))
-    (loop :for image :in (enumerate-images :tag tag)
-	  :do (progn
-		(docker:delete-image
-		 (docker:find-image
-		  (build:image-name image)))
-		(ensure-that-image-does-not-exist image)))))
+	  :do (ensure-that-volume-does-not-exist volume :docker-engine docker-engine))))
 
 (define-testcase project-integration-test ()
   (validate-project-lifecycle))

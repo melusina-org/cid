@@ -14,7 +14,7 @@
 (defpackage #:org.melusina.cid/build
   (:use #:common-lisp)
   (:local-nicknames
-   (#:docker #:org.melusina.cid/docker))
+   (#:cid #:org.melusina.cid))
   (:export
    #:image
    #:image-name
@@ -90,9 +90,7 @@
 		     #\/
 		     name))
 		  (validate
-		    (if (string= name "console")
-			"/opt/cid/bin/console"
-			"/usr/bin/true")))
+		    "/usr/bin/true"))
 	     (make-instance
 	      'image
 	      :repository repository
@@ -112,25 +110,55 @@
 	   :key #'image-repository
 	   :test #'string=))))
 
-(defun build-image (image &key (cache t))
+(defun build-image (image &key (cache t) docker-engine build-time-variables)
+  (check-type docker-engine (or cid:docker-engine null))
   (setf image (find-image image))
   (with-slots (repository tag context dockerfile) image
-    (docker:create-image
-     :dockerfile dockerfile
-     :context context
-     :repository repository
-     :tag tag
-     :build-time-variables (list (cons "CID_LINUX_REFERENCE" tag))
-     :cache cache)))
+    (unless tag
+      (setf tag "latest"))
+    (unless build-time-variables
+      (setf build-time-variables
+	    (list (cons "CID_LINUX_REFERENCE" tag))))
+    (unless context
+      (setf context #p"."))
+    (unless dockerfile
+      (setf dockerfile (merge-pathnames #p"Dockerfile" context)))
+    (let ((image-tag
+	    (concatenate 'string repository '(#\:) tag)))
+    (uiop:run-program
+     (append
+      '("docker")
+      (when docker-engine
+	(list "--context" (slot-value docker-engine 'cid::context)))
+      '("image" "build")
+      (unless cache
+	(list "--no-cache"))
+      (when build-time-variables
+	(loop :for (name . value) :in build-time-variables
+	      :append (list "--build-arg" (concatenate 'string name "=" value))))
+      (list "--file" (namestring dockerfile))
+      (list "--tag" image-tag)
+      (list (namestring context)))
+     :output *standard-output*
+     :error-output *trace-output*)
+    (finish-output *standard-output*)
+    (finish-output *trace-output*)
+    (find-image image-tag))))
 
-(defun validate-image (image)
+(defun validate-image (image &key docker-engine)
+  (check-type docker-engine (or cid:docker-engine null))
   (setf image (find-image image))
   (eq 0
       (nth-value
        2
        (uiop:run-program
-	(list "docker" "run" "-i" "--rm"
-	      "--entrypoint" (image-validate image)
-	      (image-name image))))))
+	(append
+	 '("docker")
+	 (when docker-engine
+	   (list "--context" (slot-value docker-engine 'cid::context)))
+	 (list
+	  "run" "-i" "--rm"
+	  "--entrypoint" (image-validate image)
+	  (image-name image)))))))
 
 ;;;; End of file `build.lisp'
