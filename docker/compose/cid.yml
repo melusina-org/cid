@@ -51,7 +51,7 @@ services:
   environment:
    KEYCLOAK_ADMIN: 'Administrator'
    KEYCLOAK_ADMIN_PASSWORD: ${cid_keycloak_password:-Administrator}
-   KC_HOSTNAME: https://${cid_hostname}/authorization
+   KC_HOSTNAME: ${cid_location:-https://localhost}/authorization
    KC_HTTP_RELATIVE_PATH: '/authorization'
    KC_PROXY_HEADERS: 'xforwarded'
    KC_HTTP_ENABLED: 'true'

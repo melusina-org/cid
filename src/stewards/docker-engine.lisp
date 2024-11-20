@@ -260,9 +260,10 @@ the `docker' CLI client."))
   (flet ((return-early-when-volume-already-exists (instance)
 	   (with-slots (steward volume) instance
 	     (when (probe-docker-volume steward volume)
-	       (resource-error 'create-resource instance
-			       "Docker volume already exists."
-			       "There is already an existing docker volume under the name ~S
+	       (resource-already-exists
+		'create-resource instance
+		"Docker volume already exists."
+		"There is already an existing docker volume under the name ~S
 therefore the docker volume ~A with the same name cannot be created." volume instance))))
 	 (create-docker-volume ()
 	   (with-slots (steward volume driver) instance
@@ -457,9 +458,10 @@ therefore the docker volume ~A with the same name cannot be created." volume ins
   (flet ((return-early-when-project-already-exists (instance)
 	   (with-slots (steward project) instance
 	     (when (probe-docker-project steward project)
-	       (resource-error 'create-resource instance
-			       "Docker project already exists."
-			       "There is already an existing docker compose project under the name ~S
+	       (resource-already-exists
+		'create-resource instance
+		"Docker project already exists."
+		"There is already an existing docker compose project under the name ~S
 therefore the docker project ~A with the same name cannot be created." project instance))))
 	 (create-docker-project ()
 	   (with-slots (steward project pathname) instance
@@ -509,7 +511,7 @@ and
 		   (run-docker-engine-command steward "compose"
 					      "--project-name" project
 					      "--file" (namestring pathname)
-					      "down")
+					      "down" "--volumes")
 		 (cond
 		   ((= 0 exit-code)
 		    (values output))

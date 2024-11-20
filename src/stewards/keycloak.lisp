@@ -834,7 +834,7 @@ therefore the keycloak client ~A with the same name cannot be created." parent i
 	       (let ((endpoint
 		       (concatenate 'string
 				    "/admin/realms/"
-				    (name parent)
+				    (resource-identifier parent)
 				    "/clients")))
 		 (keycloak-admin-request steward endpoint
 					 :method :post

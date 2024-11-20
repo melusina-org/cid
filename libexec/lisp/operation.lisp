@@ -27,7 +27,6 @@
    #:project-https-port
    #:project-ssh-port
    #:project-pathname
-   #:project-resources
    #:project-configuration-file
    #:edit-project-configuration-file
    #:project-backup-directory
@@ -264,15 +263,121 @@ files used by git."
   (declare (ignore name hostname http-port https-port ssh-port status docker-compose keycloak-admin-password tag resources pathname))
   (apply #'make-instance 'project initargs))
 
-(defun make-project-resources (&optional (project *project*))
-  (let* ((cid:*tenant*
-	   (cid:make-tenant :name "melusina"
-			    :displayname "Melusina"))
-	 (cid:*project*
-	   (cid:make-project :name "local"
-			     :displayname "Local Laboratory"
-			     :tenant cid:*tenant*))
-	 (keycloak-admin
+
+;;;;
+;;;; Project Modules
+;;;;
+;;;;
+
+(defun make-archive-module (&optional (project *project*))
+  "Make the Archive module for PROJECT."
+  (let* ((local-filesystem-subtree
+	   (cid:make-local-filesystem-subtree
+	    :name "archive"
+	    :displayname "Archive"
+	    :description
+	    "The Archive module owns the local filesystem directory
+where state dumps are stored."
+	    :pathname (project-backup-directory project)))
+	 (index
+	   (cid:make-local-text-file
+	    :local-filesystem-subtree local-filesystem-subtree
+	    :name "index"
+	    :displayname "INDEX"
+	    :description "An INDEX file describing the contents
+of the Archive directory."
+	    :pathname #p"INDEX"
+	    :mode #o600
+	    :content "The INDEX file.")))
+    (list index)))
+
+(defun make-compute-module (&optional (project *project*))
+  "Make the Compute module for PROJECT."
+  (let* ((testsuite-p
+	   (string= "testsuite" (subseq (project-name project) 0 9)))
+	 (colima-tool
+	   (cid:make-colima-tool
+	    :name "colima"
+	    :displayname "Colima"
+	    :description "The Colima steward creates and disposes of
+computational resources."))
+	 (colima-instance
+	   (cid:make-colima-instance
+	    :colima-tool colima-tool
+	    :name "compute"
+	    :displayname "Compute"
+	    :description (format nil "Computational resources for ~A."
+				 (project-name project))
+	    :profile (if testsuite-p
+			 "laboratory"
+			 (project-name project))
+	    :external testsuite-p
+	    :memory-size 4
+	    :disk-size 60)))
+    (list colima-instance)))
+
+(defun make-services-module (&optional (project *project*))
+  (let* ((testsuite-p
+	   (string= "testsuite" (subseq (project-name project) 0 9)))
+	 (docker-engine
+	   (cid:make-docker-engine
+	    :name "docker-engine"
+	    :displayname "Docker Engine"
+	    :description "The interface to the docker engine running the deployment."
+	    :context
+	    (if testsuite-p
+		"colima-laboratory"
+		(format nil "colima-~A" (project-name project)))))
+	 (docker-volumes
+	   (flet ((make-docker-volume (&key name displayname description volume &allow-other-keys)
+		    (cid:make-docker-volume
+		     :docker-engine docker-engine
+		     :name name
+		     :displayname displayname
+		     :description description
+		     :volume volume)))
+	     (loop :for spec :in (project-volume-database project)
+		   :collect (apply #'make-docker-volume spec))))
+	 (docker-project
+	   (cid:make-docker-project
+	    :docker-engine docker-engine
+	    :name "docker-compose"
+	    :displayname (format nil "Docker ~A" (project-name project))
+	    :description "The Docker Compose project running services for the project."
+	    :project (project-name project)
+	    :pathname *docker-compose*
+	    :environment
+	    (list (cons "cid_hostname"
+			(project-hostname project))
+		  (cons "cid_location"
+			(if (equalp 443 (project-https-port project))
+			    (concatenate
+			     'string
+			     "https://"
+			     (project-hostname project))
+			    (concatenate
+			     'string
+			     "https://"
+			     (project-hostname project)
+			     ":"
+			     (write-to-string (project-https-port project)))))
+		  (cons "cid_http_port"
+			(write-to-string (project-http-port project)))
+		  (cons "cid_https_port"
+			(write-to-string (project-https-port project)))
+		  (cons "cid_ssh_port"
+			(write-to-string (project-ssh-port project)))
+		  (cons "cid_image_tag"
+			(project-tag project))
+		  (cons "cid_project"
+			(project-name project))
+		  (cons "cid_keycloak_password"
+			(slot-value project 'keycloak-admin-password)))
+	    :volumes docker-volumes)))
+    (list* docker-project docker-volumes)))
+
+(defun make-identity-configuration-module (&optional (project *project*))
+  (let* ((keycloak-admin
 	   (with-slots (keycloak-admin-password hostname https-port) project
 	     (cid:make-keycloak-admin
 	      :name "keycloak-admin"
@@ -288,26 +393,27 @@ files used by git."
 			 (write-to-string https-port)
 			 "/authorization")
 	      :password keycloak-admin-password)))
-	 (keycloak-renaissance-realm
+	 (keycloak-realm
 	   (cid:make-keycloak-realm
 	    :keycloak-admin keycloak-admin
-	    :name "renaissance"
-	    :displayname "Common Lisp Renaissance"
-	    :description "The Keycloak realm for Common Lisp Renaissance"
-	    :realm "renaissance"
+	    :name "realm"
+	    :displayname "Keycloak Realm"
+	    :description (format nil "The Keycloak Realm for ~A."
+				 (project-name project))
+	    :realm (project-name project)
 	    :brute-force-protected t
 	    :login-with-email :allow
 	    :reset-password :allow
 	    :edit-username :deny))
-	 (keycloak-renaissance-trac
+	 (keycloak-trac-client
 	   (with-slots (hostname) project
 	     (cid:make-keycloak-client
 	      :keycloak-admin keycloak-admin
-	      :parent keycloak-renaissance-realm
+	      :parent keycloak-realm
 	      :client "trac"
-	      :name "Renaissance Trac"
-	      :displayname "Renaissance Trac"
-	      :description "The OpenID Connect client providing authorisation for the Apache OIDC Module in Renaissance Trac."
+	      :name "trac-client"
+	      :displayname "Keycloak Trac Client"
+	      :description "The OpenID Connect client providing authorisation for the Apache OIDC Module in Trac."
 	      :home-url (concatenate
 			 'string
 			 "https://"
@@ -321,30 +427,21 @@ files used by git."
 			 "/trac/renaissance/*"))
 	      :web-origins
 	      (list (concatenate 'string "https://" hostname))
-	      :public-client nil)))
-	 (docker-engine
-	   (cid:make-docker-engine
-	    :name "docker-engine"
-	    :displayname "Docker Engine"
-	    :description "The interface to the docker engine running the deployment."
-	    :context
-	    (if (string= "testsuite" (subseq (project-name project) 0 9))
-		"colima-laboratory"
-		(format nil "colima-~A" (project-name project)))))
-	 (docker-volumes
-	   (flet ((make-docker-volume (&key name displayname description volume &allow-other-keys)
-		    (cid:make-docker-volume
-		     :docker-engine docker-engine
-		     :name name
-		     :displayname displayname
-		     :description description
-		     :volume volume)))
-	     (loop :for spec :in (project-volume-database project)
-		    :collect (apply #'make-docker-volume spec))))
-	 )
-    (list :realms (list keycloak-renaissance-realm)
-	  :clients (list keycloak-renaissance-trac)
-	  :docker-volumes docker-volumes)))
+	      :public-client nil))))
+    (list keycloak-realm keycloak-trac-client)))
+
+(defun make-project-resources (&optional (project *project*))
+  (let* ((cid:*tenant*
+	   (cid:make-tenant :name "melusina"
+			    :displayname "Melusina"))
+	 (cid:*project*
+	   (cid:make-project :name "local"
+			     :displayname "Local Laboratory"
+			     :tenant cid:*tenant*)))
+    (list :archive (make-archive-module project)
+	  :compute (make-compute-module project)
+	  :services (make-services-module project)
+          :identity-configuration (make-identity-configuration-module project))))
 
 (defmethod initialize-instance :after ((instance project) &rest initargs &key &allow-other-keys)
   (declare (ignore initargs))
@@ -458,34 +555,6 @@ files used by git."
 		     (slot-value ,project 'keycloak-admin-password)))
        ,@body)))
 
-(defun start-project (&optional (project *project*))
-  (with-project-environment project
-    (uiop:run-program
-     (list "docker" "--context" (project-docker-context project)
-	   "compose"
-	   "--project-name" (project-name project)
-	   "--file" (namestring
-		     (project-docker-compose project))
-	   "up" "--detach")
-     :output t
-     :error-output t)))
-
-(defun stop-project (&optional (project *project*))
-  (with-project-environment project
-    (uiop:run-program
-     (list "docker" "--context" (project-docker-context project)
-	   "compose"
-	   "--project-name" (project-name project)
-	   "--file" (namestring
-		     (project-docker-compose project))
-	   "down")
-     :output t
-     :error-output t)))
-
-(defun restart-project (&optional (project *project*))
-  (stop-project project)
-  (start-project project))
-
 (defun create-project (&key project name tag hostname http-port https-port ssh-port (docker-compose *docker-compose*))
   (unless (or name tag project)
     (setf project *project*))
@@ -526,115 +595,76 @@ files used by git."
 		project-configuration-file))
 	     (setf (project-configuration "project.hostname" project)
 		   (slot-value project 'hostname))))
-	 (create-docker-resources ()
-	   (let ((docker-engine
-		   (find 'cid:docker-engine (project-stewards project)
-			 :key #'type-of
-			 :test #'eq))
-		 (docker-resources
-		   (flet ((docker-resource-p (resource)
-			    (eq (type-of (cid:steward resource))
-				'cid:docker-engine)))
-		     (remove-if-not #'docker-resource-p
-				    (project-resources project)))))
-	     (cid:configure-steward docker-engine)
-	     (dolist (resource docker-resources)
-	       (cid:create-resource resource))))
+	 (create-module (name)
+	   (let ((module-stewards
+		   (remove-duplicates
+		    (loop :for resource :in (getf (slot-value project 'resources) name)
+			  :collect (cid:steward resource))))
+		 (module-resources
+		   (reverse
+		    (cid:sort-resources
+		     (getf (slot-value project 'resources) name)))))
+	     (dolist (steward module-stewards)
+	       (cid:configure-steward steward))
+	     (dolist (resource module-resources)
+	       (unless (cid:resource-external-p resource)
+		 (cid:create-resource resource)))))
 	 (wait-for-services-to-be-ready ()
 	   (sleep 60))
-	 (create-keycloak-resources ()
-	   (let ((keycloak-admin
-		   (find 'cid:keycloak-admin (project-stewards project)
-			 :key #'type-of
-			 :test #'eq))
-		 (keycloak-resources
-		   (flet ((keycloak-resource-p (resource)
-			    (eq (type-of (cid:steward resource))
-				'cid:keycloak-admin)))
-		     (remove-if-not #'keycloak-resource-p
-				    (project-resources project)))))
-	     (cid:configure-steward keycloak-admin)
-	     (dolist (resource keycloak-resources)
-	       (cid:create-resource resource))))
 	 (update-project-status ()
 	   (with-slots (status) project
-	     (setf status t))))
+	     (setf status t)))
+	 (create-docker-volumes (project)
+	   (loop :for resource :in (project-resources project)
+		 :when (typep resource 'cid:docker-volume)
+		 :do (cid:create-resource resource)))
+	 (use-exisiting-docker-volumes (c)
+	   "A restart function invoking the USE-RESOURCE restart.
+This is required because the configure project script is a monolith
+and not yet modularized."
+	   (when (typep (cid:resource-error-resource c) 'cid:docker-volume)
+	     (let ((restart (find-restart 'cid:use-resource)))
+	       (when restart (invoke-restart restart))))))
     (return-early-when-project-resources-already-exist)
     (create-project-directories)
     (create-project-configuration-file)
-    (create-docker-resources)
+    (create-module :archive)
+    (create-module :compute)
+    (create-docker-volumes project)
     (configure-project project)
-    (start-project project)
+    (handler-bind ((cid:resource-error
+		     #'use-exisiting-docker-volumes))
+      (create-module :services))
     (wait-for-services-to-be-ready)
-    (create-keycloak-resources)
+    (create-module :identity-configuration)
     (update-project-status)
     (values project)))
 
 (defun delete-project (&optional (project *project*))
-  (flet ((delete-keycloak-resources ()
-	   (let ((keycloak-admin
-		   (find 'cid:keycloak-admin (project-stewards project)
-			 :key #'type-of
-			 :test #'eq))
-		 (keycloak-resources
-		   (flet ((keycloak-resource-p (resource)
-			    (eq (type-of (cid:steward resource))
-				'cid:keycloak-admin)))
-		     (remove-if-not #'keycloak-resource-p
-				    (project-resources project)))))
-	     (cid:configure-steward keycloak-admin)
-	     (dolist (resource keycloak-resources)
-	       (cid:delete-resource resource))))
-	 (delete-containers-and-internal-volumes ()
-	   (with-project-environment project
-	     (uiop:run-program
-	      (list "docker" "--context" (project-docker-context project)
-		    "compose"
-		    "--project-name" (project-name project)
-		    "--file" (namestring
-		     (project-docker-compose project))
-		    "rm" "--stop" "--volumes" "--force")
-	      :output t
-	      :error-output t)))
-	 (delete-docker-resources ()
-	   (let ((docker-engine
-		   (find 'cid:docker-engine (project-stewards project)
-			 :key #'type-of
-			 :test #'eq))
-		 (docker-resources
-		   (flet ((docker-resource-p (resource)
-			    (eq (type-of (cid:steward resource))
-				'cid:docker-engine)))
-		     (remove-if-not #'docker-resource-p
-				    (project-resources project)))))
-	     (cid:configure-steward docker-engine)
-	     (dolist (resource docker-resources)
-	       (cid:delete-resource resource))))
-	 (delete-docker-networks ()
-	   (let ((docker-engine
-		   (find 'cid:docker-engine (project-stewards project)
-			 :key #'type-of
-			 :test #'eq))
-		 (docker-networks
-		   (loop :for network :in '("frontend" "service")
-			 :collect (concatenate
-				   'string
-				   (project-name project)
-				   "_"
-				   network))))
-	     (apply #'cid::run-docker-engine-command
-		    docker-engine "network" "rm" docker-networks)))
+  (flet ((delete-module (name)
+	   (let ((module-stewards
+		   (remove-duplicates
+		    (loop :for resource :in (getf (slot-value project 'resources) name)
+			  :collect (cid:steward resource))))
+		 (module-resources
+		   (cid:sort-resources
+		    (getf (slot-value project 'resources) name))))
+	     (dolist (steward module-stewards)
+	       (cid:configure-steward steward))
+	     (dolist (resource module-resources)
+	       (unless (cid:resource-external-p resource)
+		 (cid:delete-resource resource)))))
 	 (delete-project-configuration-file ()
 	   (uiop:delete-file-if-exists
 	    (project-configuration-file project)))
 	 (update-project-status ()
 	   (with-slots (status) project
 	     (setf status nil))))
-    (delete-keycloak-resources)
-    (delete-containers-and-internal-volumes)
-    (delete-docker-resources)
-    (delete-docker-networks)
+    (delete-module :identity-configuration)
+    (delete-module :services)
+    (delete-module :compute)
     (delete-project-configuration-file)
+    (delete-module :archive)
     (update-project-status)
     (values project)))
 

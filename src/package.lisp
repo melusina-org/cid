@@ -65,6 +65,9 @@
    #:resource-tenant
    #:resource-properties
    #:resource-error
+   #:resource-error-operation
+   #:resource-error-resource
+   #:resource-error-description   
    #:resource-no-longer-exists
    #:resource-already-exists
    #:resource-prerequisite-is-missing
@@ -94,6 +97,8 @@
    #:resource-prerequisite-p
    #:prepare-modification-instructions
    #:apply-modification-instructions
+   #:use-resource
+   #:recreate-resource
    ;; Simulators and Simulations
    #:simulator
    #:make-simulator

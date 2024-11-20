@@ -364,7 +364,7 @@ known state indicates the underlying resource did exist."
 
 
 ;;;;
-;;;; Resource Prerequisite is Mising
+;;;; Resource Prerequisite is Missing
 ;;;;
 
 (define-condition resource-prerequisite-is-missing (resource-error)
@@ -505,7 +505,8 @@ prerequisites in an order so that any resource in the list appears
 before its prerequisites."))
 
 (defmethod resource-prerequisites append ((instance resource))
-  nil)
+  (when (slot-value instance 'parent)
+    (list (slot-value instance 'parent))))
 
 (defmethod resource-prerequisites :around ((instance resource))
   "Ensure the prerequisites of a resource are sorted."

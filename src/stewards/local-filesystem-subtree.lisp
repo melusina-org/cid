@@ -165,9 +165,10 @@ Deeper hierarchies are not implemented." pathname))
 (defmethod create-resource ((instance local-text-file))
   (flet ((return-early-when-file-already-exists (pathname)
 	   (when (probe-file pathname)
-	     (resource-error 'create-resource instance
-			     "File already exists."
-			     "There is already an existing file under the pathname ~S
+	     (resource-already-exists
+	      'create-resource instance
+	      "File already exists."
+	      "There is already an existing file under the pathname ~S
 therefore the local text file ~A cannot be created." pathname instance)))
 	 (create-empty-file (pathname)
 	   (let ((octal-mode
