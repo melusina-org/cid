@@ -103,19 +103,39 @@ This includes the following tasks:
 
 
 (defun configure-apache-trac-environment (environment)
-  (with-output-to-file (conf (trac-environment-site-pathname environment)
-			     :owner "www-data"
-			     :group "www-data"
-			     :mode #o644)
-    (write-string
-     (trac-environment-apache-configuration-document environment)
-     conf)))
-    
+  (let ((environment
+	  (cond ((stringp environment)
+		 (make-trac-environment* environment))
+		(t
+		 environment))))
+    (with-output-to-file (conf (trac-environment-site-pathname environment)
+			       :owner "www-data"
+			       :group "www-data"
+			       :mode #o644)
+      (write-string
+       (trac-environment-apache-configuration-document environment)
+       conf))))
+
+(defun configure-entry-point ()
+  (format t "Administration Console Configuration for El Cid.~%")
+  (uiop:quit 0))
 			     
-(defun entry-point ()
-  (format t "Administration Console for El Cid.~%")
+(defun server-entry-point ()
+  (format t "Administration Console Server for El Cid.~%")
   (start-swank)
   (idle-loop)
   (uiop:quit 0))
+
+(defun entry-point ()
+  (let ((subcommand
+	  (first (uiop:command-line-arguments))))
+    (cond
+      ((or (eq nil subcommand)
+	   (string= "listen" subcommand))
+       (server-entry-point))
+      ((string= "configure" subcommand)
+       (configure-entry-point))
+      (t
+       (error "The word ~S does not designate a console subcommand." subcommand)))))
 
 ;;;; End of file `entry-point.lisp'

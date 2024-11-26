@@ -18,15 +18,18 @@ export SBCL_HOME
 
 start_console()
 {
-    exec su cid -c /opt/cid/bin/console "$@"
+    exec su cid -c "/opt/cid/bin/console $@"
 }
 
-is_option_p()
+is_console_argument_p()
 {
-    case "${0:-NIL}" in
+    case "${1:-NIL}" in
         -*)
 	    return 0
             ;;
+	listen|configure)
+	    return 0
+	    ;;
 	*)
 	    return 1
             ;;
@@ -35,7 +38,7 @@ is_option_p()
 
 if [ $# -eq 0 ]; then
     start_console
-elif is_option_p "$1"; then
+elif is_console_argument_p "$1"; then
     start_console "$@"
 else
     exec "$@"

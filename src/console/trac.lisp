@@ -200,7 +200,7 @@ be read on this system." directory))))))
 (defun trac-environment-ini-file (environment)
   "The pathname for ENVIRONMENT INI-file."
   (merge-pathnames
-   "conf/trac.ini"
+   #p"conf/trac.ini"
    (trac-environment-directory environment)))
 
 (defun trac-environment-chrome-dir (environment)
@@ -242,11 +242,22 @@ be read on this system." directory))))))
 (defun trac-admin (environment &rest argv)
   "Run ARGV for ENVIRONMENT's trac-admin."
   (run-program
-   (list* *trac-admin-pathname*
-	  (trac-environment-directory environment)
+   (list* (namestring *trac-admin-pathname*)
+	  (namestring (trac-environment-directory environment))
 	  argv)
    :directory *trac-data-directory*
    :identity "www-data"))
+
+(defun trac-admin-query (environment &rest argv)
+  "Run ARGV for ENVIRONMENT's trac-admin as a query."
+  (run-program
+   (list* (namestring *trac-admin-pathname*)
+	  (namestring (trac-environment-directory environment))
+	  argv)
+   :directory *trac-data-directory*
+   :identity "www-data"
+   :output :lines))
+
 
 (defun trac-environment-apache-configuration-document (environment)
   (let ((parameter-re

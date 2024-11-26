@@ -212,6 +212,12 @@ files used by git."
 	(delete service (slot-value project 'enable)))
   nil)
 
+(defun project-testsuite-p (&optional (project *project*))
+  (let ((length-testsuite 9))
+    (and (>= (length (project-name project)) length-testsuite)
+	 (string= "testsuite"
+		  (subseq (project-name project) 0 length-testsuite)))))
+
 (defun project-volume-database (&optional (project *project*))
   "The specification for Docker volumes consumed by PROJECT."
   (flet ((volume-name (name)
@@ -294,7 +300,7 @@ of the Archive directory."
 (defun make-compute-module (&optional (project *project*))
   "Make the Compute module for PROJECT."
   (let* ((testsuite-p
-	   (string= "testsuite" (subseq (project-name project) 0 9)))
+	   (project-testsuite-p project))
 	 (colima-tool
 	   (cid:make-colima-tool
 	    :name "colima"
@@ -318,7 +324,7 @@ computational resources."))
 
 (defun make-services-module (&optional (project *project*))
   (let* ((testsuite-p
-	   (string= "testsuite" (subseq (project-name project) 0 9)))
+	   (project-testsuite-p project))
 	 (docker-engine
 	   (cid:make-docker-engine
 	    :name "docker-engine"
@@ -738,7 +744,7 @@ and not yet modularized."
 ;;;; Run Program
 ;;;;
 
-(defun run-console-program (command &key (project *project*) volumes publish (output t) environment name hostname)
+(defun run-console-program (command &key (project *project*) volumes publish (output t) environment name hostname system-source)
   (flet ((docker-bind (source destination)
 	   (list
 	    "--mount"
@@ -776,10 +782,14 @@ and not yet modularized."
 	    :append (docker-environment name value))
       (docker-bind
        (project-backup-directory project)
-       "/opt/cid/var/backups")
+       #p"/opt/cid/var/backups/")
       (docker-bind
        (project-pathname project)
-       "/opt/cid/var/config")
+       #p"/opt/cid/var/config/")
+      (when system-source
+	(docker-bind
+	 (asdf:system-source-directory "org.melusina.cid")
+	 #p"/opt/cid/var/quicklisp/local-projects/cid/"))
       volumes
       (when publish
 	(loop :for spec :in publish
@@ -789,13 +799,14 @@ and not yet modularized."
       command)
      :output output :error-output t)))
 
-(defun run-console-server (&key (project *project*))
+(defun run-console-server (&key (project *project*) (system-source t))
   (run-console-program
    nil
    :project project
    :name (concatenate 'string (project-name project) "-console-server")
    :hostname (concatenate 'string "console." (project-hostname project))
    :publish '("127.0.0.1:14005:4005")
+   :system-source system-source
    :environment
    (when cid:*encryption-key*
      (list
@@ -813,9 +824,12 @@ and not yet modularized."
 The configuration of a PROJECT interacts with the software
 run by the project and creates logical resources as described
 by the PROJECT."
-  (run-console-program
-   (list "/bin/sh" "/opt/cid/bin/cid_configure")
-   :project project))
+ (run-console-program
+  (list "configure")
+  :project project)
+ (run-console-program
+  (list "/bin/sh" "/opt/cid/bin/cid_configure")
+  :project project))
 
 
 ;;;;
